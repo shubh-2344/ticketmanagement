@@ -8,7 +8,6 @@ RUN npm install
 
 COPY . .
 
-RUN mkdir -p /app/data
 
 EXPOSE 5000
 
