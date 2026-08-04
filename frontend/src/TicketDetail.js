@@ -6,22 +6,19 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
   const [showApprovalForm, setShowApprovalForm] = useState(false);
 
   const handleApprove = () => {
-    if (!comment.trim()) {
-      alert('Please add a comment before approving');
-      return;
-    }
     onApprove(ticket.id, comment);
   };
 
   const handleReject = () => {
     if (!comment.trim()) {
-      alert('Please add a reason before rejecting');
+      alert('Please add a reason before denying');
       return;
     }
     onReject(ticket.id, comment);
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -31,20 +28,30 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     });
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: '#ffc107',
-      approved: '#28a745',
-      rejected: '#dc3545',
-      closed: '#6c757d'
-    };
-    return colors[status] || '#667eea';
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'pending_manager_approval':
+        return { text: '🟡 Pending Manager Review', bg: '#f59e0b' };
+      case 'pending_admin_assignment':
+        return { text: '🟣 Pending Admin Device Assignment', bg: '#8b5cf6' };
+      case 'approved':
+        return { text: '🟢 Device Assigned & Fulfilled', bg: '#10b981' };
+      case 'rejected':
+        return { text: '🔴 Denied by Manager', bg: '#ef4444' };
+      case 'closed':
+        return { text: '⚪ Closed', bg: '#64748b' };
+      default:
+        return { text: status.toUpperCase(), bg: '#3b82f6' };
+    }
   };
 
+  const statusInfo = getStatusBadge(ticket.status);
   const isManager = currentUser.role === 'manager';
+  const isAdmin = currentUser.role === 'admin';
   const isRequester = currentUser.id === ticket.requester_id;
-  const canApprove = isManager && ticket.status === 'pending';
-  const canClose = isRequester && ticket.status === 'approved';
+
+  const canManagerReview = (isManager || isAdmin) && (ticket.status === 'pending_manager_approval' || ticket.status === 'pending');
+  const canClose = isRequester && (ticket.status === 'approved' || ticket.status === 'closed');
 
   return (
     <div className="ticket-detail">
@@ -59,10 +66,28 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         </div>
         <span
           className="status-badge"
-          style={{ backgroundColor: getStatusColor(ticket.status) }}
+          style={{ backgroundColor: statusInfo.bg }}
         >
-          {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+          {statusInfo.text}
         </span>
+      </div>
+
+      {/* Multi-Stage Workflow Timeline Indicator */}
+      <div className="workflow-timeline">
+        <div className={`timeline-step ${ticket.created_at ? 'completed' : ''}`}>
+          <div className="step-num">1</div>
+          <div className="step-label">Submitted</div>
+        </div>
+        <div className="step-connector"></div>
+        <div className={`timeline-step ${ticket.approval_date ? (ticket.status === 'rejected' ? 'rejected' : 'completed') : 'active'}`}>
+          <div className="step-num">2</div>
+          <div className="step-label">Manager Review</div>
+        </div>
+        <div className="step-connector"></div>
+        <div className={`timeline-step ${ticket.assigned_at ? 'completed' : (ticket.status === 'pending_admin_assignment' ? 'active' : '')}`}>
+          <div className="step-num">3</div>
+          <div className="step-label">Admin Fulfillment</div>
+        </div>
       </div>
 
       <div className="detail-container">
@@ -73,7 +98,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           </section>
 
           <section className="section">
-            <h2>Details</h2>
+            <h2>Ticket Metadata</h2>
             <div className="details-grid">
               <div className="detail-item">
                 <span className="label">Type:</span>
@@ -88,49 +113,73 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               <div className="detail-item">
                 <span className="label">Priority:</span>
                 <span className="value" style={{
-                  color: ticket.priority === 'high' ? '#e74c3c' : ticket.priority === 'medium' ? '#ffc107' : '#17a2b8'
+                  color: ticket.priority === 'high' ? '#ef4444' : ticket.priority === 'medium' ? '#f59e0b' : '#38bdf8'
                 }}>
-                  {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                  {ticket.priority.toUpperCase()}
                 </span>
               </div>
               <div className="detail-item">
-                <span className="label">Created:</span>
+                <span className="label">Created Date:</span>
                 <span className="value">{formatDate(ticket.created_at)}</span>
               </div>
             </div>
           </section>
 
           <section className="section">
-            <h2>Requestor Information</h2>
+            <h2>Requester & Assigned Manager</h2>
             <div className="details-grid">
               <div className="detail-item">
-                <span className="label">Name:</span>
-                <span className="value">{ticket.requester_name}</span>
+                <span className="label">Requester Name:</span>
+                <span className="value">{ticket.requester_name} ({ticket.requester_email})</span>
               </div>
               <div className="detail-item">
-                <span className="label">Email:</span>
-                <span className="value">{ticket.requester_email}</span>
+                <span className="label">Assigned Manager:</span>
+                <span className="value">{ticket.manager_name || 'Assigned Manager'}</span>
               </div>
             </div>
           </section>
 
+          {/* STAGE 2: Manager Review Details */}
           {ticket.approver_name && (
-            <section className="section approval-info">
-              <h2>Approval Information</h2>
+            <section className={`section ${ticket.status === 'rejected' ? 'rejection-info' : 'approval-info'}`}>
+              <h2>STAGE 2: Manager Review Status</h2>
               <div className="details-grid">
                 <div className="detail-item">
-                  <span className="label">Approved by:</span>
+                  <span className="label">Reviewed by:</span>
                   <span className="value">{ticket.approver_name}</span>
                 </div>
                 <div className="detail-item">
-                  <span className="label">Date:</span>
+                  <span className="label">Review Date:</span>
                   <span className="value">{formatDate(ticket.approval_date)}</span>
                 </div>
               </div>
               {ticket.approval_comment && (
                 <div className="approval-comment">
-                  <p><strong>Comment:</strong></p>
+                  <p><strong>Manager Comment:</strong></p>
                   <p>{ticket.approval_comment}</p>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* STAGE 3: Admin Device Assignment Details */}
+          {(ticket.assigned_device_name || ticket.assigned_at) && (
+            <section className="section admin-fulfilled-info">
+              <h2>STAGE 3: Admin Device Assignment & Fulfillment</h2>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <span className="label">Assigned Hardware Device:</span>
+                  <span className="value font-bold text-cyan">{ticket.assigned_device_name}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Fulfillment Date:</span>
+                  <span className="value">{formatDate(ticket.assigned_at)}</span>
+                </div>
+              </div>
+              {ticket.assignment_description && (
+                <div className="assignment-notes">
+                  <p><strong>Admin Fulfillment Instructions:</strong></p>
+                  <p>{ticket.assignment_description}</p>
                 </div>
               )}
             </section>
@@ -138,9 +187,9 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         </div>
 
         <div className="sidebar">
-          {canApprove && (
+          {canManagerReview && (
             <div className="action-panel">
-              <h3>Review & Approve</h3>
+              <h3>Manager Review Action</h3>
               
               {!showApprovalForm ? (
                 <div className="action-buttons">
@@ -148,13 +197,13 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                     className="btn btn-approve"
                     onClick={() => setShowApprovalForm(true)}
                   >
-                    ✓ Approve
+                    ✓ Approve & Pass to Admin
                   </button>
                   <button
                     className="btn btn-reject"
                     onClick={() => setShowApprovalForm(true)}
                   >
-                    ✗ Reject
+                    ✗ Deny Request
                   </button>
                 </div>
               ) : (
@@ -162,7 +211,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Add approval comment or reason for rejection..."
+                    placeholder="Add review comment or reason..."
                     rows={4}
                   />
                   <div className="form-buttons">
@@ -170,13 +219,13 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                       className="btn btn-approve"
                       onClick={handleApprove}
                     >
-                      ✓ Approve
+                      ✓ Approve (Send to Admin)
                     </button>
                     <button
                       className="btn btn-reject"
                       onClick={handleReject}
                     >
-                      ✗ Reject
+                      ✗ Deny Request
                     </button>
                     <button
                       className="btn btn-cancel"
@@ -201,19 +250,6 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               >
                 ✓ Close Ticket
               </button>
-            </div>
-          )}
-
-          {!canApprove && !canClose && (
-            <div className="info-panel">
-              <p>
-                {isRequester && ticket.status === 'pending' && 'Waiting for manager approval...'}
-                {isRequester && ticket.status === 'approved' && 'Your request has been approved. Click "Close Ticket" when done.'}
-                {isRequester && ticket.status === 'rejected' && 'Your request was rejected. You can create a new ticket.'}
-                {isRequester && ticket.status === 'closed' && 'This ticket is closed.'}
-                {!isRequester && ticket.status === 'pending' && 'Pending manager review.'}
-                {!isRequester && (ticket.status === 'approved' || ticket.status === 'rejected' || ticket.status === 'closed') && 'This ticket has been processed.'}
-              </p>
             </div>
           )}
         </div>

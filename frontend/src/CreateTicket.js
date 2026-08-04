@@ -9,25 +9,30 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
     type: initialDevice ? 'device-request' : 'issue',
     category: initialDevice ? initialDevice.category : 'general',
     priority: 'medium',
-    inventory_id: initialDevice ? initialDevice.id : ''
+    inventory_id: initialDevice ? initialDevice.id : '',
+    manager_id: '',
+    manager_name: ''
   });
 
   const [inventoryList, setInventoryList] = useState([]);
+  const [managerList, setManagerList] = useState([]);
 
   useEffect(() => {
     fetchInventory();
+    fetchManagers();
   }, []);
 
   useEffect(() => {
     if (initialDevice) {
-      setFormData({
+      setFormData((prev) => ({
+        ...prev,
         title: `Request: ${initialDevice.name}`,
         description: `Requesting company device: ${initialDevice.name} (${initialDevice.description || ''})`,
         type: 'device-request',
         category: initialDevice.category,
         priority: 'medium',
         inventory_id: initialDevice.id
-      });
+      }));
     }
   }, [initialDevice]);
 
@@ -42,11 +47,39 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
     }
   };
 
+  const fetchManagers = async () => {
+    try {
+      if (API_URL) {
+        const response = await axios.get(`${API_URL}/managers`);
+        setManagerList(response.data);
+        if (response.data.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            manager_id: response.data[0].id,
+            manager_name: response.data[0].name
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Error loading managers:', err);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleManagerSelect = (e) => {
+    const mgrId = e.target.value;
+    const selectedMgr = managerList.find((m) => m.id === mgrId);
+    setFormData((prev) => ({
+      ...prev,
+      manager_id: mgrId,
+      manager_name: selectedMgr ? selectedMgr.name : ''
     }));
   };
 
@@ -77,6 +110,11 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       return;
     }
 
+    if (!formData.manager_id) {
+      alert('Please select a manager for approval');
+      return;
+    }
+
     onSubmit(formData);
     setFormData({
       title: '',
@@ -84,7 +122,9 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       type: 'issue',
       category: 'general',
       priority: 'medium',
-      inventory_id: ''
+      inventory_id: '',
+      manager_id: managerList.length > 0 ? managerList[0].id : '',
+      manager_name: managerList.length > 0 ? managerList[0].name : ''
     });
   };
 
@@ -115,6 +155,25 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
 
       <form onSubmit={handleSubmit} className="form">
         <div className="form-group">
+          <label htmlFor="manager_id">Assign Specific Manager for Approval *</label>
+          <select
+            id="manager_id"
+            name="manager_id"
+            value={formData.manager_id}
+            onChange={handleManagerSelect}
+            required
+            className="manager-select-highlight"
+          >
+            {managerList.map((mgr) => (
+              <option key={mgr.id} value={mgr.id}>
+                👤 {mgr.name} ({mgr.role.toUpperCase()} - {mgr.email})
+              </option>
+            ))}
+          </select>
+          <span className="field-hint">The assigned manager will review and approve/deny this request first.</span>
+        </div>
+
+        <div className="form-group">
           <label htmlFor="type">Ticket Type *</label>
           <div className="radio-group">
             <label className="radio-label">
@@ -142,14 +201,14 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
 
         {formData.type === 'device-request' && (
           <div className="form-group">
-            <label htmlFor="inventory_id">Select from Available Company Inventory (Optional)</label>
+            <label htmlFor="inventory_id">Select Item from Company Inventory (Optional)</label>
             <select
               id="inventory_id"
               name="inventory_id"
               value={formData.inventory_id}
               onChange={handleInventorySelect}
             >
-              <option value="">-- Choose Item from Inventory --</option>
+              <option value="">-- Choose Item from Catalog --</option>
               {inventoryList.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name} ({item.category}) - {item.quantity} available
@@ -225,17 +284,17 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary">
-            Create Ticket
+            Submit Request to Manager
           </button>
         </div>
       </form>
 
       <div className="info-box">
-        <h4>ℹ️ Request Guidelines</h4>
+        <h4>🔄 Multi-Stage Ticket Workflow</h4>
         <ul>
-          <li>All submitted tickets will be routed according to your account role.</li>
-          <li>For device requests, select an item from company inventory if available.</li>
-          <li>Detailed descriptions help expedite approval.</li>
+          <li><strong>Stage 1:</strong> Submit request to your assigned Manager.</li>
+          <li><strong>Stage 2:</strong> Manager reviews request (Approve or Deny).</li>
+          <li><strong>Stage 3:</strong> If approved, Admin assigns device & hardware specifications.</li>
         </ul>
       </div>
     </div>

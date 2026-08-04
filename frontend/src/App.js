@@ -90,7 +90,7 @@ function App() {
   const handleCreateTicket = async (ticketData) => {
     try {
       await axios.post(`${API_URL}/tickets`, ticketData);
-      alert('Ticket created successfully!');
+      alert('Ticket created successfully and sent to manager for approval!');
       setSelectedDeviceForRequest(null);
       fetchTickets();
       setView('dashboard');
@@ -107,10 +107,11 @@ function App() {
 
   const handleApproveTicket = async (ticketId, comment) => {
     try {
-      await axios.put(`${API_URL}/tickets/${ticketId}/approve`, {
+      await axios.put(`${API_URL}/tickets/${ticketId}/manager-review`, {
+        action: 'approve',
         approval_comment: comment
       });
-      alert('Ticket approved successfully!');
+      alert('Ticket approved! Sent to Admin for device assignment.');
       fetchTickets();
       setSelectedTicket(null);
       setView('dashboard');
@@ -122,10 +123,11 @@ function App() {
 
   const handleRejectTicket = async (ticketId, comment) => {
     try {
-      await axios.put(`${API_URL}/tickets/${ticketId}/reject`, {
+      await axios.put(`${API_URL}/tickets/${ticketId}/manager-review`, {
+        action: 'reject',
         approval_comment: comment
       });
-      alert('Ticket rejected successfully!');
+      alert('Ticket denied.');
       fetchTickets();
       setSelectedTicket(null);
       setView('dashboard');
@@ -292,8 +294,11 @@ function App() {
 
           {!loading && view === 'approvals' && (currentUser.role === 'manager' || currentUser.role === 'admin') && (
             <ApprovalQueue
-              tickets={tickets.filter((t) => t.status === 'pending')}
+              tickets={tickets}
+              currentUser={currentUser}
               onViewTicket={handleViewTicket}
+              onRefresh={fetchTickets}
+              API_URL={API_URL}
             />
           )}
 
