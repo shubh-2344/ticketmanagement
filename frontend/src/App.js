@@ -8,6 +8,7 @@ import TicketDetail from './TicketDetail';
 import ApprovalQueue from './ApprovalQueue';
 import AdminInventory from './AdminInventory';
 import AdminUserControl from './AdminUserControl';
+import AdminProfile from './AdminProfile';
 import AvailableDevices from './AvailableDevices';
 
 function App() {
@@ -218,13 +219,21 @@ function App() {
           <div className="header-brand">
             <img src="/logo.png" alt="Portal Logo" className="header-logo-img" />
             <h1>
-              Ticket Management <span className="gradient-text">Hub</span>
+              Ticket Management
             </h1>
             <span className="ai-status-pulse">● System Live</span>
           </div>
 
           <div className="header-right">
-            <div className="user-profile-badge">
+            <div
+              className="user-profile-badge clickable-profile"
+              onClick={() => {
+                if (currentUser.role === 'admin') {
+                  setView('admin-profile');
+                }
+              }}
+              title={currentUser.role === 'admin' ? "Click to open Admin Profile & Password Settings" : ""}
+            >
               <span className="user-avatar">{currentUser.name.charAt(0)}</span>
               <div className="user-info-text">
                 <span className="user-name">{currentUser.name}</span>
@@ -306,6 +315,15 @@ function App() {
                 <span>User & View Control</span>
                 <span className="admin-tag">ADMIN</span>
               </button>
+
+              <button
+                className={`nav-button admin-btn ${view === 'admin-profile' ? 'active' : ''}`}
+                onClick={() => setView('admin-profile')}
+              >
+                <span className="nav-icon">⚙️</span>
+                <span>Admin Profile & Pwd</span>
+                <span className="admin-tag">ADMIN</span>
+              </button>
             </div>
           )}
         </nav>
@@ -380,6 +398,26 @@ function App() {
                 <div className="denied-icon">🔒</div>
                 <h2>Access Restricted</h2>
                 <p>Normal user accounts do not have administrator permissions.</p>
+                <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                  Return to Dashboard
+                </button>
+              </div>
+            )
+          )}
+
+          {/* ADMIN PROFILE & SETTINGS MENU */}
+          {!loading && view === 'admin-profile' && (
+            currentUser.role === 'admin' ? (
+              <AdminProfile
+                API_URL={API_URL}
+                currentUser={currentUser}
+                onProfileUpdated={fetchCurrentUser}
+              />
+            ) : (
+              <div className="access-denied-card">
+                <div className="denied-icon">🔒</div>
+                <h2>Access Restricted</h2>
+                <p>Only administrators can access Admin Profile settings.</p>
                 <button className="btn-return-home" onClick={() => setView('dashboard')}>
                   Return to Dashboard
                 </button>

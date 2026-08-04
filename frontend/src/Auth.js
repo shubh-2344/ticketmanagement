@@ -48,7 +48,7 @@ function Auth({ API_URL, onAuthSuccess }) {
       <div className="auth-card">
         <div className="auth-header">
           <img src="/logo.png" alt="Portal Logo" className="auth-logo-img" />
-          <h2>Ticket Management Hub</h2>
+          <h2>Ticket Management</h2>
           <p>{isLogin ? 'Sign in to access your dashboard' : 'Register a new account'}</p>
         </div>
 

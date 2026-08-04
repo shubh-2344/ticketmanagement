@@ -262,7 +262,6 @@ app.post('/api/auth/signup', async (req, res) => {
         return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
-    // Signup allows Employee or Manager only; Admin roles are managed by System Admin
     const validRoles = ['employee', 'manager'];
     const assignedRole = validRoles.includes(role) ? role : 'employee';
 
@@ -331,6 +330,150 @@ app.post('/api/auth/login', async (req, res) => {
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: err.message || 'Login failed.' });
+    }
+});
+
+// Change Password Endpoint (Authenticated user changes their own password)
+app.put('/api/auth/change-password', authenticateToken, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+    }
+
+    try {
+        const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userRes.rows[0];
+        if (user.password_hash && user.password_hash.trim() !== '') {
+            const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+            if (!isMatch) {
+                return res.status(401).json({ error: 'Current password is incorrect' });
+            }
+        }
+
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashed, req.user.id]);
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+        console.error('Change password error:', err);
+        res.status(500).json({ error: err.message || 'Failed to change password' });
+    }
+});
+
+// ADMIN CREATE USER ACCOUNT (Admin can create accounts for Admin, Manager, or Employee)
+app.post('/api/admin/users', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { name, email, password, role } = req.body;
+
+    if (!name || !email || !password || !role) {
+        return res.status(400).json({ error: 'Name, email, password, and role are required' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    const validRoles = ['employee', 'manager', 'admin'];
+    if (!validRoles.includes(role)) {
+        return res.status(400).json({ error: 'Invalid role specified' });
+    }
+
+    try {
+        const check = await pool.query('SELECT id FROM users WHERE email = $1', [email.trim().toLowerCase()]);
+        if (check.rows.length > 0) {
+            return res.status(400).json({ error: 'A user with this email already exists' });
+        }
+
+        const userId = 'usr_' + uuidv4().substring(0, 8);
+        const hashed = await bcrypt.hash(password, 10);
+
+        await pool.query(
+            'INSERT INTO users (id, name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5)',
+            [userId, name.trim(), email.trim().toLowerCase(), hashed, role]
+        );
+
+        res.status(201).json({
+            message: `User ${name} (${role.toUpperCase()}) created successfully!`,
+            userId
+        });
+    } catch (err) {
+        console.error('Admin create user error:', err);
+        res.status(500).json({ error: err.message || 'Failed to create user' });
+    }
+});
+
+// ADMIN RESET USER PASSWORD (Admin resets password for any user)
+app.put('/api/admin/users/:id/reset-password', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+    }
+
+    try {
+        const hashed = await bcrypt.hash(newPassword, 10);
+        const result = await pool.query(
+            'UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id, name, email',
+            [hashed, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({ message: `Password reset successfully for ${result.rows[0].name}` });
+    } catch (err) {
+        console.error('Admin reset password error:', err);
+        res.status(500).json({ error: err.message || 'Failed to reset password' });
+    }
+});
+
+// ADMIN DELETE USER (Admin can delete a user account)
+app.delete('/api/admin/users/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { id } = req.params;
+
+    if (id === req.user.id) {
+        return res.status(400).json({ error: 'You cannot delete your own admin account while logged in' });
+    }
+
+    try {
+        const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id, name', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({ message: `User ${result.rows[0].name} deleted successfully` });
+    } catch (err) {
+        console.error('Admin delete user error:', err);
+        res.status(500).json({ error: err.message || 'Failed to delete user' });
+    }
+});
+
+// ADMIN EXPORT SYSTEM DATA (Export tickets, inventory & users as JSON)
+app.get('/api/admin/export-data', authenticateToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const ticketsRes = await pool.query('SELECT * FROM tickets ORDER BY created_at DESC');
+        const inventoryRes = await pool.query('SELECT * FROM inventory ORDER BY created_at DESC');
+        const usersRes = await pool.query('SELECT id, name, email, role, created_at FROM users ORDER BY name ASC');
+
+        res.json({
+            exportDate: new Date(),
+            system: "Ticket Management System",
+            usersCount: usersRes.rows.length,
+            ticketsCount: ticketsRes.rows.length,
+            inventoryCount: inventoryRes.rows.length,
+            users: usersRes.rows,
+            tickets: ticketsRes.rows,
+            inventory: inventoryRes.rows
+        });
+    } catch (err) {
+        console.error('Admin export data error:', err);
+        res.status(500).json({ error: err.message || 'Failed to export data' });
     }
 });
 
