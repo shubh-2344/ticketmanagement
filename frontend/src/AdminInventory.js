@@ -101,9 +101,14 @@ function AdminInventory({ API_URL }) {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}" from inventory?`)) {
-      return;
-    }
+    const confirmed = await window.showConfirm({
+      title: 'Remove Inventory Item',
+      message: `Are you sure you want to delete "${name}" from inventory?`,
+      confirmText: 'Yes, Remove Item',
+      cancelText: 'Cancel',
+      confirmType: 'danger'
+    });
+    if (!confirmed) return;
     try {
       await axios.delete(`${API_URL}/inventory/${id}`);
       fetchInventory();

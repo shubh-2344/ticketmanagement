@@ -99,14 +99,20 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
   };
 
   const handleDeleteUser = async (userId, userName) => {
-    if (window.confirm(`Are you sure you want to delete user "${userName}"?`)) {
-      try {
-        const res = await axios.delete(`${API_URL}/admin/users/${userId}`);
-        alert(res.data.message);
-        fetchUsers();
-      } catch (err) {
-        alert(err.response?.data?.error || 'Failed to delete user');
-      }
+    const confirmed = await window.showConfirm({
+      title: 'Delete User Account',
+      message: `Are you sure you want to delete user "${userName}"? They will lose access to the portal.`,
+      confirmText: 'Yes, Delete User',
+      cancelText: 'Cancel',
+      confirmType: 'danger'
+    });
+    if (!confirmed) return;
+    try {
+      const res = await axios.delete(`${API_URL}/admin/users/${userId}`);
+      alert(res.data.message);
+      fetchUsers();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete user');
     }
   };
 

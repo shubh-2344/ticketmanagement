@@ -21,6 +21,7 @@ function App() {
   const [ticketViewMode, setTicketViewMode] = useState('grid');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const showToast = useCallback((message, type = 'success') => {
     if (!message) return;
@@ -31,15 +32,36 @@ function App() {
     }, 4000);
   }, []);
 
+  const showConfirm = useCallback(({ title = 'Confirm Action', message = 'Are you sure you want to proceed?', confirmText = 'Confirm', cancelText = 'Cancel', confirmType = 'danger' }) => {
+    return new Promise((resolve) => {
+      setConfirmConfig({
+        title,
+        message,
+        confirmText,
+        cancelText,
+        confirmType,
+        onConfirm: () => {
+          setConfirmConfig(null);
+          resolve(true);
+        },
+        onCancel: () => {
+          setConfirmConfig(null);
+          resolve(false);
+        }
+      });
+    });
+  }, []);
+
   useEffect(() => {
     window.showToast = showToast;
+    window.showConfirm = showConfirm;
     window.alert = (message) => {
       if (!message) return;
       const str = String(message);
       const isError = /fail|error|denied|reject|required|invalid|must|cannot|select|provide|fill/i.test(str);
       showToast(str, isError ? 'error' : 'success');
     };
-  }, [showToast]);
+  }, [showToast, showConfirm]);
 
   // Dynamic API URL resolution targeting backend port 5000
   const getApiUrl = () => {
@@ -112,7 +134,16 @@ function App() {
     setView('dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const confirmed = await showConfirm({
+      title: 'Confirm Logout',
+      message: 'Are you sure you want to log out of your session?',
+      confirmText: 'Logout',
+      cancelText: 'Cancel',
+      confirmType: 'warning'
+    });
+    if (!confirmed) return;
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken('');
@@ -244,6 +275,27 @@ function App() {
             <button className="toast-close" onClick={() => setToast(null)}>
               ✕
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Confirmation Dialog Modal */}
+      {confirmConfig && (
+        <div className="confirm-modal-overlay" onClick={confirmConfig.onCancel}>
+          <div className="confirm-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className={`confirm-icon-badge ${confirmConfig.confirmType}`}>
+              {confirmConfig.confirmType === 'danger' ? '🗑️' : confirmConfig.confirmType === 'warning' ? '⚠️' : '❓'}
+            </div>
+            <h3 className="confirm-modal-title">{confirmConfig.title}</h3>
+            <p className="confirm-modal-message">{confirmConfig.message}</p>
+            <div className="confirm-modal-actions">
+              <button className="btn-confirm-cancel" onClick={confirmConfig.onCancel}>
+                {confirmConfig.cancelText}
+              </button>
+              <button className={`btn-confirm-submit ${confirmConfig.confirmType}`} onClick={confirmConfig.onConfirm}>
+                {confirmConfig.confirmText}
+              </button>
+            </div>
           </div>
         </div>
       )}

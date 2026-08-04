@@ -93,11 +93,16 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     }
   };
 
-  const handleAdminDeleteClick = () => {
-    if (window.confirm(`Are you sure you want to permanently delete ticket "${ticket.title}"?`)) {
-      if (onAdminDelete) {
-        onAdminDelete(ticket.id);
-      }
+  const handleAdminDeleteClick = async () => {
+    const confirmed = await window.showConfirm({
+      title: 'Delete Ticket',
+      message: `Are you sure you want to permanently delete ticket "${ticket.title}"? This action cannot be undone.`,
+      confirmText: 'Yes, Delete Ticket',
+      cancelText: 'Cancel',
+      confirmType: 'danger'
+    });
+    if (confirmed && onAdminDelete) {
+      onAdminDelete(ticket.id);
     }
   };
 
