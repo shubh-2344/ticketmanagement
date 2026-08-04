@@ -12,6 +12,9 @@ const { Pool } = require('pg');
 
 const app = express();
 
+// Helper to validate UUID strings
+const isValidUUID = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
 // Enable express proxy trust for rate limiting behind reverse proxies
 app.set('trust proxy', 1);
 
@@ -67,7 +70,7 @@ async function initializeDB() {
             ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255) DEFAULT '';
         `);
 
-        // Inventory Table (Admin Managed Feature)
+        // Inventory Table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS inventory (
                 id UUID PRIMARY KEY,
@@ -81,7 +84,7 @@ async function initializeDB() {
             )
         `);
 
-        // Tickets Table with Multi-Stage Approval & Device Assignment Schema
+        // Tickets Table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS tickets (
                 id UUID PRIMARY KEY,
@@ -109,7 +112,7 @@ async function initializeDB() {
             )
         `);
 
-        // Migrations for existing database schemas
+        // Migrations
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS manager_id VARCHAR(50);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS manager_name VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS inventory_id UUID;`);
@@ -151,7 +154,7 @@ async function initializeDB() {
             `, [uuidv4(), uuidv4(), uuidv4(), uuidv4(), uuidv4()]);
         }
 
-        console.log("Database initialized successfully with multi-stage approval schema.");
+        console.log("Database initialized successfully with secure multi-stage schema.");
     } catch (err) {
         console.error("Database initialization error:", err.message);
     }
@@ -236,7 +239,7 @@ app.post('/api/auth/signup', async (req, res) => {
         });
     } catch (err) {
         console.error('Signup error:', err);
-        res.status(500).json({ error: 'Failed to register user. Internal server error.' });
+        res.status(500).json({ error: err.message || 'Failed to register user.' });
     }
 });
 
@@ -273,7 +276,7 @@ app.post('/api/auth/login', async (req, res) => {
         });
     } catch (err) {
         console.error('Login error:', err);
-        res.status(500).json({ error: 'Login failed. Internal server error.' });
+        res.status(500).json({ error: err.message || 'Login failed.' });
     }
 });
 
@@ -287,35 +290,35 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         res.json(result.rows[0]);
     } catch (err) {
         console.error('Get user profile error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Internal server error' });
     }
 });
 
-// Get Managers Endpoint (For ticket creation manager selection dropdown)
+// Get Managers Endpoint
 app.get('/api/managers', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query("SELECT id, name, email, role FROM users WHERE role = 'manager' OR role = 'admin' ORDER BY name ASC");
         res.json(result.rows);
     } catch (err) {
         console.error('Get managers error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Internal server error' });
     }
 });
 
-// User List Endpoint (Admin & Manager access)
+// User List Endpoint
 app.get('/api/users', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
     try {
         const result = await pool.query('SELECT id, name, email, role, created_at FROM users ORDER BY name ASC');
         res.json(result.rows);
     } catch (err) {
         console.error('Get users error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Internal server error' });
     }
 });
 
 // Ticket Endpoints with Multi-Stage Flow
 
-// GET tickets: Employees see only their tickets; Managers & Admins see all tickets
+// GET tickets
 app.get('/api/tickets', authenticateToken, async (req, res) => {
     try {
         let query = 'SELECT * FROM tickets';
@@ -332,7 +335,7 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
         res.json(result.rows);
     } catch (err) {
         console.error('Get tickets error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Internal server error' });
     }
 });
 
@@ -354,11 +357,11 @@ app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
         res.json(ticket);
     } catch (err) {
         console.error('Get ticket detail error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Internal server error' });
     }
 });
 
-// CREATE new ticket (Stage 1: User assigns specific manager)
+// CREATE new ticket (Safe Foreign Key & UUID Handling)
 app.post('/api/tickets', authenticateToken, async (req, res) => {
     const { title, description, type, category, priority, inventory_id, manager_id, manager_name } = req.body;
 
@@ -367,8 +370,23 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
     }
 
     try {
+        // Ensure requesting user exists in users table to satisfy Foreign Key constraint
+        const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [req.user.id]);
+        if (userCheck.rows.length === 0) {
+            await pool.query(
+                `INSERT INTO users (id, name, email, password_hash, role) 
+                 VALUES ($1, $2, $3, $4, $5) 
+                 ON CONFLICT (email) DO NOTHING`,
+                [req.user.id, req.user.name || 'User', req.user.email || 'user@company.com', '', req.user.role || 'employee']
+            );
+        }
+
         const id = uuidv4();
         const initialStatus = 'pending_manager_approval';
+
+        // Safely validate inventory_id UUID format
+        const safeInventoryId = isValidUUID(inventory_id) ? inventory_id : null;
+        const safeManagerId = (manager_id && manager_id !== 'undefined') ? manager_id : null;
 
         await pool.query(`
             INSERT INTO tickets (
@@ -388,9 +406,9 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
             req.user.id,
             req.user.name,
             req.user.email,
-            manager_id || null,
+            safeManagerId,
             manager_name || 'Assigned Manager',
-            inventory_id || null
+            safeInventoryId
         ]);
 
         res.status(201).json({
@@ -401,22 +419,20 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
         });
     } catch (err) {
         console.error('Create ticket error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Failed to create ticket' });
     }
 });
 
-// STAGE 2: MANAGER APPROVAL / DENIAL (Manager or Admin)
+// STAGE 2: MANAGER APPROVAL / DENIAL
 app.put('/api/tickets/:id/manager-review', authenticateToken, requireRole(['manager', 'admin']), async (req, res) => {
     const { id } = req.params;
-    const { action, approval_comment } = req.body; // action: 'approve' or 'reject'
+    const { action, approval_comment } = req.body;
 
     if (!action || !['approve', 'reject'].includes(action)) {
         return res.status(400).json({ error: 'Action must be "approve" or "reject"' });
     }
 
     try {
-        // If manager approves -> status becomes 'pending_admin_assignment'
-        // If manager rejects -> status becomes 'rejected'
         const nextStatus = action === 'approve' ? 'pending_admin_assignment' : 'rejected';
 
         const result = await pool.query(`
@@ -443,11 +459,11 @@ app.put('/api/tickets/:id/manager-review', authenticateToken, requireRole(['mana
         });
     } catch (err) {
         console.error('Manager review error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Failed to review ticket' });
     }
 });
 
-// STAGE 3: ADMIN DEVICE ASSIGNMENT & FULFILLMENT (Admin Only)
+// STAGE 3: ADMIN DEVICE ASSIGNMENT & FULFILLMENT
 app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin']), async (req, res) => {
     const { id } = req.params;
     const { inventory_id, assigned_device_name, assignment_description } = req.body;
@@ -457,14 +473,15 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
     }
 
     try {
-        // If specific inventory_id is chosen, decrement inventory quantity
-        if (inventory_id) {
+        const safeInventoryId = isValidUUID(inventory_id) ? inventory_id : null;
+
+        if (safeInventoryId) {
             await pool.query(`
                 UPDATE inventory
                 SET quantity = GREATEST(0, quantity - 1),
                     status = CASE WHEN quantity - 1 <= 0 THEN 'Out of Stock' ELSE status END
                 WHERE id = $1
-            `, [inventory_id]);
+            `, [safeInventoryId]);
         }
 
         const result = await pool.query(`
@@ -477,7 +494,7 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = $4
             RETURNING *
-        `, [inventory_id || null, assigned_device_name.trim(), assignment_description || '', id]);
+        `, [safeInventoryId, assigned_device_name.trim(), assignment_description || '', id]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });
@@ -489,23 +506,11 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
         });
     } catch (err) {
         console.error('Admin assign error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Device assignment failed' });
     }
 });
 
-// Backward compatibility endpoints for approval/rejection
-app.put('/api/tickets/:id/approve', authenticateToken, requireRole(['manager', 'admin']), async (req, res) => {
-    // Routes to manager-review with action: 'approve'
-    req.body.action = 'approve';
-    return app._router.handle(req, res);
-});
-
-app.put('/api/tickets/:id/reject', authenticateToken, requireRole(['manager', 'admin']), async (req, res) => {
-    req.body.action = 'reject';
-    return app._router.handle(req, res);
-});
-
-// CLOSE ticket (Requester or Admin)
+// CLOSE ticket
 app.put('/api/tickets/:id/close', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
@@ -528,19 +533,18 @@ app.put('/api/tickets/:id/close', authenticateToken, async (req, res) => {
         res.json({ message: 'Ticket closed successfully' });
     } catch (err) {
         console.error('Close ticket error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Failed to close ticket' });
     }
 });
 
-// INVENTORY MANAGEMENT ENDPOINTS (Admin Feature)
-
+// INVENTORY ENDPOINTS
 app.get('/api/inventory', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM inventory ORDER BY created_at DESC');
         res.json(result.rows);
     } catch (err) {
         console.error('Get inventory error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Internal server error' });
     }
 });
 
@@ -568,7 +572,7 @@ app.post('/api/inventory', authenticateToken, requireRole(['admin']), async (req
         });
     } catch (err) {
         console.error('Add inventory error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Failed to add inventory item' });
     }
 });
 
@@ -599,7 +603,7 @@ app.put('/api/inventory/:id', authenticateToken, requireRole(['admin']), async (
         res.json({ message: 'Inventory item updated successfully', item: result.rows[0] });
     } catch (err) {
         console.error('Update inventory error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Failed to update inventory item' });
     }
 });
 
@@ -615,7 +619,7 @@ app.delete('/api/inventory/:id', authenticateToken, requireRole(['admin']), asyn
         res.json({ message: 'Inventory item deleted successfully' });
     } catch (err) {
         console.error('Delete inventory error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err.message || 'Failed to delete inventory item' });
     }
 });
 
