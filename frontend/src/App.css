@@ -65,8 +65,17 @@ body {
 }
 
 @keyframes float-glow {
-  0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 8px #38bdf8); }
-  50% { transform: translateY(-3px); filter: drop-shadow(0 0 14px #818cf8); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+    filter: drop-shadow(0 0 8px #38bdf8);
+  }
+
+  50% {
+    transform: translateY(-3px);
+    filter: drop-shadow(0 0 14px #818cf8);
+  }
 }
 
 .header-brand h1 {
@@ -239,23 +248,23 @@ body {
 }
 
 .nav-button.admin-btn {
-  background: rgba(244, 114, 182, 0.06);
-  border-color: rgba(244, 114, 182, 0.18);
-  color: #cbd5e1;
+  background: rgba(244, 141, 56, 0.919);
+  border-color: rgba(253, 230, 138, 0.2);
+  color: #fef3c7;
 }
 
 .nav-button.admin-btn:hover {
-  background: rgba(244, 114, 182, 0.16);
-  border-color: rgba(244, 114, 182, 0.35);
-  color: #f8fafc;
+  background: rgba(254, 243, 199, 0.18);
+  border-color: rgba(253, 230, 138, 0.4);
+  color: #fffbeb;
   transform: translateX(4px);
 }
 
 .nav-button.admin-btn.active {
-  background: linear-gradient(90deg, #38bdf8 0%, #a855f7 50%, #f472b6 100%);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 6px 22px rgba(244, 114, 182, 0.4);
+  background: linear-gradient(135deg, #fffbeb 0%, #fde68a 100%);
+  color: #451a03;
+  border: 1px solid #fef3c7;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);
   font-weight: 700;
 }
 
@@ -263,17 +272,17 @@ body {
   margin-left: auto;
   font-size: 9px;
   font-weight: 800;
-  background: rgba(244, 114, 182, 0.2);
-  border: 1px solid rgba(244, 114, 182, 0.35);
+  background: rgba(254, 243, 199, 0.2);
+  border: 1px solid rgba(253, 230, 138, 0.35);
   padding: 2px 7px;
   border-radius: 6px;
-  color: #f472b6;
+  color: #fde68a;
 }
 
 .nav-button.active .admin-tag {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
-  color: #ffffff;
+  background: rgba(69, 26, 3, 0.15);
+  border-color: rgba(69, 26, 3, 0.25);
+  color: #78350f;
 }
 
 /* Main Content Surface */
@@ -311,7 +320,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Access Denied Card */
@@ -370,6 +381,7 @@ body {
     flex-direction: column;
     padding: 16px;
   }
+
   .sidebar {
     width: 100%;
     flex-direction: row;

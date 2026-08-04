@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './App.css';
 import Auth from './Auth';
@@ -20,6 +20,26 @@ function App() {
   const [selectedDeviceForRequest, setSelectedDeviceForRequest] = useState(null);
   const [ticketViewMode, setTicketViewMode] = useState('grid');
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((message, type = 'success') => {
+    if (!message) return;
+    const id = Date.now();
+    setToast({ id, message, type });
+    setTimeout(() => {
+      setToast((current) => (current?.id === id ? null : current));
+    }, 4000);
+  }, []);
+
+  useEffect(() => {
+    window.showToast = showToast;
+    window.alert = (message) => {
+      if (!message) return;
+      const str = String(message);
+      const isError = /fail|error|denied|reject|required|invalid|must|cannot|select|provide|fill/i.test(str);
+      showToast(str, isError ? 'error' : 'success');
+    };
+  }, [showToast]);
 
   // Dynamic API URL resolution targeting backend port 5000
   const getApiUrl = () => {
@@ -213,6 +233,21 @@ function App() {
 
   return (
     <div className="app ai-theme">
+      {/* Top-Right Floating Toast Notification */}
+      {toast && (
+        <div className="toast-container">
+          <div className={`toast-message ${toast.type}`}>
+            <div className="toast-icon">
+              {toast.type === 'success' ? '✓' : '✕'}
+            </div>
+            <div className="toast-content">{toast.message}</div>
+            <button className="toast-close" onClick={() => setToast(null)}>
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header Bar */}
       <header className="header">
         <div className="header-content">
