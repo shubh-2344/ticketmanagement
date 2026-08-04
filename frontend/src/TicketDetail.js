@@ -27,9 +27,113 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     manager_id: ticket.manager_id || '',
     manager_name: ticket.manager_name || '',
     assigned_device_name: ticket.assigned_device_name || '',
-    assignment_description: ticket.assignment_description || '',
     approval_comment: ticket.approval_comment || ''
   });
+
+  const [extendHours, setExtendHours] = useState(24);
+  const [extendReason, setExtendReason] = useState('');
+
+  const handleExtendSLA = async (e) => {
+    e.preventDefault();
+    if (!extendReason.trim()) {
+      alert('Please enter a reason for the SLA extension.');
+      return;
+    }
+
+    const currentTarget = ticket.target_resolution_date ? new Date(ticket.target_resolution_date) : new Date();
+    currentTarget.setHours(currentTarget.getHours() + parseInt(extendHours, 10));
+
+    const updatedSlaHours = (ticket.sla_hours || 48) + parseInt(extendHours, 10);
+
+    try {
+      await axios.put(`${API_URL}/tickets/${ticket.id}/extend-sla`, {
+        target_resolution_date: currentTarget.toISOString(),
+        sla_hours: updatedSlaHours,
+        extension_reason: extendReason
+      });
+      alert(`SLA successfully extended by ${extendHours} hours!`);
+      setExtendReason('');
+      window.location.reload();
+    } catch (err) {
+      console.error('Error extending SLA:', err);
+      alert(err.response?.data?.error || 'SLA extension failed.');
+    }
+  };
+
+  const renderSLADashboard = () => {
+    if (!ticket.target_resolution_date) return null;
+
+    const created = new Date(ticket.created_at).getTime();
+    const target = new Date(ticket.target_resolution_date).getTime();
+    const now = Date.now();
+
+    const totalDuration = target - created;
+    const elapsed = now - created;
+
+    let percentage = 0;
+    if (totalDuration > 0) {
+      percentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+    }
+
+    const isClosed = ticket.status === 'closed' || ticket.status === 'approved' || ticket.status === 'rejected';
+    const isOverdue = now > target && !isClosed;
+    const timeDiff = target - now;
+
+    let timeText = '';
+    if (isClosed) {
+      timeText = 'Ticket Closed/Resolved - SLA Stopped';
+    } else if (isOverdue) {
+      const overdueMs = now - target;
+      const hours = Math.floor(overdueMs / (1000 * 60 * 60));
+      const mins = Math.floor((overdueMs % (1000 * 60 * 60)) / (1000 * 60));
+      timeText = `🚨 OVERDUE BY: ${hours}h ${mins}m`;
+    } else {
+      const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+      const mins = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      timeText = `⏳ Time Remaining: ${hours}h ${mins}m`;
+    }
+
+    let progressColor = '#10b981'; 
+    if (isOverdue) {
+      progressColor = '#ef4444'; 
+    } else if (percentage >= 85) {
+      progressColor = '#f97316'; 
+    } else if (percentage >= 50) {
+      progressColor = '#f59e0b'; 
+    }
+
+    return (
+      <section className={`section sla-dashboard-card ${isOverdue ? 'overdue' : ''}`}>
+        <div className="sla-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '1.1rem', margin: 0, color: '#f8fafc' }}>SLA Resolution Progress</h2>
+          <span className="sla-target-badge" style={{ backgroundColor: progressColor, padding: '4px 8px', borderRadius: '6px', fontSize: '0.8rem', color: '#0f172a', fontWeight: 'bold' }}>
+            Target: {new Date(ticket.target_resolution_date).toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </span>
+        </div>
+        <div className="sla-time-text" style={{ color: isOverdue ? '#fca5a5' : '#e2e8f0', fontWeight: 'bold', margin: '8px 0', fontSize: '0.95rem' }}>{timeText}</div>
+        <div className="sla-progress-track" style={{ background: '#334155', borderRadius: '8px', height: '10px', overflow: 'hidden', margin: '10px 0' }}>
+          <div 
+            className="sla-progress-bar"
+            style={{ 
+              width: `${isClosed ? 100 : percentage}%`, 
+              backgroundColor: isClosed ? '#64748b' : progressColor,
+              height: '100%',
+              transition: 'width 0.4s ease'
+            }}
+          />
+        </div>
+        <div className="sla-footer-meta" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#94a3b8' }}>
+          <span>Initial SLA Limit: {ticket.sla_hours || 48} Hours</span>
+          <span>Status: {isClosed ? 'Complete' : (isOverdue ? 'SLA Breached' : 'On Track')}</span>
+        </div>
+      </section>
+    );
+  };
 
   useEffect(() => {
     if (API_URL) {
@@ -129,14 +233,14 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     });
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, type) => {
     switch (status) {
       case 'pending_manager_approval':
         return { text: '🟡 Pending Manager Review', bg: '#f59e0b' };
       case 'pending_admin_assignment':
-        return { text: '🟣 Pending Admin Device Assignment', bg: '#8b5cf6' };
+        return { text: type === 'issue' ? '🟣 Pending Admin Action' : '🟣 Pending Admin Device Assignment', bg: '#8b5cf6' };
       case 'approved':
-        return { text: '🟢 Device Assigned & Fulfilled', bg: '#10b981' };
+        return { text: type === 'issue' ? '🟢 Resolved & Closed' : '🟢 Device Assigned & Fulfilled', bg: '#10b981' };
       case 'rejected':
         return { text: '🔴 Denied by Manager', bg: '#ef4444' };
       case 'closed':
@@ -146,7 +250,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     }
   };
 
-  const statusInfo = getStatusBadge(ticket.status);
+  const statusInfo = getStatusBadge(ticket.status, ticket.type);
   const isManager = currentUser.role === 'manager';
   const isAdmin = currentUser.role === 'admin';
   const isRequester = currentUser.id === ticket.requester_id;
@@ -188,25 +292,42 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       </div>
 
       {/* Multi-Stage Workflow Timeline Indicator */}
-      <div className="workflow-timeline">
-        <div className={`timeline-step ${ticket.created_at ? 'completed' : ''}`}>
-          <div className="step-num">1</div>
-          <div className="step-label">Submitted</div>
+      {ticket.type === 'issue' ? (
+        <div className="workflow-timeline issue-timeline">
+          <div className={`timeline-step ${ticket.created_at ? 'completed' : ''}`}>
+            <div className="step-num">1</div>
+            <div className="step-label">Submitted</div>
+          </div>
+          <div className="step-connector"></div>
+          <div className={`timeline-step ${ticket.status === 'approved' || ticket.status === 'closed' ? 'completed' : 'active'}`}>
+            <div className="step-num">2</div>
+            <div className="step-label">Admin Resolution</div>
+          </div>
         </div>
-        <div className="step-connector"></div>
-        <div className={`timeline-step ${ticket.approval_date ? (ticket.status === 'rejected' ? 'rejected' : 'completed') : 'active'}`}>
-          <div className="step-num">2</div>
-          <div className="step-label">Manager Review</div>
+      ) : (
+        <div className="workflow-timeline">
+          <div className={`timeline-step ${ticket.created_at ? 'completed' : ''}`}>
+            <div className="step-num">1</div>
+            <div className="step-label">Submitted</div>
+          </div>
+          <div className="step-connector"></div>
+          <div className={`timeline-step ${ticket.approval_date ? (ticket.status === 'rejected' ? 'rejected' : 'completed') : 'active'}`}>
+            <div className="step-num">2</div>
+            <div className="step-label">Manager Review</div>
+          </div>
+          <div className="step-connector"></div>
+          <div className={`timeline-step ${ticket.assigned_at || ticket.status === 'approved' ? 'completed' : (ticket.status === 'pending_admin_assignment' ? 'active' : '')}`}>
+            <div className="step-num">3</div>
+            <div className="step-label">Admin Device Assignment</div>
+          </div>
         </div>
-        <div className="step-connector"></div>
-        <div className={`timeline-step ${ticket.assigned_at || ticket.status === 'approved' ? 'completed' : (ticket.status === 'pending_admin_assignment' ? 'active' : '')}`}>
-          <div className="step-num">3</div>
-          <div className="step-label">Admin Device Assignment</div>
-        </div>
-      </div>
+      )}
 
       <div className="detail-container">
         <div className="main-panel">
+          {/* SLA Resolution Progress Dashboard */}
+          {renderSLADashboard()}
+
           <section className="section">
             <h2>Description</h2>
             <p className="description">{ticket.description}</p>
@@ -218,7 +339,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               <div className="detail-item">
                 <span className="label">Type:</span>
                 <span className="value">
-                  {ticket.type === 'device-request' ? '🖥️ Device Request' : '🐛 Issue Report'}
+                  {ticket.type === 'device-request' ? '🖥️ Device Request' : '🔧 Issue Report'}
                 </span>
               </div>
               <div className="detail-item">
@@ -249,7 +370,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               </div>
               <div className="detail-item">
                 <span className="label">Assigned Manager:</span>
-                <span className="value">{ticket.manager_name || 'Assigned Manager'}</span>
+                <span className="value">{ticket.type === 'issue' ? 'N/A - Direct Admin' : (ticket.manager_name || 'Assigned Manager')}</span>
               </div>
             </div>
           </section>
@@ -280,13 +401,13 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           {/* STAGE 3: ADMIN DEVICE ASSIGNMENT & FULFILLMENT SECTION (Visible for All Users) */}
           <section className="section admin-fulfilled-info">
             <div className="section-header-flex">
-              <h2>STAGE 3: Admin Device Assignment & Fulfillment</h2>
+              <h2>{ticket.type === 'issue' ? 'STAGE 2: Admin Resolution & Fulfillment' : 'STAGE 3: Admin Device Assignment & Fulfillment'}</h2>
               {isAdmin && (ticket.assigned_device_name || isPendingAdminAssignment) && (
                 <button
                   className="btn-toggle-device-edit"
                   onClick={() => setShowDeviceAssignForm(!showDeviceAssignForm)}
                 >
-                  {showDeviceAssignForm ? '✖ Cancel Form' : (ticket.assigned_device_name ? '✏️ Modify Assignment' : '🚀 Assign Device Now')}
+                  {showDeviceAssignForm ? '✖ Cancel Form' : (ticket.assigned_device_name ? '✏️ Modify Resolution' : '🚀 Resolve Issue Now')}
                 </button>
               )}
             </div>
@@ -294,52 +415,54 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             {/* Admin Interactive Assignment Form */}
             {isAdmin && (showDeviceAssignForm || isPendingAdminAssignment) && (
               <form onSubmit={handleAdminDeviceAssignSubmit} className="detail-assign-form">
-                <div className="form-field-group">
-                  <label>Select Hardware from Company Inventory (Optional):</label>
-                  <select
-                    value={deviceAssignData.inventory_id}
-                    onChange={(e) => {
-                      const invId = e.target.value;
-                      const invItem = inventoryList.find(i => i.id === invId);
-                      setDeviceAssignData({
-                        ...deviceAssignData,
-                        inventory_id: invId,
-                        assigned_device_name: invItem ? invItem.name : deviceAssignData.assigned_device_name
-                      });
-                    }}
-                  >
-                    <option value="">-- Custom Hardware Entry --</option>
-                    {inventoryList.map(i => (
-                      <option key={i.id} value={i.id}>
-                        {i.name} ({i.quantity} in stock)
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {ticket.type !== 'issue' && (
+                  <div className="form-field-group">
+                    <label>Select Hardware from Company Inventory (Optional):</label>
+                    <select
+                      value={deviceAssignData.inventory_id}
+                      onChange={(e) => {
+                        const invId = e.target.value;
+                        const invItem = inventoryList.find(i => i.id === invId);
+                        setDeviceAssignData({
+                          ...deviceAssignData,
+                          inventory_id: invId,
+                          assigned_device_name: invItem ? invItem.name : deviceAssignData.assigned_device_name
+                        });
+                      }}
+                    >
+                      <option value="">-- Custom Hardware Entry --</option>
+                      {inventoryList.map(i => (
+                        <option key={i.id} value={i.id}>
+                          {i.name} ({i.quantity} in stock)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="form-field-group">
-                  <label>Assigned Device Name / Model Details *:</label>
+                  <label>{ticket.type === 'issue' ? 'Resolution Summary / Status *:' : 'Assigned Device Name / Model Details *:'}</label>
                   <input
                     type="text"
                     value={deviceAssignData.assigned_device_name}
                     onChange={(e) => setDeviceAssignData({ ...deviceAssignData, assigned_device_name: e.target.value })}
-                    placeholder="e.g. MacBook Pro 16 Inch (Serial #MP-2026-X9)"
+                    placeholder={ticket.type === 'issue' ? 'e.g. Access granted to DB server / software updated' : 'e.g. MacBook Pro 16 Inch (Serial #MP-2026-X9)'}
                     required
                   />
                 </div>
 
                 <div className="form-field-group">
-                  <label>Admin Fulfillment Notes & Setup Description:</label>
+                  <label>{ticket.type === 'issue' ? 'Admin Resolution Description & Setup Notes:' : 'Admin Fulfillment Notes & Setup Description:'}</label>
                   <textarea
                     rows="3"
                     value={deviceAssignData.assignment_description}
                     onChange={(e) => setDeviceAssignData({ ...deviceAssignData, assignment_description: e.target.value })}
-                    placeholder="Enter hardware specifications, serial number, workstation location, or setup credentials..."
+                    placeholder={ticket.type === 'issue' ? 'Enter detailed resolution details, troubleshooting steps, or credentials setup instructions...' : 'Enter hardware specifications, serial number, workstation location, or setup credentials...'}
                   />
                 </div>
 
                 <button type="submit" className="btn-submit-fulfillment">
-                  🚀 Save Device Assignment & Complete Stage 3
+                  {ticket.type === 'issue' ? '🚀 Save Resolution & Complete Stage 2' : '🚀 Save Device Assignment & Complete Stage 3'}
                 </button>
               </form>
             )}
@@ -349,17 +472,17 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               <div>
                 <div className="details-grid">
                   <div className="detail-item">
-                    <span className="label">Assigned Hardware Device:</span>
+                    <span className="label">{ticket.type === 'issue' ? 'Resolution Action:' : 'Assigned Hardware Device:'}</span>
                     <span className="value font-bold text-cyan">{ticket.assigned_device_name}</span>
                   </div>
                   <div className="detail-item">
-                    <span className="label">Fulfillment Date:</span>
+                    <span className="label">{ticket.type === 'issue' ? 'Resolution Date:' : 'Fulfillment Date:'}</span>
                     <span className="value">{formatDate(ticket.assigned_at)}</span>
                   </div>
                 </div>
                 {ticket.assignment_description && (
                   <div className="assignment-notes">
-                    <p><strong>Admin Fulfillment Instructions & Notes:</strong></p>
+                    <p><strong>{ticket.type === 'issue' ? 'Admin Resolution Instructions & Notes:' : 'Admin Fulfillment Instructions & Notes:'}</strong></p>
                     <p>{ticket.assignment_description}</p>
                   </div>
                 )}
@@ -367,7 +490,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             ) : (
               !isPendingAdminAssignment && !showDeviceAssignForm && (
                 <p className="pending-assignment-text">
-                  ⏳ Pending manager review before device assignment.
+                  {ticket.type === 'issue' ? '⏳ Pending Administrator review and resolution.' : '⏳ Pending manager review before device assignment.'}
                 </p>
               )
             )}
@@ -448,6 +571,46 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               <button className="btn btn-admin-modal-trigger" onClick={() => setShowAdminEditModal(true)}>
                 ✏️ Modify All Ticket Fields
               </button>
+            </div>
+          )}
+
+          {isAdmin && ticket.status !== 'closed' && ticket.status !== 'approved' && ticket.status !== 'rejected' && (
+            <div className="action-panel admin-panel-card sla-extension-panel">
+              <h3>⏳ Extend Ticket SLA</h3>
+              <p className="admin-help-text">You can increase the resolution SLA or extend the resolution date for this ticket.</p>
+              
+              <form onSubmit={handleExtendSLA} className="sla-extend-form">
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>Extension Duration:</label>
+                  <select 
+                    value={extendHours} 
+                    onChange={(e) => setExtendHours(parseInt(e.target.value, 10))}
+                    style={{ padding: '8px', background: '#1e293b', color: '#f8fafc', width: '100%', border: '1px solid #475569', borderRadius: '6px' }}
+                  >
+                    <option value={12}>+12 Hours</option>
+                    <option value={24}>+24 Hours (1 Day)</option>
+                    <option value={48}>+48 Hours (2 Days)</option>
+                    <option value={72}>+72 Hours (3 Days)</option>
+                    <option value={168}>+168 Hours (1 Week)</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>Reason for Extension *</label>
+                  <textarea 
+                    value={extendReason} 
+                    onChange={(e) => setExtendReason(e.target.value)}
+                    placeholder="e.g. Waiting for vendor parts / client feedback..."
+                    rows={2}
+                    required
+                    style={{ padding: '8px', background: '#1e293b', color: '#f8fafc', width: '100%', border: '1px solid #475569', borderRadius: '6px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <button type="submit" className="btn btn-primary" style={{ padding: '10px', fontSize: '0.85rem' }}>
+                  Extend Resolution Time
+                </button>
+              </form>
             </div>
           )}
         </div>

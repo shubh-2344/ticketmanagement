@@ -425,3 +425,57 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* SLA Dashboard & Extension Panel Enhancements */
+.sla-dashboard-card {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.sla-dashboard-card.overdue {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.pulse-danger {
+  animation: pulse-danger-animation 2s infinite ease-in-out;
+}
+
+.pulse-warning {
+  animation: pulse-warning-animation 2s infinite ease-in-out;
+}
+
+@keyframes pulse-danger-animation {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes pulse-warning-animation {
+  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+}
+
+.sla-extend-form .form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.issue-timeline .timeline-step.completed .step-num {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.issue-timeline .timeline-step.active .step-num {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3);
+  color: white;
+}

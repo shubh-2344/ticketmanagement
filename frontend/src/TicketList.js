@@ -2,14 +2,14 @@ import React from 'react';
 import './TicketList.css';
 
 function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, type) => {
     switch (status) {
       case 'pending_manager_approval':
         return { text: '🟡 Manager Review', bg: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24' };
       case 'pending_admin_assignment':
-        return { text: '🟣 Admin Device Assignment', bg: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.4)', color: '#c084fc' };
+        return { text: type === 'issue' ? '🟣 Pending Admin Action' : '🟣 Admin Device Assignment', bg: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.4)', color: '#c084fc' };
       case 'approved':
-        return { text: '🟢 Device Assigned', bg: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', color: '#4ade80' };
+        return { text: type === 'issue' ? '🟢 Resolved' : '🟢 Device Assigned', bg: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', color: '#4ade80' };
       case 'rejected':
         return { text: '🔴 Denied by Manager', bg: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5' };
       case 'closed':
@@ -20,7 +20,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
   };
 
   const getTypeColor = (type) => {
-    return type === 'device-request' ? '#38bdf8' : '#ef4444';
+    return type === 'device-request' ? '#38bdf8' : '#e2e8f0';
   };
 
   const formatDate = (dateString) => {
@@ -62,17 +62,17 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
             </thead>
             <tbody>
               {tickets.map((t) => {
-                const statusInfo = getStatusBadge(t.status);
+                const statusInfo = getStatusBadge(t.status, t.type);
                 return (
                   <tr key={t.id} onClick={() => onViewTicket(t)} className="clickable-row">
                     <td>
                       <div className="table-title-cell">
                         <strong>{t.title}</strong>
-                        <span className="mini-type-tag">{t.type === 'device-request' ? '🖥️ Device' : '🐛 Issue'}</span>
+                        <span className="mini-type-tag">{t.type === 'device-request' ? '🖥️ Device' : '🔧 Issue'}</span>
                       </div>
                     </td>
                     <td>{t.requester_name}</td>
-                    <td>{t.manager_name || 'Manager'}</td>
+                    <td>{t.type === 'issue' ? 'N/A - Admin' : (t.manager_name || 'Manager')}</td>
                     <td><span className={`priority-text ${t.priority}`}>{t.priority.toUpperCase()}</span></td>
                     <td>
                       <span className="status-pill-table" style={{ color: statusInfo.color }}>
@@ -91,14 +91,14 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
         /* COMPACT LIST VIEW LAYOUT */
         <div className="compact-list-container">
           {tickets.map((ticket) => {
-            const statusInfo = getStatusBadge(ticket.status);
+            const statusInfo = getStatusBadge(ticket.status, ticket.type);
             return (
               <div key={ticket.id} className="compact-row" onClick={() => onViewTicket(ticket)}>
                 <div className="compact-left">
-                  <span className="compact-type">{ticket.type === 'device-request' ? '🖥️' : '🐛'}</span>
+                  <span className="compact-type">{ticket.type === 'device-request' ? '🖥️' : '🔧'}</span>
                   <div className="compact-title-group">
                     <h4>{ticket.title}</h4>
-                    <small>By {ticket.requester_name} • Manager: {ticket.manager_name || 'Manager'}</small>
+                    <small>By {ticket.requester_name}{ticket.type !== 'issue' && ` • Manager: ${ticket.manager_name || 'Manager'}`}</small>
                   </div>
                 </div>
                 <div className="compact-right">
@@ -115,7 +115,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
         /* DEFAULT GRID CARDS VIEW LAYOUT */
         <div className="tickets-grid">
           {tickets.map((ticket) => {
-            const statusInfo = getStatusBadge(ticket.status);
+            const statusInfo = getStatusBadge(ticket.status, ticket.type);
 
             return (
               <div
@@ -130,7 +130,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
                       className="badge"
                       style={{ backgroundColor: getTypeColor(ticket.type) }}
                     >
-                      {ticket.type === 'device-request' ? '🖥️ Device' : '🐛 Issue'}
+                      {ticket.type === 'device-request' ? '🖥️ Device' : '🔧 Issue'}
                     </span>
                     <span
                       className="badge status-pill"
@@ -149,8 +149,8 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
 
                 <div className="ticket-meta">
                   <div className="meta-item">
-                    <span className="label">Assigned Manager:</span>
-                    <span className="value">{ticket.manager_name || 'Manager'}</span>
+                    <span className="label">{ticket.type === 'issue' ? 'Workflow:' : 'Assigned Manager:'}</span>
+                    <span className="value">{ticket.type === 'issue' ? 'Direct Admin Approval' : (ticket.manager_name || 'Manager')}</span>
                   </div>
                   <div className="meta-item">
                     <span className="label">Priority:</span>
@@ -160,7 +160,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
 
                 {ticket.assigned_device_name && (
                   <div className="device-assigned-preview">
-                    <span>💻 Assigned Device: <strong>{ticket.assigned_device_name}</strong></span>
+                    <span>{ticket.type === 'issue' ? '🔧 Resolution' : '💻 Assigned Device'}: <strong>{ticket.assigned_device_name}</strong></span>
                   </div>
                 )}
 

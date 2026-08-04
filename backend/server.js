@@ -134,6 +134,9 @@ async function initializeDB() {
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assignment_description TEXT;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP;`);
 
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS target_resolution_date TIMESTAMP;`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS sla_hours INT DEFAULT 48;`);
+
         await pool.query(`ALTER TABLE tickets ALTER COLUMN status TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN priority TYPE VARCHAR(50);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN type TYPE VARCHAR(100);`);
@@ -646,36 +649,51 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
         }
 
         const id = uuidv4();
-        const initialStatus = 'pending_manager_approval';
+        
+        // If it is an issue, bypass manager review and send directly to Admin.
+        const initialStatus = type === 'issue' ? 'pending_admin_assignment' : 'pending_manager_approval';
 
         const safeInventoryId = isValidUUID(inventory_id) ? inventory_id : null;
-        const safeManagerId = (manager_id && manager_id !== 'undefined') ? manager_id : null;
+        // Issues don't need a manager assignment
+        const safeManagerId = (type !== 'issue' && manager_id && manager_id !== 'undefined') ? manager_id : null;
+        const safeManagerName = type === 'issue' ? null : (manager_name || 'Assigned Manager');
+
+        // Calculate SLA hours and target resolution date based on priority
+        const ticketPriority = priority || 'medium';
+        const slaHours = ticketPriority === 'high' ? 24 : (ticketPriority === 'low' ? 72 : 48);
+        const targetResolutionDate = new Date();
+        targetResolutionDate.setHours(targetResolutionDate.getHours() + slaHours);
 
         await pool.query(`
             INSERT INTO tickets (
                 id, title, description, type, category, priority, status,
                 requester_id, requester_name, requester_email,
-                manager_id, manager_name, inventory_id
+                manager_id, manager_name, inventory_id,
+                sla_hours, target_resolution_date
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         `, [
             id,
             title.trim(),
             description.trim(),
             type,
             category,
-            priority || 'medium',
+            ticketPriority,
             initialStatus,
             req.user.id,
             req.user.name,
             req.user.email,
             safeManagerId,
-            manager_name || 'Assigned Manager',
-            safeInventoryId
+            safeManagerName,
+            safeInventoryId,
+            slaHours,
+            targetResolutionDate
         ]);
 
         res.status(201).json({
-            message: 'Ticket created successfully and sent to manager for approval',
+            message: type === 'issue' 
+                ? 'Ticket created successfully and sent to Admin for review' 
+                : 'Ticket created successfully and sent to manager for approval',
             id,
             title,
             status: initialStatus
@@ -748,6 +766,44 @@ app.put('/api/tickets/:id', authenticateToken, requireRole(['admin']), async (re
     } catch (err) {
         console.error('Admin modify ticket error:', err);
         res.status(500).json({ error: err.message || 'Failed to modify ticket' });
+    }
+});
+
+// ADMIN EXTEND TICKET SLA / RESOLVE TIME
+app.put('/api/tickets/:id/extend-sla', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { id } = req.params;
+    const { target_resolution_date, sla_hours, extension_reason } = req.body;
+
+    if (!target_resolution_date) {
+        return res.status(400).json({ error: 'Target resolution date is required for extension' });
+    }
+
+    try {
+        const result = await pool.query(`
+            UPDATE tickets
+            SET target_resolution_date = $1,
+                sla_hours = COALESCE($2, sla_hours),
+                assignment_description = CASE 
+                    WHEN $3::text IS NOT NULL AND $3::text != '' 
+                    THEN COALESCE(assignment_description, '') || CHR(10) || '[SLA Extended] ' || $3::text
+                    ELSE assignment_description
+                END,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $4
+            RETURNING *
+        `, [target_resolution_date, sla_hours ? parseInt(sla_hours, 10) : null, extension_reason || '', id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        res.json({
+            message: 'Ticket SLA / Resolve time extended successfully by Admin',
+            ticket: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Extend SLA error:', err);
+        res.status(500).json({ error: err.message || 'Failed to extend SLA' });
     }
 });
 

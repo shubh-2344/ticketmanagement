@@ -96,7 +96,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
               className={`queue-tab admin-tab ${activeTab === 'admin_queue' ? 'active' : ''}`}
               onClick={() => setActiveTab('admin_queue')}
             >
-              📦 Admin Device Assignment ({adminQueue.length})
+              📦 Admin Actions Queue ({adminQueue.length})
             </button>
           )}
         </div>
@@ -199,42 +199,44 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
                       <div><span className="label">Category:</span> <span>{ticket.category}</span></div>
                     </div>
 
-                    {/* Admin Device Assignment Form */}
+                    {/* Admin Device Assignment / Issue Resolution Form */}
                     <div className="admin-assign-box">
-                      <h4>🚀 Assign Hardware & Fulfill Request</h4>
+                      <h4>{ticket.type === 'issue' ? '🚀 Fulfill & Resolve Issue' : '🚀 Assign Hardware & Fulfill Request'}</h4>
 
                       <div className="assign-form-row">
-                        <div className="form-field">
-                          <label>Select Inventory Hardware Item (Optional):</label>
-                          <select
-                            value={ticketAdminData.inventory_id || ''}
-                            onChange={(e) => {
-                              const invId = e.target.value;
-                              const invItem = inventoryList.find(i => i.id === invId);
-                              setAdminAssignment({
-                                ...adminAssignment,
-                                [ticket.id]: {
-                                  ...ticketAdminData,
-                                  inventory_id: invId,
-                                  assigned_device_name: invItem ? invItem.name : ticketAdminData.assigned_device_name || ''
-                                }
-                              });
-                            }}
-                          >
-                            <option value="">-- Custom Device Entry --</option>
-                            {inventoryList.map(i => (
-                              <option key={i.id} value={i.id}>
-                                {i.name} ({i.quantity} available)
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        {ticket.type !== 'issue' && (
+                          <div className="form-field">
+                            <label>Select Inventory Hardware Item (Optional):</label>
+                            <select
+                              value={ticketAdminData.inventory_id || ''}
+                              onChange={(e) => {
+                                const invId = e.target.value;
+                                const invItem = inventoryList.find(i => i.id === invId);
+                                setAdminAssignment({
+                                  ...adminAssignment,
+                                  [ticket.id]: {
+                                    ...ticketAdminData,
+                                    inventory_id: invId,
+                                    assigned_device_name: invItem ? invItem.name : ticketAdminData.assigned_device_name || ''
+                                  }
+                                });
+                              }}
+                            >
+                              <option value="">-- Custom Device Entry --</option>
+                              {inventoryList.map(i => (
+                                <option key={i.id} value={i.id}>
+                                  {i.name} ({i.quantity} available)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
 
                         <div className="form-field">
-                          <label>Assigned Device Name / Model *:</label>
+                          <label>{ticket.type === 'issue' ? 'Resolution Summary / Action Taken *:' : 'Assigned Device Name / Model *:'}</label>
                           <input
                             type="text"
-                            placeholder="e.g. MacBook Pro 16 Inch (Serial #MP-2026-X9)"
+                            placeholder={ticket.type === 'issue' ? 'e.g. Access granted / password reset' : 'e.g. MacBook Pro 16 Inch (Serial #MP-2026-X9)'}
                             value={ticketAdminData.assigned_device_name || ''}
                             onChange={(e) => setAdminAssignment({
                               ...adminAssignment,
@@ -245,10 +247,10 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
                       </div>
 
                       <div className="form-field">
-                        <label>Admin Fulfillment Description & Setup Notes:</label>
+                        <label>{ticket.type === 'issue' ? 'Admin Resolution Description & Troubleshooting Notes:' : 'Admin Fulfillment Description & Setup Notes:'}</label>
                         <textarea
                           rows="2"
-                          placeholder="Provide hardware specifications, serial numbers, desk setup instructions, or security credentials..."
+                          placeholder={ticket.type === 'issue' ? 'Provide resolution details, troubleshooting steps, or credentials setup instructions...' : 'Provide hardware specifications, serial numbers, desk setup instructions, or security credentials...'}
                           value={ticketAdminData.assignment_description || ''}
                           onChange={(e) => setAdminAssignment({
                             ...adminAssignment,
@@ -261,7 +263,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
                         className="btn-fulfill-admin"
                         onClick={() => handleAdminAssign(ticket.id)}
                       >
-                        🚀 Assign Device & Complete Fulfillment
+                        {ticket.type === 'issue' ? '🚀 Resolve Issue & Complete Ticket' : '🚀 Assign Device & Complete Fulfillment'}
                       </button>
                     </div>
                   </div>

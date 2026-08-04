@@ -110,7 +110,7 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       return;
     }
 
-    if (!formData.manager_id) {
+    if (formData.type !== 'issue' && !formData.manager_id) {
       alert('Please select a manager for approval');
       return;
     }
@@ -154,24 +154,26 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       <h2>Create New Ticket</h2>
 
       <form onSubmit={handleSubmit} className="form">
-        <div className="form-group">
-          <label htmlFor="manager_id">Assign Specific Manager for Approval *</label>
-          <select
-            id="manager_id"
-            name="manager_id"
-            value={formData.manager_id}
-            onChange={handleManagerSelect}
-            required
-            className="manager-select-highlight"
-          >
-            {managerList.map((mgr) => (
-              <option key={mgr.id} value={mgr.id}>
-                👤 {mgr.name} ({mgr.role.toUpperCase()} - {mgr.email})
-              </option>
-            ))}
-          </select>
-          <span className="field-hint">The assigned manager will review and approve/deny this request first.</span>
-        </div>
+        {formData.type !== 'issue' && (
+          <div className="form-group">
+            <label htmlFor="manager_id">Assign Specific Manager for Approval *</label>
+            <select
+              id="manager_id"
+              name="manager_id"
+              value={formData.manager_id}
+              onChange={handleManagerSelect}
+              required
+              className="manager-select-highlight"
+            >
+              {managerList.map((mgr) => (
+                <option key={mgr.id} value={mgr.id}>
+                  👤 {mgr.name} ({mgr.role.toUpperCase()} - {mgr.email})
+                </option>
+              ))}
+            </select>
+            <span className="field-hint">The assigned manager will review and approve/deny this request first.</span>
+          </div>
+        )}
 
         <div className="form-group">
           <label htmlFor="type">Ticket Type *</label>
@@ -194,7 +196,7 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
                 checked={formData.type === 'issue'}
                 onChange={handleChange}
               />
-              <span>🐛 Report Issue</span>
+              <span>🔧 Report Issue</span>
             </label>
           </div>
         </div>
@@ -284,18 +286,30 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary">
-            Submit Request to Manager
+            {formData.type === 'issue' ? 'Submit Ticket directly to Admin' : 'Submit Request to Manager'}
           </button>
         </div>
       </form>
 
       <div className="info-box">
-        <h4>🔄 Multi-Stage Ticket Workflow</h4>
-        <ul>
-          <li><strong>Stage 1:</strong> Submit request to your assigned Manager.</li>
-          <li><strong>Stage 2:</strong> Manager reviews request (Approve or Deny).</li>
-          <li><strong>Stage 3:</strong> If approved, Admin assigns device & hardware specifications.</li>
-        </ul>
+        {formData.type === 'issue' ? (
+          <>
+            <h4>⚡ Direct Admin Support Workflow</h4>
+            <ul>
+              <li><strong>Stage 1:</strong> Submit issue directly to the system Administrator.</li>
+              <li><strong>Stage 2:</strong> Admin resolves, sets SLA tracking, and closes the ticket.</li>
+            </ul>
+          </>
+        ) : (
+          <>
+            <h4>🔄 Multi-Stage Device Request Workflow</h4>
+            <ul>
+              <li><strong>Stage 1:</strong> Submit request to your assigned Manager.</li>
+              <li><strong>Stage 2:</strong> Manager reviews request (Approve or Deny).</li>
+              <li><strong>Stage 3:</strong> If approved, Admin assigns device & hardware specifications.</li>
+            </ul>
+          </>
+        )}
       </div>
     </div>
   );
