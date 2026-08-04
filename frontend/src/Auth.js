@@ -26,60 +26,40 @@ function Auth({ API_URL, onAuthSuccess }) {
     setError('');
     setLoading(true);
 
-    try {
-      const endpoint = isLogin ? `${API_URL}/auth/login` : `${API_URL}/auth/signup`;
-      const payload = isLogin
-        ? { email: formData.email.trim(), password: formData.password }
-        : { ...formData, name: formData.name.trim(), email: formData.email.trim() };
+    const endpoint = isLogin ? `${API_URL}/auth/login` : `${API_URL}/auth/signup`;
+    const payload = isLogin
+      ? { email: formData.email, password: formData.password }
+      : formData;
 
+    try {
       const response = await axios.post(endpoint, payload);
       const { token, user } = response.data;
-
       onAuthSuccess(token, user);
     } catch (err) {
-      console.error('Auth error details:', err);
-      let errorMsg = err.response?.data?.error || 'Authentication failed. Please check your network connection and credentials.';
-
-      if (!isLogin && err.response?.status === 400 && errorMsg.includes('already exists')) {
-        errorMsg = 'An account with this email already exists. Please click on the "Sign In" tab above to log in.';
-      }
-
-      setError(errorMsg);
+      console.error('Auth error:', err);
+      setError(err.response?.data?.error || 'Authentication failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const fillQuickLogin = (email) => {
-    setFormData({
-      name: '',
-      email,
-      password: 'Password123!',
-      role: 'employee'
-    });
-    setIsLogin(true);
-    setError('');
   };
 
   return (
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-logo">🎫</div>
-          <h2>Ticket & Inventory System</h2>
-          <p>{isLogin ? 'Sign in to access your portal' : 'Create an account to get started'}</p>
+          <img src="/logo.png" alt="Portal Logo" className="auth-logo-img" />
+          <h2>Ticket Management Hub</h2>
+          <p>{isLogin ? 'Sign in to access your dashboard' : 'Register a new account'}</p>
         </div>
 
         <div className="auth-tabs">
           <button
-            type="button"
             className={`auth-tab ${isLogin ? 'active' : ''}`}
             onClick={() => { setIsLogin(true); setError(''); }}
           >
-            Sign In
+            Login
           </button>
           <button
-            type="button"
             className={`auth-tab ${!isLogin ? 'active' : ''}`}
             onClick={() => { setIsLogin(false); setError(''); }}
           >
@@ -87,68 +67,58 @@ function Auth({ API_URL, onAuthSuccess }) {
           </button>
         </div>
 
-        {error && (
-          <div className="auth-error-banner">
-            <span>⚠️ {error}</span>
-          </div>
-        )}
+        {error && <div className="auth-error-banner">⚠️ {error}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           {!isLogin && (
             <div className="form-group">
-              <label htmlFor="name">Full Name *</label>
+              <label>Full Name</label>
               <input
                 type="text"
-                id="name"
                 name="name"
-                placeholder="e.g. Alex Morgan"
                 value={formData.name}
                 onChange={handleChange}
+                placeholder="John Doe"
                 required
               />
             </div>
           )}
 
           <div className="form-group">
-            <label htmlFor="email">Email Address *</label>
+            <label>Email Address</label>
             <input
               type="email"
-              id="email"
               name="email"
-              placeholder="name@company.com"
               value={formData.email}
               onChange={handleChange}
+              placeholder="user@company.com"
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password *</label>
+            <label>Password</label>
             <input
               type="password"
-              id="password"
               name="password"
-              placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
+              placeholder="••••••••"
               required
-              minLength={6}
             />
           </div>
 
           {!isLogin && (
             <div className="form-group">
-              <label htmlFor="role">Select Account Type / Role *</label>
+              <label>Account Role</label>
               <select
-                id="role"
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
                 className="auth-select"
               >
-                <option value="employee">👨‍💻 Employee (Create & Track Tickets)</option>
-                <option value="manager">📋 Manager (Review & Approve Requests)</option>
-                <option value="admin">⚙️ Admin (Inventory & System Management)</option>
+                <option value="employee">User / Employee</option>
+                <option value="manager">Manager</option>
               </select>
             </div>
           )}
@@ -157,33 +127,6 @@ function Auth({ API_URL, onAuthSuccess }) {
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
         </form>
-
-        <div className="quick-demo-section">
-          <p className="quick-demo-title">🔑 Quick Demo Accounts (Password: <code>Password123!</code>)</p>
-          <div className="quick-demo-buttons">
-            <button
-              type="button"
-              className="quick-btn admin"
-              onClick={() => fillQuickLogin('admin@company.com')}
-            >
-              ⚙️ Admin
-            </button>
-            <button
-              type="button"
-              className="quick-btn manager"
-              onClick={() => fillQuickLogin('manager@company.com')}
-            >
-              📋 Manager
-            </button>
-            <button
-              type="button"
-              className="quick-btn employee"
-              onClick={() => fillQuickLogin('john@company.com')}
-            >
-              👨‍💻 Employee
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

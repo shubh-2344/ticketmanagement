@@ -7,6 +7,7 @@ import CreateTicket from './CreateTicket';
 import TicketDetail from './TicketDetail';
 import ApprovalQueue from './ApprovalQueue';
 import AdminInventory from './AdminInventory';
+import AdminUserControl from './AdminUserControl';
 import AvailableDevices from './AvailableDevices';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedDeviceForRequest, setSelectedDeviceForRequest] = useState(null);
+  const [ticketViewMode, setTicketViewMode] = useState('grid');
   const [loading, setLoading] = useState(false);
 
   // Dynamic API URL resolution targeting backend port 5000
@@ -44,6 +46,7 @@ function App() {
   useEffect(() => {
     if (currentUser && token) {
       fetchTickets();
+      fetchGlobalSettings();
     }
   }, [currentUser, token]);
 
@@ -54,6 +57,17 @@ function App() {
     } catch (error) {
       console.error('Error verifying user token:', error);
       handleLogout();
+    }
+  };
+
+  const fetchGlobalSettings = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/settings`);
+      if (response.data && response.data.ticket_view_mode) {
+        setTicketViewMode(response.data.ticket_view_mode);
+      }
+    } catch (error) {
+      console.error('Error fetching global settings:', error);
     }
   };
 
@@ -202,9 +216,9 @@ function App() {
       <header className="header">
         <div className="header-content">
           <div className="header-brand">
-            <span className="brand-ai-icon">✨</span>
+            <img src="/logo.png" alt="Portal Logo" className="header-logo-img" />
             <h1>
-              DevSecOps <span className="gradient-text">AI Hub</span>
+              Ticket Management <span className="gradient-text">Hub</span>
             </h1>
             <span className="ai-status-pulse">● System Live</span>
           </div>
@@ -271,7 +285,7 @@ function App() {
             </button>
           )}
 
-          {/* ADMIN ONLY ACCESS BUTTON */}
+          {/* ADMIN ONLY NAVIGATION GROUP */}
           {currentUser.role === 'admin' && (
             <div className="admin-nav-group">
               <div className="nav-section-title">ADMINISTRATOR</div>
@@ -281,6 +295,15 @@ function App() {
               >
                 <span className="nav-icon">📦</span>
                 <span>Inventory Control</span>
+                <span className="admin-tag">ADMIN</span>
+              </button>
+
+              <button
+                className={`nav-button admin-btn ${view === 'users' ? 'active' : ''}`}
+                onClick={() => setView('users')}
+              >
+                <span className="nav-icon">👥</span>
+                <span>User & View Control</span>
                 <span className="admin-tag">ADMIN</span>
               </button>
             </div>
@@ -299,6 +322,7 @@ function App() {
               tickets={tickets}
               currentUser={currentUser}
               onViewTicket={handleViewTicket}
+              viewMode={ticketViewMode}
             />
           )}
 
@@ -327,7 +351,7 @@ function App() {
             />
           )}
 
-          {/* ADMIN INVENTORY VIEW & ACCESS CONTROL */}
+          {/* ADMIN INVENTORY VIEW */}
           {!loading && view === 'inventory' && (
             currentUser.role === 'admin' ? (
               <AdminInventory API_URL={API_URL} />
@@ -336,6 +360,26 @@ function App() {
                 <div className="denied-icon">🔒</div>
                 <h2>Access Restricted</h2>
                 <p>Normal user accounts do not have administrator permissions to access Inventory Control.</p>
+                <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                  Return to Dashboard
+                </button>
+              </div>
+            )
+          )}
+
+          {/* ADMIN USER & VIEW CONTROL */}
+          {!loading && view === 'users' && (
+            currentUser.role === 'admin' ? (
+              <AdminUserControl
+                API_URL={API_URL}
+                currentViewMode={ticketViewMode}
+                onUpdateViewMode={(newMode) => setTicketViewMode(newMode)}
+              />
+            ) : (
+              <div className="access-denied-card">
+                <div className="denied-icon">🔒</div>
+                <h2>Access Restricted</h2>
+                <p>Normal user accounts do not have administrator permissions.</p>
                 <button className="btn-return-home" onClick={() => setView('dashboard')}>
                   Return to Dashboard
                 </button>

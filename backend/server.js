@@ -70,6 +70,20 @@ async function initializeDB() {
             ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255) DEFAULT '';
         `);
 
+        // System Settings Table (Admin Global Layout & Ticket View Configuration)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS system_settings (
+                key VARCHAR(50) PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        `);
+
+        await pool.query(`
+            INSERT INTO system_settings (key, value)
+            VALUES ('ticket_view_mode', 'grid')
+            ON CONFLICT (key) DO NOTHING
+        `);
+
         // Inventory Table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS inventory (
@@ -112,7 +126,7 @@ async function initializeDB() {
             )
         `);
 
-        // Migrations: Add missing columns and alter column lengths if pre-existing
+        // Migrations
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS manager_id VARCHAR(50);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS manager_name VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS inventory_id UUID;`);
@@ -120,13 +134,12 @@ async function initializeDB() {
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assignment_description TEXT;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP;`);
 
-        // Alter existing column data types to prevent "value too long for type character varying(20)"
         await pool.query(`ALTER TABLE tickets ALTER COLUMN status TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN priority TYPE VARCHAR(50);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN type TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN category TYPE VARCHAR(100);`);
 
-        // Default Seed Users (Password: Password123!)
+        // Default Seed Users
         const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
 
         const seedUsers = [
@@ -160,7 +173,7 @@ async function initializeDB() {
             `, [uuidv4(), uuidv4(), uuidv4(), uuidv4(), uuidv4()]);
         }
 
-        console.log("Database initialized successfully with expanded status/priority column sizes.");
+        console.log("Database initialized successfully.");
     } catch (err) {
         console.error("Database initialization error:", err.message);
     }
@@ -201,9 +214,43 @@ app.get('/health', (req, res) => {
     res.json({ status: "ok" });
 });
 
-// Auth Routes
+// System Settings Endpoints (Global Ticket View Settings for All Users)
+app.get('/api/settings', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM system_settings');
+        const settings = {};
+        result.rows.forEach(row => {
+            settings[row.key] = row.value;
+        });
+        res.json(settings);
+    } catch (err) {
+        console.error('Get settings error:', err);
+        res.status(500).json({ error: err.message || 'Failed to fetch settings' });
+    }
+});
 
-// Signup Endpoint
+app.put('/api/settings', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { ticket_view_mode } = req.body;
+
+    if (!ticket_view_mode || !['grid', 'table', 'compact'].includes(ticket_view_mode)) {
+        return res.status(400).json({ error: 'Invalid view mode. Must be "grid", "table", or "compact"' });
+    }
+
+    try {
+        await pool.query(`
+            INSERT INTO system_settings (key, value)
+            VALUES ('ticket_view_mode', $1)
+            ON CONFLICT (key) DO UPDATE SET value = $1
+        `, [ticket_view_mode]);
+
+        res.json({ message: 'Global ticket view setting updated for all users', ticket_view_mode });
+    } catch (err) {
+        console.error('Update settings error:', err);
+        res.status(500).json({ error: err.message || 'Failed to update settings' });
+    }
+});
+
+// Signup Endpoint (Users can register as Employee or Manager)
 app.post('/api/auth/signup', async (req, res) => {
     const { name, email, password, role } = req.body;
 
@@ -215,7 +262,8 @@ app.post('/api/auth/signup', async (req, res) => {
         return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
-    const validRoles = ['employee', 'manager', 'admin'];
+    // Signup allows Employee or Manager only; Admin roles are managed by System Admin
+    const validRoles = ['employee', 'manager'];
     const assignedRole = validRoles.includes(role) ? role : 'employee';
 
     try {
@@ -322,6 +370,35 @@ app.get('/api/users', authenticateToken, requireRole(['admin', 'manager']), asyn
     }
 });
 
+// ADMIN UPDATE USER ROLE (Admin can change any user's role to employee or manager or admin)
+app.put('/api/users/:id/role', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!role || !['employee', 'manager', 'admin'].includes(role)) {
+        return res.status(400).json({ error: 'Role must be "employee", "manager", or "admin"' });
+    }
+
+    try {
+        const result = await pool.query(
+            'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, name, email, role',
+            [role, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({
+            message: `User role successfully updated to ${role.toUpperCase()}`,
+            user: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Update user role error:', err);
+        res.status(500).json({ error: err.message || 'Failed to update user role' });
+    }
+});
+
 // Ticket Endpoints with Multi-Stage Flow
 
 // GET tickets
@@ -350,7 +427,7 @@ app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query('SELECT * FROM tickets WHERE id = $1', [id]);
-
+        
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });
         }
@@ -367,7 +444,7 @@ app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// CREATE new ticket (Safe Foreign Key & UUID Handling)
+// CREATE new ticket
 app.post('/api/tickets', authenticateToken, async (req, res) => {
     const { title, description, type, category, priority, inventory_id, manager_id, manager_name } = req.body;
 
@@ -376,7 +453,6 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
     }
 
     try {
-        // Ensure requesting user exists in users table to satisfy Foreign Key constraint
         const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [req.user.id]);
         if (userCheck.rows.length === 0) {
             await pool.query(
@@ -390,7 +466,6 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
         const id = uuidv4();
         const initialStatus = 'pending_manager_approval';
 
-        // Safely validate inventory_id UUID format
         const safeInventoryId = isValidUUID(inventory_id) ? inventory_id : null;
         const safeManagerId = (manager_id && manager_id !== 'undefined') ? manager_id : null;
 
@@ -426,6 +501,88 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('Create ticket error:', err);
         res.status(500).json({ error: err.message || 'Failed to create ticket' });
+    }
+});
+
+// ADMIN OVERRIDE & MODIFY TICKET API (Admin can modify any ticket for all users)
+app.put('/api/tickets/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { id } = req.params;
+    const {
+        title,
+        description,
+        type,
+        category,
+        priority,
+        status,
+        manager_id,
+        manager_name,
+        assigned_device_name,
+        assignment_description,
+        approval_comment
+    } = req.body;
+
+    try {
+        const safeManagerId = (manager_id && manager_id !== 'undefined') ? manager_id : null;
+
+        const result = await pool.query(`
+            UPDATE tickets
+            SET title = COALESCE($1, title),
+                description = COALESCE($2, description),
+                type = COALESCE($3, type),
+                category = COALESCE($4, category),
+                priority = COALESCE($5, priority),
+                status = COALESCE($6, status),
+                manager_id = COALESCE($7, manager_id),
+                manager_name = COALESCE($8, manager_name),
+                assigned_device_name = COALESCE($9, assigned_device_name),
+                assignment_description = COALESCE($10, assignment_description),
+                approval_comment = COALESCE($11, approval_comment),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $12
+            RETURNING *
+        `, [
+            title ? title.trim() : null,
+            description ? description.trim() : null,
+            type || null,
+            category || null,
+            priority || null,
+            status || null,
+            safeManagerId,
+            manager_name || null,
+            assigned_device_name ? assigned_device_name.trim() : null,
+            assignment_description ? assignment_description.trim() : null,
+            approval_comment ? approval_comment.trim() : null,
+            id
+        ]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        res.json({
+            message: 'Ticket modified successfully by Admin',
+            ticket: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Admin modify ticket error:', err);
+        res.status(500).json({ error: err.message || 'Failed to modify ticket' });
+    }
+});
+
+// ADMIN DELETE TICKET API (Admin can delete any ticket)
+app.delete('/api/tickets/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const result = await pool.query('DELETE FROM tickets WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        res.json({ message: 'Ticket deleted successfully by Admin' });
+    } catch (err) {
+        console.error('Admin delete ticket error:', err);
+        res.status(500).json({ error: err.message || 'Failed to delete ticket' });
     }
 });
 
