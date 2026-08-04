@@ -10,6 +10,7 @@ import AdminInventory from './AdminInventory';
 import AdminUserControl from './AdminUserControl';
 import AdminProfile from './AdminProfile';
 import AvailableDevices from './AvailableDevices';
+import Toast from './Toast';
 
 function App() {
   const [view, setView] = useState('dashboard');
@@ -29,7 +30,7 @@ function App() {
     setToast({ id, message, type });
     setTimeout(() => {
       setToast((current) => (current?.id === id ? null : current));
-    }, 4000);
+    }, 3000);
   }, []);
 
   const showConfirm = useCallback(({ title = 'Confirm Action', message = 'Are you sure you want to proceed?', confirmText = 'Confirm', cancelText = 'Cancel', confirmType = 'danger' }) => {
@@ -264,20 +265,8 @@ function App() {
 
   return (
     <div className="app ai-theme">
-      {/* Top-Right Floating Toast Notification */}
-      {toast && (
-        <div className="toast-container">
-          <div className={`toast-message ${toast.type}`}>
-            <div className="toast-icon">
-              {toast.type === 'success' ? '✓' : '✕'}
-            </div>
-            <div className="toast-content">{toast.message}</div>
-            <button className="toast-close" onClick={() => setToast(null)}>
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Top-Left Reusable Toast Notification */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Enhanced Confirmation Dialog Modal */}
       {confirmConfig && (
