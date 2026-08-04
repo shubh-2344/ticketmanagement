@@ -29,23 +29,28 @@ function Auth({ API_URL, onAuthSuccess }) {
     try {
       const endpoint = isLogin ? `${API_URL}/auth/login` : `${API_URL}/auth/signup`;
       const payload = isLogin
-        ? { email: formData.email, password: formData.password }
-        : formData;
+        ? { email: formData.email.trim(), password: formData.password }
+        : { ...formData, name: formData.name.trim(), email: formData.email.trim() };
 
       const response = await axios.post(endpoint, payload);
       const { token, user } = response.data;
 
       onAuthSuccess(token, user);
     } catch (err) {
-      console.error('Auth error:', err);
-      const errorMsg = err.response?.data?.error || 'Authentication failed. Please check your credentials.';
+      console.error('Auth error details:', err);
+      let errorMsg = err.response?.data?.error || 'Authentication failed. Please check your network connection and credentials.';
+
+      if (!isLogin && err.response?.status === 400 && errorMsg.includes('already exists')) {
+        errorMsg = 'An account with this email already exists. Please click on the "Sign In" tab above to log in.';
+      }
+
       setError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  const fillQuickLogin = (email, roleName) => {
+  const fillQuickLogin = (email) => {
     setFormData({
       name: '',
       email,
@@ -67,12 +72,14 @@ function Auth({ API_URL, onAuthSuccess }) {
 
         <div className="auth-tabs">
           <button
+            type="button"
             className={`auth-tab ${isLogin ? 'active' : ''}`}
             onClick={() => { setIsLogin(true); setError(''); }}
           >
             Sign In
           </button>
           <button
+            type="button"
             className={`auth-tab ${!isLogin ? 'active' : ''}`}
             onClick={() => { setIsLogin(false); setError(''); }}
           >
@@ -80,7 +87,11 @@ function Auth({ API_URL, onAuthSuccess }) {
           </button>
         </div>
 
-        {error && <div className="auth-error-banner">⚠️ {error}</div>}
+        {error && (
+          <div className="auth-error-banner">
+            <span>⚠️ {error}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           {!isLogin && (
@@ -153,21 +164,21 @@ function Auth({ API_URL, onAuthSuccess }) {
             <button
               type="button"
               className="quick-btn admin"
-              onClick={() => fillQuickLogin('admin@company.com', 'Admin')}
+              onClick={() => fillQuickLogin('admin@company.com')}
             >
               ⚙️ Admin
             </button>
             <button
               type="button"
               className="quick-btn manager"
-              onClick={() => fillQuickLogin('manager@company.com', 'Manager')}
+              onClick={() => fillQuickLogin('manager@company.com')}
             >
               📋 Manager
             </button>
             <button
               type="button"
               className="quick-btn employee"
-              onClick={() => fillQuickLogin('john@company.com', 'Employee')}
+              onClick={() => fillQuickLogin('john@company.com')}
             >
               👨‍💻 Employee
             </button>

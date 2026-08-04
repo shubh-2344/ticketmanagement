@@ -16,9 +16,17 @@ function App() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Dynamic API URL resolution without hardcoded static IPs
-  const API_URL = process.env.REACT_APP_API_URL || 
-    (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : `${window.location.origin}/api`);
+  // Dynamic API URL resolution targeting the backend port 5000 on the same host
+  const getApiUrl = () => {
+    if (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL !== '/api') {
+      return process.env.REACT_APP_API_URL;
+    }
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname || 'localhost';
+    return `${protocol}//${hostname}:5000/api`;
+  };
+
+  const API_URL = getApiUrl();
 
   // Configure Axios global Authorization header
   useEffect(() => {

@@ -12,25 +12,29 @@ const { Pool } = require('pg');
 
 const app = express();
 
-// Security Headers (SonarQube Remediation)
-app.use(helmet());
+// Enable express proxy trust for rate limiting behind reverse proxies
+app.set('trust proxy', 1);
 
-// Enable CORS securely
-const corsOptions = {
-    origin: process.env.CORS_ORIGIN || '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+// Security Headers (SonarQube Remediation)
+app.use(helmet({
+    contentSecurityPolicy: false // Allow cross-origin script execution in development
+}));
+
+// Enable CORS securely for all origins
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
-};
-app.use(cors(corsOptions));
+}));
 app.use(bodyParser.json());
 
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_ticket_management_2026';
 
-// Rate limiting for auth routes to protect against brute force attacks
+// Rate limiting for auth routes (Generous limit to avoid blocking legitimate testing)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: 500, // 500 requests per 15 minutes
     message: { error: 'Too many requests from this IP, please try again later.' }
 });
 
@@ -109,16 +113,22 @@ async function initializeDB() {
         // Default Seed Users (Password: Password123!)
         const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
 
-        await pool.query(`
-            INSERT INTO users(id, name, email, password_hash, role)
-            VALUES
-            ('user1', 'John Doe', 'john@company.com', $1, 'employee'),
-            ('user2', 'Jane Smith', 'jane@company.com', $1, 'manager'),
-            ('user3', 'Bob Wilson', 'bob@company.com', $1, 'employee'),
-            ('mgr1', 'Manager One', 'manager@company.com', $1, 'manager'),
-            ('admin1', 'System Admin', 'admin@company.com', $1, 'admin')
-            ON CONFLICT (email) DO UPDATE SET password_hash = $1
-        `, [defaultPasswordHash]);
+        const seedUsers = [
+            ['user1', 'John Doe', 'john@company.com', defaultPasswordHash, 'employee'],
+            ['user2', 'Jane Smith', 'jane@company.com', defaultPasswordHash, 'manager'],
+            ['user3', 'Bob Wilson', 'bob@company.com', defaultPasswordHash, 'employee'],
+            ['mgr1', 'Manager One', 'manager@company.com', defaultPasswordHash, 'manager'],
+            ['admin1', 'System Admin', 'admin@company.com', defaultPasswordHash, 'admin']
+        ];
+
+        for (const [id, name, email, passHash, role] of seedUsers) {
+            await pool.query(`
+                INSERT INTO users (id, name, email, password_hash, role)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (email) DO UPDATE 
+                SET password_hash = $4, name = $2, role = $5
+            `, [id, name, email, passHash, role]);
+        }
 
         // Seed Sample Inventory Items if empty
         const invCheck = await pool.query('SELECT COUNT(*) FROM inventory');
@@ -194,7 +204,7 @@ app.post('/api/auth/signup', async (req, res) => {
     const assignedRole = validRoles.includes(role) ? role : 'employee';
 
     try {
-        const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+        const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email.trim().toLowerCase()]);
         if (existingUser.rows.length > 0) {
             return res.status(400).json({ error: 'User with this email already exists' });
         }
