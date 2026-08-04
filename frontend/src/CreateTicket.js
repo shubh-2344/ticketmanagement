@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import './CreateTicket.css';
 
-function CreateTicket({ onSubmit }) {
+function CreateTicket({ onSubmit, API_URL }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     type: 'issue',
     category: 'general',
-    priority: 'medium'
+    priority: 'medium',
+    inventory_id: ''
   });
+
+  const [inventoryList, setInventoryList] = useState([]);
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  const fetchInventory = async () => {
+    try {
+      if (API_URL) {
+        const response = await axios.get(`${API_URL}/inventory`);
+        setInventoryList(response.data.filter(item => item.quantity > 0));
+      }
+    } catch (err) {
+      console.error('Error loading inventory for ticket creation:', err);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -16,6 +35,25 @@ function CreateTicket({ onSubmit }) {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleInventorySelect = (e) => {
+    const selectedId = e.target.value;
+    const selectedItem = inventoryList.find(i => i.id === selectedId);
+    
+    if (selectedItem) {
+      setFormData(prev => ({
+        ...prev,
+        inventory_id: selectedId,
+        category: selectedItem.category,
+        title: `Request: ${selectedItem.name}`
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        inventory_id: ''
+      }));
+    }
   };
 
   const handleSubmit = (e) => {
@@ -32,7 +70,8 @@ function CreateTicket({ onSubmit }) {
       description: '',
       type: 'issue',
       category: 'general',
-      priority: 'medium'
+      priority: 'medium',
+      inventory_id: ''
     });
   };
 
@@ -88,6 +127,25 @@ function CreateTicket({ onSubmit }) {
           </div>
         </div>
 
+        {formData.type === 'device-request' && inventoryList.length > 0 && (
+          <div className="form-group">
+            <label htmlFor="inventory_id">Select from Available Admin Inventory (Optional)</label>
+            <select
+              id="inventory_id"
+              name="inventory_id"
+              value={formData.inventory_id}
+              onChange={handleInventorySelect}
+            >
+              <option value="">-- Choose Item from Inventory --</option>
+              {inventoryList.map(item => (
+                <option key={item.id} value={item.id}>
+                  {item.name} ({item.category}) - {item.quantity} available
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="form-group">
           <label htmlFor="title">Title *</label>
           <input
@@ -98,6 +156,7 @@ function CreateTicket({ onSubmit }) {
             onChange={handleChange}
             placeholder="Enter ticket title"
             maxLength={100}
+            required
           />
           <span className="char-count">{formData.title.length}/100</span>
         </div>
@@ -112,6 +171,7 @@ function CreateTicket({ onSubmit }) {
             placeholder="Provide detailed description of your request or issue"
             rows={5}
             maxLength={500}
+            required
           />
           <span className="char-count">{formData.description.length}/500</span>
         </div>
@@ -124,9 +184,10 @@ function CreateTicket({ onSubmit }) {
               name="category"
               value={formData.category}
               onChange={handleChange}
+              required
             >
               <option value="">Select category</option>
-              {categories[formData.type].map(cat => (
+              {categories[formData.type]?.map(cat => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
@@ -157,12 +218,11 @@ function CreateTicket({ onSubmit }) {
       </form>
 
       <div className="info-box">
-        <h4>ℹ️ Before You Submit</h4>
+        <h4>ℹ️ Request Guidelines</h4>
         <ul>
-          <li>Ensure all required fields are filled correctly</li>
-          <li>Device requests must include specific device type</li>
-          <li>Be as detailed as possible in your description</li>
-          <li>Your request will be reviewed by your manager</li>
+          <li>All submitted tickets will be routed according to your account role.</li>
+          <li>For device requests, select an item from company inventory if available.</li>
+          <li>Detailed descriptions help expedite approval.</li>
         </ul>
       </div>
     </div>

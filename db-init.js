@@ -26,8 +26,23 @@ function initializeDB() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL DEFAULT '',
         role TEXT DEFAULT 'employee',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Inventory table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS inventory (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        quantity INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'Available',
+        description TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -44,26 +59,19 @@ function initializeDB() {
         requester_id TEXT NOT NULL,
         requester_name TEXT NOT NULL,
         requester_email TEXT NOT NULL,
+        inventory_id TEXT,
         approver_id TEXT,
         approver_name TEXT,
         approval_date DATETIME,
         approval_comment TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (requester_id) REFERENCES users(id)
+        FOREIGN KEY (requester_id) REFERENCES users(id),
+        FOREIGN KEY (inventory_id) REFERENCES inventory(id)
       )
     `);
 
-    // Insert sample users
-    db.run(`
-      INSERT OR IGNORE INTO users (id, name, email, role) VALUES
-      ('user1', 'John Doe', 'john@company.com', 'employee'),
-      ('user2', 'Jane Smith', 'jane@company.com', 'manager'),
-      ('user3', 'Bob Wilson', 'bob@company.com', 'employee'),
-      ('mgr1', 'Manager One', 'manager@company.com', 'manager')
-    `);
-
-    console.log('Database initialized successfully');
+    console.log('Database initialized successfully with auth and inventory tables');
   });
 
   db.close();
