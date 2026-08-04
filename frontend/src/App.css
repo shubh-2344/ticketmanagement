@@ -389,6 +389,100 @@ body {
   }
 }
 
+/* Top-Left Floating Toast Notification (High Visibility) */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast-message {
+  pointer-events: auto;
+  min-width: 320px;
+  max-width: 460px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: toast-slide-left 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-message.success {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  border: 1px solid rgba(167, 243, 208, 0.6);
+  color: #ffffff;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.45);
+}
+
+.toast-message.error {
+  background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+  border: 1px solid rgba(254, 205, 211, 0.6);
+  color: #ffffff;
+  box-shadow: 0 10px 30px rgba(225, 29, 72, 0.45);
+}
+
+.toast-icon {
+  font-size: 18px;
+  font-weight: 900;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-content {
+  flex: 1;
+  line-height: 1.45;
+  font-size: 13.5px;
+  letter-spacing: 0.2px;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.toast-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+@keyframes toast-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px) translateY(-10px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
+}
+
 /* Enhanced Confirmation Modal Dialog */
 .confirm-modal-overlay {
   position: fixed;
