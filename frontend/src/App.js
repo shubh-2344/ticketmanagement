@@ -150,6 +150,31 @@ function App() {
     }
   };
 
+  const handleAdminUpdateTicket = async (ticketId, updatedData) => {
+    try {
+      const response = await axios.put(`${API_URL}/tickets/${ticketId}`, updatedData);
+      alert('Ticket updated successfully by Admin!');
+      setSelectedTicket(response.data.ticket);
+      fetchTickets();
+    } catch (error) {
+      console.error('Admin update ticket error:', error);
+      alert(error.response?.data?.error || 'Failed to update ticket');
+    }
+  };
+
+  const handleAdminDeleteTicket = async (ticketId) => {
+    try {
+      await axios.delete(`${API_URL}/tickets/${ticketId}`);
+      alert('Ticket deleted successfully by Admin.');
+      setSelectedTicket(null);
+      fetchTickets();
+      setView('dashboard');
+    } catch (error) {
+      console.error('Admin delete ticket error:', error);
+      alert(error.response?.data?.error || 'Failed to delete ticket');
+    }
+  };
+
   const handleViewTicket = (ticket) => {
     setSelectedTicket(ticket);
     setView('detail');
@@ -325,6 +350,9 @@ function App() {
               onApprove={handleApproveTicket}
               onReject={handleRejectTicket}
               onClose={handleCloseTicket}
+              onAdminUpdate={handleAdminUpdateTicket}
+              onAdminDelete={handleAdminDeleteTicket}
+              API_URL={API_URL}
               onBack={() => {
                 setSelectedTicket(null);
                 setView('dashboard');
