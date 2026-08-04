@@ -90,10 +90,10 @@ async function initializeDB() {
                 id UUID PRIMARY KEY,
                 title TEXT NOT NULL,
                 description TEXT NOT NULL,
-                type VARCHAR(50),
-                category VARCHAR(50),
-                priority VARCHAR(20) DEFAULT 'medium',
-                status VARCHAR(50) DEFAULT 'pending_manager_approval',
+                type VARCHAR(100),
+                category VARCHAR(100),
+                priority VARCHAR(50) DEFAULT 'medium',
+                status VARCHAR(100) DEFAULT 'pending_manager_approval',
                 requester_id VARCHAR(50) REFERENCES users(id) ON DELETE CASCADE,
                 requester_name VARCHAR(100),
                 requester_email VARCHAR(100),
@@ -112,13 +112,19 @@ async function initializeDB() {
             )
         `);
 
-        // Migrations
+        // Migrations: Add missing columns and alter column lengths if pre-existing
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS manager_id VARCHAR(50);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS manager_name VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS inventory_id UUID;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_device_name VARCHAR(150);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assignment_description TEXT;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP;`);
+
+        // Alter existing column data types to prevent "value too long for type character varying(20)"
+        await pool.query(`ALTER TABLE tickets ALTER COLUMN status TYPE VARCHAR(100);`);
+        await pool.query(`ALTER TABLE tickets ALTER COLUMN priority TYPE VARCHAR(50);`);
+        await pool.query(`ALTER TABLE tickets ALTER COLUMN type TYPE VARCHAR(100);`);
+        await pool.query(`ALTER TABLE tickets ALTER COLUMN category TYPE VARCHAR(100);`);
 
         // Default Seed Users (Password: Password123!)
         const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
@@ -154,7 +160,7 @@ async function initializeDB() {
             `, [uuidv4(), uuidv4(), uuidv4(), uuidv4(), uuidv4()]);
         }
 
-        console.log("Database initialized successfully with secure multi-stage schema.");
+        console.log("Database initialized successfully with expanded status/priority column sizes.");
     } catch (err) {
         console.error("Database initialization error:", err.message);
     }
