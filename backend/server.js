@@ -406,6 +406,45 @@ app.post('/api/admin/users', authenticateToken, requireRole(['admin']), async (r
     }
 });
 
+// ADMIN UPDATE USER DETAILS (Admin can update name, email, and role for any user)
+app.put('/api/admin/users/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { id } = req.params;
+    const { name, email, role } = req.body;
+
+    if (!name || !email || !role) {
+        return res.status(400).json({ error: 'Name, email, and role are required' });
+    }
+
+    const validRoles = ['employee', 'manager', 'admin'];
+    if (!validRoles.includes(role)) {
+        return res.status(400).json({ error: 'Invalid role specified' });
+    }
+
+    try {
+        const check = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email.trim().toLowerCase(), id]);
+        if (check.rows.length > 0) {
+            return res.status(400).json({ error: 'Another user with this email already exists' });
+        }
+
+        const result = await pool.query(
+            'UPDATE users SET name = $1, email = $2, role = $3 WHERE id = $4 RETURNING id, name, email, role',
+            [name.trim(), email.trim().toLowerCase(), role, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({
+            message: `User ${result.rows[0].name} updated successfully`,
+            user: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Admin update user error:', err);
+        res.status(500).json({ error: err.message || 'Failed to update user' });
+    }
+});
+
 // ADMIN RESET USER PASSWORD (Admin resets password for any user)
 app.put('/api/admin/users/:id/reset-password', authenticateToken, requireRole(['admin']), async (req, res) => {
     const { id } = req.params;
