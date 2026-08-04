@@ -342,25 +342,32 @@
 }
 
 .admin-panel-card {
-  border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.05);
 }
 
 .admin-help-text {
   font-size: 0.8rem;
-  color: #fca5a5;
+  color: #38bdf8;
   margin-bottom: 12px;
 }
 
 .btn-admin-modal-trigger {
   width: 100%;
-  padding: 10px;
-  background: linear-gradient(90deg, #ef4444, #ec4899);
+  padding: 12px;
+  background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
   color: white;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-admin-modal-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(56, 189, 248, 0.45);
 }
 
 .action-panel h3 {

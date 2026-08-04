@@ -203,7 +203,7 @@ function App() {
   const getRoleBadgeColor = (role) => {
     switch (role) {
       case 'admin':
-        return 'linear-gradient(135deg, #ef4444, #b91c1c)';
+        return 'linear-gradient(90deg, #38bdf8 0%, #a855f7 50%, #f472b6 100%)';
       case 'manager':
         return 'linear-gradient(135deg, #f59e0b, #d97706)';
       default:

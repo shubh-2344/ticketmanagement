@@ -51,8 +51,11 @@
 }
 
 .queue-tab.admin-tab.active {
-  background: linear-gradient(90deg, #ef4444, #b91c1c);
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(90deg, #38bdf8 0%, #a855f7 50%, #f472b6 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 18px rgba(244, 114, 182, 0.35);
+  font-weight: 700;
 }
 
 .queue-list {
@@ -70,7 +73,7 @@
 }
 
 .queue-card.admin-border {
-  border-color: rgba(239, 68, 68, 0.4);
+  border-color: rgba(56, 189, 248, 0.35);
 }
 
 .card-top {
@@ -98,9 +101,9 @@
 }
 
 .stage-badge.admin {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
 }
 
 .clickable-title {
@@ -211,7 +214,7 @@
 
 .admin-assign-box {
   background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(56, 189, 248, 0.3);
   padding: 20px;
   border-radius: 12px;
   display: flex;
@@ -221,7 +224,7 @@
 
 .admin-assign-box h4 {
   font-size: 15px;
-  color: #fca5a5;
+  color: #38bdf8;
 }
 
 .assign-form-row {
@@ -255,14 +258,27 @@
 }
 
 .btn-fulfill-admin {
-  background: linear-gradient(90deg, #ef4444, #ec4899);
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 12px 22px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 700;
+  letter-spacing: 0.3px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: 6px;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.35);
+}
+
+.btn-fulfill-admin:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(56, 189, 248, 0.45);
+  background: linear-gradient(135deg, #7dd3fc 0%, #818cf8 100%);
+}
+
+.btn-fulfill-admin:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
 }
