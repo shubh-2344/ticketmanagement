@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './CreateTicket.css';
 
-function CreateTicket({ onSubmit, API_URL }) {
+function CreateTicket({ onSubmit, API_URL, initialDevice }) {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    type: 'issue',
-    category: 'general',
+    title: initialDevice ? `Request: ${initialDevice.name}` : '',
+    description: initialDevice ? `Requesting company device: ${initialDevice.name} (${initialDevice.description || ''})` : '',
+    type: initialDevice ? 'device-request' : 'issue',
+    category: initialDevice ? initialDevice.category : 'general',
     priority: 'medium',
-    inventory_id: ''
+    inventory_id: initialDevice ? initialDevice.id : ''
   });
 
   const [inventoryList, setInventoryList] = useState([]);
@@ -18,11 +18,24 @@ function CreateTicket({ onSubmit, API_URL }) {
     fetchInventory();
   }, []);
 
+  useEffect(() => {
+    if (initialDevice) {
+      setFormData({
+        title: `Request: ${initialDevice.name}`,
+        description: `Requesting company device: ${initialDevice.name} (${initialDevice.description || ''})`,
+        type: 'device-request',
+        category: initialDevice.category,
+        priority: 'medium',
+        inventory_id: initialDevice.id
+      });
+    }
+  }, [initialDevice]);
+
   const fetchInventory = async () => {
     try {
       if (API_URL) {
         const response = await axios.get(`${API_URL}/inventory`);
-        setInventoryList(response.data.filter(item => item.quantity > 0));
+        setInventoryList(response.data.filter((item) => item.quantity > 0));
       }
     } catch (err) {
       console.error('Error loading inventory for ticket creation:', err);
@@ -31,7 +44,7 @@ function CreateTicket({ onSubmit, API_URL }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
@@ -39,17 +52,17 @@ function CreateTicket({ onSubmit, API_URL }) {
 
   const handleInventorySelect = (e) => {
     const selectedId = e.target.value;
-    const selectedItem = inventoryList.find(i => i.id === selectedId);
-    
+    const selectedItem = inventoryList.find((i) => i.id === selectedId);
+
     if (selectedItem) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         inventory_id: selectedId,
         category: selectedItem.category,
         title: `Request: ${selectedItem.name}`
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         inventory_id: ''
       }));
@@ -58,7 +71,7 @@ function CreateTicket({ onSubmit, API_URL }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim() || !formData.description.trim()) {
       alert('Please fill in all required fields');
       return;
@@ -85,7 +98,7 @@ function CreateTicket({ onSubmit, API_URL }) {
       'Phone',
       'Other'
     ],
-    'issue': [
+    issue: [
       'Access/Permission',
       'Software',
       'Hardware',
@@ -99,7 +112,7 @@ function CreateTicket({ onSubmit, API_URL }) {
   return (
     <div className="create-ticket">
       <h2>Create New Ticket</h2>
-      
+
       <form onSubmit={handleSubmit} className="form">
         <div className="form-group">
           <label htmlFor="type">Ticket Type *</label>
@@ -127,9 +140,9 @@ function CreateTicket({ onSubmit, API_URL }) {
           </div>
         </div>
 
-        {formData.type === 'device-request' && inventoryList.length > 0 && (
+        {formData.type === 'device-request' && (
           <div className="form-group">
-            <label htmlFor="inventory_id">Select from Available Admin Inventory (Optional)</label>
+            <label htmlFor="inventory_id">Select from Available Company Inventory (Optional)</label>
             <select
               id="inventory_id"
               name="inventory_id"
@@ -137,7 +150,7 @@ function CreateTicket({ onSubmit, API_URL }) {
               onChange={handleInventorySelect}
             >
               <option value="">-- Choose Item from Inventory --</option>
-              {inventoryList.map(item => (
+              {inventoryList.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name} ({item.category}) - {item.quantity} available
                 </option>
@@ -187,7 +200,7 @@ function CreateTicket({ onSubmit, API_URL }) {
               required
             >
               <option value="">Select category</option>
-              {categories[formData.type]?.map(cat => (
+              {categories[formData.type]?.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>

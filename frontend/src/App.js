@@ -7,6 +7,7 @@ import CreateTicket from './CreateTicket';
 import TicketDetail from './TicketDetail';
 import ApprovalQueue from './ApprovalQueue';
 import AdminInventory from './AdminInventory';
+import AvailableDevices from './AvailableDevices';
 
 function App() {
   const [view, setView] = useState('dashboard');
@@ -14,9 +15,10 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedDeviceForRequest, setSelectedDeviceForRequest] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Dynamic API URL resolution targeting the backend port 5000 on the same host
+  // Dynamic API URL resolution targeting backend port 5000
   const getApiUrl = () => {
     if (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL !== '/api') {
       return process.env.REACT_APP_API_URL;
@@ -82,18 +84,25 @@ function App() {
     setCurrentUser(null);
     setTickets([]);
     setSelectedTicket(null);
+    setSelectedDeviceForRequest(null);
   };
 
   const handleCreateTicket = async (ticketData) => {
     try {
       await axios.post(`${API_URL}/tickets`, ticketData);
       alert('Ticket created successfully!');
+      setSelectedDeviceForRequest(null);
       fetchTickets();
       setView('dashboard');
     } catch (error) {
       console.error('Error creating ticket:', error);
       alert(error.response?.data?.error || 'Failed to create ticket');
     }
+  };
+
+  const handleRequestDeviceFromCatalog = (device) => {
+    setSelectedDeviceForRequest(device);
+    setView('create');
   };
 
   const handleApproveTicket = async (ticketId, comment) => {
@@ -151,9 +160,12 @@ function App() {
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'admin': return 'linear-gradient(135deg, #ef4444, #b91c1c)';
-      case 'manager': return 'linear-gradient(135deg, #f59e0b, #d97706)';
-      default: return 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+      case 'admin':
+        return 'linear-gradient(135deg, #ef4444, #b91c1c)';
+      case 'manager':
+        return 'linear-gradient(135deg, #f59e0b, #d97706)';
+      default:
+        return 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
     }
   };
 
@@ -164,7 +176,9 @@ function App() {
         <div className="header-content">
           <div className="header-brand">
             <span className="brand-ai-icon">✨</span>
-            <h1>DevSecOps <span className="gradient-text">AI Hub</span></h1>
+            <h1>
+              DevSecOps <span className="gradient-text">AI Hub</span>
+            </h1>
             <span className="ai-status-pulse">● System Live</span>
           </div>
 
@@ -202,8 +216,19 @@ function App() {
           </button>
 
           <button
+            className={`nav-button ${view === 'devices' ? 'active' : ''}`}
+            onClick={() => setView('devices')}
+          >
+            <span className="nav-icon">💻</span>
+            <span>Available Devices</span>
+          </button>
+
+          <button
             className={`nav-button ${view === 'create' ? 'active' : ''}`}
-            onClick={() => setView('create')}
+            onClick={() => {
+              setSelectedDeviceForRequest(null);
+              setView('create');
+            }}
           >
             <span className="nav-icon">➕</span>
             <span>Create Ticket</span>
@@ -236,7 +261,11 @@ function App() {
         </nav>
 
         <main className="main-content">
-          {loading && <div className="loading-ai"><div className="spinner"></div>Loading Intelligent Portal...</div>}
+          {loading && (
+            <div className="loading-ai">
+              <div className="spinner"></div>Loading Intelligent Portal...
+            </div>
+          )}
 
           {!loading && view === 'dashboard' && (
             <TicketList
@@ -246,13 +275,24 @@ function App() {
             />
           )}
 
+          {!loading && view === 'devices' && (
+            <AvailableDevices
+              API_URL={API_URL}
+              onRequestDevice={handleRequestDeviceFromCatalog}
+            />
+          )}
+
           {!loading && view === 'create' && (
-            <CreateTicket onSubmit={handleCreateTicket} API_URL={API_URL} />
+            <CreateTicket
+              onSubmit={handleCreateTicket}
+              API_URL={API_URL}
+              initialDevice={selectedDeviceForRequest}
+            />
           )}
 
           {!loading && view === 'approvals' && (currentUser.role === 'manager' || currentUser.role === 'admin') && (
             <ApprovalQueue
-              tickets={tickets.filter(t => t.status === 'pending')}
+              tickets={tickets.filter((t) => t.status === 'pending')}
               onViewTicket={handleViewTicket}
             />
           )}
