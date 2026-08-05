@@ -455,14 +455,6 @@ function App() {
                 <span className="nav-icon"><SparklesIcon size={18} /></span>
                 <span>Analytics Insights</span>
               </button>
-
-              <button
-                className={`nav-button ${view === 'ai-dashboard' ? 'active' : ''}`}
-                onClick={() => setView('ai-dashboard')}
-              >
-                <span className="nav-icon"><SparklesIcon size={18} style={{ color: '#c084fc' }} /></span>
-                <span>AI Diagnostics</span>
-              </button>
             </>
           )}
 
@@ -470,6 +462,15 @@ function App() {
           {currentUser.role === 'admin' && (
             <div className="admin-nav-group">
               <div className="nav-section-title">ADMINISTRATOR</div>
+              <button
+                className={`nav-button admin-btn ${view === 'ai-dashboard' ? 'active' : ''}`}
+                onClick={() => setView('ai-dashboard')}
+              >
+                <span className="nav-icon"><SparklesIcon size={18} style={{ color: '#c084fc' }} /></span>
+                <span>AI Diagnostics</span>
+                <span className="admin-tag">ADMIN</span>
+              </button>
+
               <button
                 className={`nav-button admin-btn ${view === 'inventory' ? 'active' : ''}`}
                 onClick={() => setView('inventory')}
@@ -520,6 +521,7 @@ function App() {
                 (currentUser.role === 'admin' || currentUser.role === 'manager') ? (
                   <ExecutiveDashboard 
                     tickets={tickets} 
+                    currentUser={currentUser}
                     onSelectTicket={handleViewTicketById} 
                     onViewAllTickets={() => setView('tickets-list')} 
                     onViewInventory={() => setView('inventory')} 
@@ -622,7 +624,7 @@ function App() {
               )}
 
               {view === 'analytics' && (
-                <AnalyticsDashboard tickets={tickets} />
+                <AnalyticsDashboard tickets={tickets} currentUser={currentUser} />
               )}
 
               {view === 'asset-lifecycle' && (
@@ -641,13 +643,13 @@ function App() {
               )}
 
               {view === 'ai-dashboard' && (
-                currentUser.role === 'admin' || currentUser.role === 'manager' ? (
+                currentUser.role === 'admin' ? (
                   <AIDashboard API_URL={API_URL} onSelectTicket={handleViewTicketById} />
                 ) : (
                   <div className="access-denied-card">
                     <div className="denied-icon">🔒</div>
                     <h2>Access Restricted</h2>
-                    <p>Only administrators or managers can access the AI Copilot Diagnostics Dashboard.</p>
+                    <p>Only system administrators can access the AI Copilot Diagnostics Dashboard.</p>
                     <button className="btn-return-home" onClick={() => setView('dashboard')}>
                       Return to Dashboard
                     </button>

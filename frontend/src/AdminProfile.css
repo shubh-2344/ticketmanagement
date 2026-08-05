@@ -90,7 +90,7 @@
   border: var(--border-card);
   border-radius: var(--radius-card);
   padding: 28px;
-  max-width: 720px;
+  width: 100%;
   box-shadow: var(--shadow);
 }
 
@@ -238,6 +238,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .btn-action-reset {
@@ -269,16 +270,19 @@
 .reset-inline-form {
   display: flex;
   gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .reset-inline-form input {
-  padding: 4px 8px;
+  padding: 6px 10px;
   background: var(--bg-body);
   border: var(--border-card);
   border-radius: 6px;
   color: var(--text-main);
   font-size: 12px;
   width: 130px;
+  max-width: 100%;
 }
 
 .btn-save-pwd {

@@ -1,12 +1,14 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import './TicketList.css'; // Recycles common table/flex styles
 
-function AnalyticsDashboard({ tickets }) {
+function AnalyticsDashboard({ tickets, currentUser }) {
   const [animate, setAnimate] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setAnimate(true), 50);
     return () => clearTimeout(timer);
   }, []);
+
+  const isManager = currentUser?.role === 'manager';
 
   const getDepartment = (email) => {
     const emailLower = (email || '').toLowerCase();
@@ -99,8 +101,15 @@ function AnalyticsDashboard({ tickets }) {
     <div className="analytics-dashboard" style={{ color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="dashboard-title-area" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 4px 0' }}>📈 Advanced Analytics</h2>
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>Real-time ticket distributions, SLA performance levels, and workload tracking.</p>
+          <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 4px 0' }}>
+            {isManager ? '📊 Team Performance & Analytics' : '📈 Advanced Analytics & Insights'}
+          </h2>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>
+            {isManager 
+              ? 'Personalized team ticket distributions, approval performance, and SLA compliance metrics.'
+              : 'Real-time ticket distributions, SLA performance levels, and workload tracking.'
+            }
+          </p>
         </div>
       </div>
 

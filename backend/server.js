@@ -666,6 +666,9 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
         if (req.user.role === 'employee') {
             query += ' WHERE requester_id = $1 ORDER BY created_at DESC';
             params.push(req.user.id);
+        } else if (req.user.role === 'manager') {
+            query += ' WHERE (manager_id = $1 OR approver_id = $1 OR requester_id = $1) ORDER BY created_at DESC';
+            params.push(req.user.id);
         } else {
             query += ' ORDER BY created_at DESC';
         }
@@ -690,6 +693,9 @@ app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
 
         const ticket = result.rows[0];
         if (req.user.role === 'employee' && ticket.requester_id !== req.user.id) {
+            return res.status(403).json({ error: 'Forbidden: You do not have access to this ticket' });
+        }
+        if (req.user.role === 'manager' && ticket.manager_id !== req.user.id && ticket.approver_id !== req.user.id && ticket.requester_id !== req.user.id) {
             return res.status(403).json({ error: 'Forbidden: You do not have access to this ticket' });
         }
 
@@ -1286,8 +1292,8 @@ app.get('/api/admin/asset-lifecycle', authenticateToken, requireRole(['admin']),
     }
 });
 
-// Admin/Manager: AI Copilot Dashboard Diagnostics
-app.get('/api/ai/analyze-tickets', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
+// Admin Only: AI Copilot Dashboard Diagnostics
+app.get('/api/ai/analyze-tickets', authenticateToken, requireRole(['admin']), async (req, res) => {
     try {
         const ticketsResult = await pool.query('SELECT * FROM tickets ORDER BY created_at DESC');
         const allTickets = ticketsResult.rows;

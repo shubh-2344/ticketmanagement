@@ -17,7 +17,8 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
   }, [API_URL]);
 
   const managerQueue = tickets.filter(
-    (t) => t.status === 'pending_manager_approval' || t.status === 'pending'
+    (t) => (t.status === 'pending_manager_approval' || t.status === 'pending') &&
+           (currentUser.role === 'admin' || t.manager_id === currentUser.id || !t.manager_id)
   );
 
   const adminQueue = tickets.filter(

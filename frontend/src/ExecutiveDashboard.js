@@ -8,7 +8,7 @@ import {
   SuccessIcon
 } from './components/Icons';
 
-function ExecutiveDashboard({ tickets, onSelectTicket, onViewAllTickets, onViewInventory }) {
+function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTickets, onViewInventory }) {
   const [animate, setAnimate] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setAnimate(true), 50);
@@ -90,27 +90,38 @@ function ExecutiveDashboard({ tickets, onSelectTicket, onViewAllTickets, onViewI
     };
   }, [tickets]);
 
+  const isManager = currentUser?.role === 'manager';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', color: 'var(--text-main)' }}>
       {/* Top Welcome Title Banner */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', margin: '0 0 4px 0' }}>💼 Executive Command Center</h2>
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>System performance index, active SLA risks, and asset lifecycle oversight.</p>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', margin: '0 0 4px 0' }}>
+            {isManager ? '👔 Manager Team Dashboard' : '💼 Executive Command Center'}
+          </h2>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>
+            {isManager 
+              ? 'Personalized team ticket workload, pending approval queue, and SLA resolution metrics.'
+              : 'System performance index, active SLA risks, and asset lifecycle oversight.'
+            }
+          </p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button 
             onClick={onViewAllTickets}
-            style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: '#ffffff', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}
+            style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}
           >
-            All Tickets List
+            {isManager ? 'Team Tickets List' : 'All Tickets List'}
           </button>
-          <button 
-            onClick={onViewInventory}
-            style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--accent)', border: 'none', color: '#ffffff', fontSize: '13px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 4px 12px var(--accent)33' }}
-          >
-            Manage Fleet
-          </button>
+          {currentUser?.role === 'admin' && (
+            <button 
+              onClick={onViewInventory}
+              style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--accent)', border: 'none', color: '#ffffff', fontSize: '13px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 4px 12px var(--accent)33' }}
+            >
+              Manage Fleet
+            </button>
+          )}
         </div>
       </div>
 
