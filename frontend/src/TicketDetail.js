@@ -256,7 +256,8 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       });
       alert(isIssue ? 'Incident resolved and completed successfully!' : 'Device assigned and ticket fulfilled successfully!');
       setShowDeviceAssignForm(false);
-      window.location.reload();
+      if (onRefresh) onRefresh();
+      if (onBack) onBack();
     } catch (err) {
       console.error('Error fulfilling ticket:', err);
       alert(err.response?.data?.error || 'Action failed.');

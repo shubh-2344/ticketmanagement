@@ -52,6 +52,15 @@ function App() {
     }, 3000);
   }, []);
 
+  const [globalViewMode, setGlobalViewMode] = useState(() => {
+    return localStorage.getItem('ticketmanagement_view_mode') || 'grid';
+  });
+
+  const handleGlobalViewModeChange = (newMode) => {
+    setGlobalViewMode(newMode);
+    localStorage.setItem('ticketmanagement_view_mode', newMode);
+  };
+
   const showConfirm = useCallback(({ title = 'Confirm Action', message = 'Are you sure you want to proceed?', confirmText = 'Confirm', cancelText = 'Cancel', confirmType = 'danger' }) => {
     return new Promise((resolve) => {
       setConfirmConfig({
@@ -580,6 +589,8 @@ function App() {
                   onViewTicket={handleViewTicket}
                   onRefresh={fetchTickets}
                   API_URL={API_URL}
+                  viewMode={globalViewMode}
+                  onViewModeChange={handleGlobalViewModeChange}
                 />
               )}
 
@@ -590,6 +601,8 @@ function App() {
                   onViewTicket={handleViewTicket}
                   onRefresh={fetchTickets}
                   API_URL={API_URL}
+                  viewMode={globalViewMode}
+                  onViewModeChange={handleGlobalViewModeChange}
                 />
               )}
 

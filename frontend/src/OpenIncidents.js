@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import axios from 'axios';
 import CountUp from './components/CountUp';
+import ViewToggle from './components/ViewToggle';
 import './TicketList.css';
 
-function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API_URL }) {
+function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API_URL, viewMode = 'grid', onViewModeChange }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -12,9 +13,13 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Table sorting state
+  const [sortField, setSortField] = useState('id');
+  const [sortDir, setSortDir] = useState('desc');
+
   // Filter ONLY active "Report Issue" tickets
   const activeIncidents = useMemo(() => {
-    return tickets.filter((t) => {
+    let filtered = tickets.filter((t) => {
       if (t.type !== 'issue') return false;
 
       const statusLower = (t.status || '').toLowerCase();
@@ -42,7 +47,33 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
 
       return true;
     });
-  }, [tickets, searchTerm, priorityFilter, categoryFilter]);
+
+    // Column sorting
+    filtered.sort((a, b) => {
+      let valA = a[sortField] || '';
+      let valB = b[sortField] || '';
+
+      if (sortField === 'id') {
+        valA = Number(a.id) || 0;
+        valB = Number(b.id) || 0;
+      }
+
+      if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+      if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [tickets, searchTerm, priorityFilter, categoryFilter, sortField, sortDir]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
 
   const criticalCount = useMemo(() => {
     return activeIncidents.filter((t) => {
@@ -141,12 +172,18 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
           </p>
         </div>
 
-        <button
-          onClick={onRefresh}
-          style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
-        >
-          Refresh Incidents
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {onViewModeChange && (
+            <ViewToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
+          )}
+
+          <button
+            onClick={onRefresh}
+            style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+          >
+            Refresh Incidents
+          </button>
+        </div>
       </div>
 
       {/* SUMMARY CARDS */}
@@ -220,13 +257,109 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
         </span>
       </div>
 
-      {/* INCIDENT CARDS LIST */}
+      {/* INCIDENT CONTENT (CARD VIEW OR LIST TABLE VIEW) */}
       {activeIncidents.length === 0 ? (
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           <p style={{ fontSize: '15px', margin: '0 0 4px 0', color: 'var(--text-main)', fontWeight: '600' }}>No active incidents found.</p>
           <span style={{ fontSize: '12px' }}>There are currently no open issue tickets matching the selected filters.</span>
         </div>
+      ) : viewMode === 'table' ? (
+        /* ENTERPRISE DATA TABLE VIEW */
+        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', color: 'var(--text-main)' }}>
+              <thead>
+                <tr style={{ background: 'rgba(0,0,0,0.15)', borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <th onClick={() => handleSort('id')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                    ID {sortField === 'id' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                  </th>
+                  <th onClick={() => handleSort('title')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                    Title {sortField === 'title' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                  </th>
+                  <th onClick={() => handleSort('requester_name')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                    Requester {sortField === 'requester_name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                  </th>
+                  <th onClick={() => handleSort('category')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                    Category {sortField === 'category' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                  </th>
+                  <th onClick={() => handleSort('priority')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                    Priority {sortField === 'priority' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                  </th>
+                  <th onClick={() => handleSort('status')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                    Status {sortField === 'status' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                  </th>
+                  <th style={{ padding: '14px 16px' }}>Assigned Specialist</th>
+                  <th style={{ padding: '14px 16px', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeIncidents.map((t) => {
+                  const priorityText = formatPriority(t.priority);
+                  const priorityColor = getPriorityColor(t.priority);
+                  const statusText = formatStatus(t.status);
+                  const statusColor = getStatusColor(t.status);
+
+                  return (
+                    <tr
+                      key={t.id}
+                      style={{ borderBottom: 'var(--border-card)', transition: 'background 0.15s ease' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        #{t.id}
+                      </td>
+                      <td style={{ padding: '14px 16px', fontWeight: '600' }}>
+                        <span onClick={() => onViewTicket(t)} style={{ cursor: 'pointer', color: 'var(--text-main)' }}>
+                          {t.title}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                        {t.requester_name}
+                      </td>
+                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                        {t.category}
+                      </td>
+                      <td style={{ padding: '14px 16px' }}>
+                        <span style={{ background: `${priorityColor}18`, color: priorityColor, border: `1px solid ${priorityColor}40`, fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
+                          {priorityText}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 16px' }}>
+                        <span style={{ background: `${statusColor}18`, color: statusColor, border: `1px solid ${statusColor}40`, fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
+                          {statusText}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                        {t.assigned_engineer || 'System Admin'}
+                      </td>
+                      <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px' }}>
+                          <button
+                            onClick={() => onViewTicket(t)}
+                            style={{ padding: '5px 10px', borderRadius: '6px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '11.5px', fontWeight: '600', cursor: 'pointer' }}
+                          >
+                            View
+                          </button>
+                          {currentUser.role === 'admin' && (
+                            <button
+                              onClick={() => handleOpenResolveModal(t)}
+                              style={{ padding: '5px 10px', borderRadius: '6px', background: '#10b981', border: 'none', color: '#ffffff', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer' }}
+                            >
+                              Resolve
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* CARD VIEW */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {activeIncidents.map((t) => {
             const priorityText = formatPriority(t.priority);

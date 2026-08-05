@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import ViewToggle from './components/ViewToggle';
 import './ApprovalQueue.css';
 
-function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL }) {
+function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL, viewMode = 'grid', onViewModeChange }) {
   const [activeTab, setActiveTab] = useState(currentUser.role === 'admin' ? 'issue_queue' : 'manager_queue');
   const [inventoryList, setInventoryList] = useState([]);
   const [reviewComment, setReviewComment] = useState({});
@@ -39,69 +40,69 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
       return;
     }
 
+    const isApprove = action === 'approve';
     const confirmed = await window.showConfirm({
-      title: action === 'approve' ? 'Approve Ticket Request' : 'Deny Ticket Request',
-      message: action === 'approve' 
-        ? 'Are you sure you want to approve this request and forward it for fulfillment?' 
-        : 'Are you sure you want to deny this request?',
-      confirmText: action === 'approve' ? 'Approve Request' : 'Deny Request',
+      title: isApprove ? 'Approve Ticket Request' : 'Deny Ticket Request',
+      message: `Are you sure you want to ${isApprove ? 'approve' : 'deny'} this ticket request?`,
+      confirmText: isApprove ? 'Approve Request' : 'Deny Request',
       cancelText: 'Cancel',
-      confirmType: action === 'approve' ? 'success' : 'danger'
+      confirmType: isApprove ? 'success' : 'danger'
     });
     if (!confirmed) return;
 
     try {
       await axios.put(`${API_URL}/tickets/${ticketId}/manager-review`, {
         action,
-        approval_comment: comment
+        manager_comment: comment
       });
-      alert(action === 'approve' ? 'Ticket approved! Sent to Admin for device assignment.' : 'Ticket denied.');
-      setReviewComment(prev => ({ ...prev, [ticketId]: '' }));
+      alert(`Ticket successfully ${action === 'approve' ? 'approved' : 'denied'}!`);
       if (onRefresh) onRefresh();
     } catch (err) {
-      console.error('Error reviewing ticket:', err);
-      alert(err.response?.data?.error || 'Action failed.');
+      console.error('Manager review error:', err);
+      alert(err.response?.data?.error || 'Review failed.');
     }
   };
 
-  const handleAdminAssign = async (ticketId) => {
-    const data = adminAssignment[ticketId] || {};
-    const targetTicket = tickets.find(t => t.id === ticketId);
-    const isIssue = targetTicket && targetTicket.type === 'issue';
+  const handleAdminAssignSubmit = async (ticket) => {
+    const data = adminAssignment[ticket.id] || {};
+    const isIssue = ticket.type === 'issue';
 
-    if (!data.assigned_device_name || !data.assigned_device_name.trim()) {
-      alert(isIssue ? 'Please enter a resolution action summary.' : 'Please enter or select the assigned device name.');
+    if (!isIssue && !data.assigned_device_name) {
+      alert('Please select or specify a hardware asset to assign.');
+      return;
+    }
+    if (isIssue && !data.assigned_device_name) {
+      alert('Please provide a resolution summary.');
       return;
     }
 
     const confirmed = await window.showConfirm({
       title: isIssue ? 'Confirm Ticket Resolution' : 'Confirm Hardware Asset Assignment',
-      message: isIssue 
-        ? `Are you sure you want to resolve and complete ticket "${targetTicket.title}"?` 
-        : `Are you sure you want to assign "${data.assigned_device_name}" to fulfill this request?`,
-      confirmText: isIssue ? 'Resolve Ticket' : 'Confirm Assignment',
+      message: isIssue
+        ? `Are you sure you want to resolve and complete incident "${ticket.title}"?`
+        : `Are you sure you want to assign asset "${data.assigned_device_name}" to ${ticket.requester_name}?`,
+      confirmText: isIssue ? 'Resolve Ticket' : 'Assign Asset',
       cancelText: 'Cancel',
       confirmType: 'success'
     });
     if (!confirmed) return;
 
     try {
-      await axios.put(`${API_URL}/tickets/${ticketId}/admin-assign`, {
+      await axios.put(`${API_URL}/tickets/${ticket.id}/admin-assign`, {
         inventory_id: data.inventory_id || null,
         assigned_device_name: data.assigned_device_name,
-        assignment_description: data.assignment_description || ''
+        assignment_description: data.assignment_description
       });
-      alert(isIssue ? 'Incident resolved and ticket completed successfully!' : 'Device assigned and ticket fulfilled successfully!');
-      setAdminAssignment(prev => ({ ...prev, [ticketId]: {} }));
+      alert(isIssue ? 'Incident resolved successfully!' : 'Hardware asset assigned successfully!');
       if (onRefresh) onRefresh();
     } catch (err) {
-      console.error('Error fulfilling ticket:', err);
-      alert(err.response?.data?.error || 'Action failed.');
+      console.error('Admin assignment error:', err);
+      alert(err.response?.data?.error || 'Assignment failed.');
     }
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '';
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -113,8 +114,12 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
 
   return (
     <div className="approval-queue-container">
-      <div className="queue-header-nav">
-        <h2>📋 Multi-Stage Approval & Resolution Portal</h2>
+      <div className="queue-header-nav" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <h2>Approvals & Resolution Queue</h2>
+        {onViewModeChange && (
+          <ViewToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
+        )}
+      </div>
 
         {/* 3-TAB APPROVALS NAVIGATION */}
         <div className="queue-tabs">
