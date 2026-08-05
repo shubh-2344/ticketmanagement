@@ -49,7 +49,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
     : {};
 
   return (
-    <div className="auth-container" style={containerStyle}>
+    <div className={`auth-container ${globalSettings?.global_theme || 'theme-enterprise-dark'}`} style={containerStyle}>
       <svg className="network-background" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">

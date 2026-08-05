@@ -4,7 +4,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Core CSS Variables for Theme Support */
@@ -25,7 +25,7 @@
 }
 
 body {
-  font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-body);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
@@ -834,9 +834,7 @@ body {
   --radius-card: 6px;
   --backdrop: none;
 }
-.theme-cyber-blue * {
-  font-family: 'Courier New', Courier, monospace !important;
-}
+
 
 /* 8. Material Enterprise */
 .theme-material-enterprise {

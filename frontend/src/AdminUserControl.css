@@ -6,31 +6,34 @@
 
 .admin-section-header h2 {
   font-size: 22px;
-  color: #f8fafc;
+  color: var(--text-main);
   margin-bottom: 6px;
+  font-weight: 700;
 }
 
 .admin-section-header p {
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
 .admin-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: var(--border-card);
+  border-radius: var(--radius-card);
   padding: 24px;
+  box-shadow: var(--shadow);
 }
 
 .admin-card h3 {
   font-size: 16px;
-  color: #f8fafc;
+  color: var(--text-main);
   margin-bottom: 8px;
+  font-weight: 600;
 }
 
 .card-subtext {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-muted);
   margin-bottom: 18px;
 }
 
@@ -42,8 +45,8 @@
 }
 
 .view-option-box {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-body);
+  border: var(--border-card);
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
@@ -54,19 +57,19 @@
 }
 
 .view-option-box:hover {
-  border-color: rgba(56, 189, 248, 0.4);
-  background: rgba(15, 23, 42, 0.9);
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.04);
 }
 
 .view-option-box.active {
-  border-color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.08);
+  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.15);
 }
 
 .view-option-box input {
   margin-top: 4px;
-  accent-color: #38bdf8;
+  accent-color: var(--accent);
 }
 
 .option-content {
@@ -82,17 +85,17 @@
 
 .option-content strong {
   font-size: 14px;
-  color: #f8fafc;
+  color: var(--text-main);
 }
 
 .option-content small {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .btn-save-global-view {
-  background: linear-gradient(90deg, #38bdf8, #818cf8);
-  color: #0f172a;
+  background: var(--accent-gradient, linear-gradient(90deg, #38bdf8, #818cf8));
+  color: #ffffff;
   border: none;
   padding: 12px 24px;
   border-radius: 10px;
@@ -104,7 +107,7 @@
 
 .btn-save-global-view:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.3);
 }
 
 /* User Table */
@@ -120,20 +123,20 @@
 }
 
 .user-table th {
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(0, 0, 0, 0.03);
   padding: 12px 16px;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: var(--border-card);
 }
 
 .user-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: var(--border-card);
   font-size: 13px;
-  color: #cbd5e1;
+  color: var(--text-main);
 }
 
 .user-name-cell {
@@ -161,24 +164,37 @@
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.5px;
+  display: inline-block;
 }
 
 .role-badge.employee {
   background: rgba(56, 189, 248, 0.2);
-  color: #38bdf8;
+  color: #0284c7;
   border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.theme-enterprise-dark .role-badge.employee {
+  color: #38bdf8;
 }
 
 .role-badge.manager {
   background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
+  color: #d97706;
   border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.theme-enterprise-dark .role-badge.manager {
+  color: #fbbf24;
 }
 
 .role-badge.admin {
   background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+  color: #dc2626;
   border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.theme-enterprise-dark .role-badge.admin {
+  color: #fca5a5;
 }
 
 .role-action-group {
@@ -189,9 +205,9 @@
 .btn-role-opt {
   padding: 6px 12px;
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  background: var(--bg-body);
+  border: var(--border-card);
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -199,20 +215,20 @@
 }
 
 .btn-role-opt:hover {
-  background: rgba(51, 65, 85, 0.8);
-  color: #f8fafc;
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text-main);
 }
 
 .btn-role-opt.active {
-  background: #38bdf8;
-  color: #0f172a;
+  background: var(--accent);
+  color: #ffffff;
   border: none;
   font-weight: 700;
 }
 
 .btn-role-opt.mgr.active {
   background: #f59e0b;
-  color: #0f172a;
+  color: #ffffff;
   border: none;
   font-weight: 700;
 }

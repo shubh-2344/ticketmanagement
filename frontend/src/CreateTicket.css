@@ -5,15 +5,16 @@
 .create-ticket h2 {
   margin-bottom: 1.5rem;
   font-size: 1.4rem;
-  color: #f8fafc;
+  color: var(--text-main);
 }
 
 .form {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  border: var(--border-card);
   padding: 24px;
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   margin-bottom: 24px;
+  box-shadow: var(--shadow);
 }
 
 .form-group {
@@ -25,34 +26,36 @@
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
 .form-group input[type="text"],
+.form-group input[type="date"],
 .form-group textarea,
 .form-group select {
   width: 100%;
   padding: 12px 14px;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid #334155;
+  background: var(--bg-body);
+  border: var(--border-card);
   border-radius: 8px;
   font-size: 0.95rem;
-  color: #f8fafc;
+  color: var(--text-main);
   outline: none;
   transition: all 0.25s ease;
 }
 
 .form-group select option {
-  background: #1e293b;
-  color: #f8fafc;
+  background: var(--bg-card);
+  color: var(--text-main);
 }
 
 .form-group input[type="text"]:focus,
+.form-group input[type="date"]:focus,
 .form-group textarea:focus,
 .form-group select:focus {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 
 .char-count {
@@ -60,7 +63,7 @@
   right: 10px;
   bottom: 10px;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .radio-group {
@@ -74,26 +77,26 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid #334155;
+  background: var(--bg-body);
+  border: var(--border-card);
   padding: 10px 16px;
   border-radius: 8px;
   transition: all 0.2s ease;
 }
 
 .radio-label:hover {
-  border-color: #38bdf8;
+  border-color: var(--accent);
 }
 
 .radio-label input[type="radio"] {
-  accent-color: #38bdf8;
+  accent-color: var(--accent);
   width: 16px;
   height: 16px;
 }
 
 .radio-label span {
   font-weight: 500;
-  color: #f8fafc;
+  color: var(--text-main);
 }
 
 .form-row {
@@ -103,8 +106,8 @@
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #38bdf8, #818cf8);
-  color: #0f172a;
+  background: var(--accent-gradient, linear-gradient(90deg, #38bdf8, #818cf8));
+  color: #ffffff;
   border: none;
   padding: 12px 24px;
   border-radius: 10px;
@@ -117,20 +120,20 @@
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.3);
 }
 
 .info-box {
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(var(--accent-rgb), 0.08);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
   padding: 20px;
   border-radius: 12px;
-  color: #bae6fd;
+  color: var(--text-main);
 }
 
 .info-box h4 {
   margin-bottom: 10px;
-  color: #38bdf8;
+  color: var(--accent);
   font-size: 0.95rem;
 }
 
@@ -141,5 +144,5 @@
 .info-box li {
   margin-bottom: 6px;
   font-size: 0.88rem;
-  color: #e0f2fe;
+  color: var(--text-muted);
 }

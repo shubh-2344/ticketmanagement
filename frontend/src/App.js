@@ -32,7 +32,6 @@ function App() {
   const [view, setView] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('dashboard-theme') || '');
   const [tickets, setTickets] = useState([]);
   const [globalSettings, setGlobalSettings] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -323,7 +322,7 @@ function App() {
     }
   };
 
-  const activeTheme = globalSettings?.global_theme || currentTheme || 'theme-enterprise-dark';
+  const activeTheme = globalSettings?.global_theme || 'theme-enterprise-dark';
 
   return (
     <div className={`app ai-theme ${activeTheme}`}>
@@ -387,37 +386,6 @@ function App() {
               >
                 {currentUser.role.toUpperCase()}
               </span>
-            </div>
-            <div className="theme-selector-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted, #94a3b8)' }}>🎨 Theme:</span>
-              <select
-                value={currentTheme}
-                onChange={(e) => {
-                  const newTheme = e.target.value;
-                  setCurrentTheme(newTheme);
-                  localStorage.setItem('dashboard-theme', newTheme);
-                }}
-                style={{
-                  padding: '6px 10px',
-                  borderRadius: '8px',
-                  background: 'rgba(30, 41, 59, 0.6)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: 'var(--text-main, #f8fafc)',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  outline: 'none'
-                }}
-              >
-                <option value="">Professional Dark</option>
-                <option value="theme-glassmorphism">Glassmorphism</option>
-                <option value="theme-azure-enterprise">Azure Enterprise</option>
-                <option value="theme-midnight-blue">Midnight Blue</option>
-                <option value="theme-cyber-security">Cyber Security</option>
-                <option value="theme-material-design">Material Design</option>
-                <option value="theme-minimal-light">Minimal Light</option>
-                <option value="theme-high-contrast">High Contrast</option>
-              </select>
-            </div>
             <button className="btn-logout" onClick={handleLogout}>
               🚪 Logout
             </button>

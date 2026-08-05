@@ -7,14 +7,14 @@
 .devices-header h2 {
   font-size: 22px;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--text-main);
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .devices-header p {
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 13px;
   margin-top: 4px;
 }
@@ -32,9 +32,9 @@
 }
 
 .cat-tab {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  background: var(--bg-card);
+  border: var(--border-card);
+  color: var(--text-muted);
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 13px;
@@ -44,16 +44,16 @@
 }
 
 .cat-tab:hover {
-  background: rgba(51, 65, 85, 0.8);
-  color: #f8fafc;
+  background: rgba(var(--accent-rgb), 0.05);
+  color: var(--text-main);
 }
 
 .cat-tab.active {
-  background: linear-gradient(90deg, #38bdf8, #818cf8);
-  color: #0f172a;
+  background: var(--accent-gradient, linear-gradient(90deg, #38bdf8, #818cf8));
+  color: #ffffff;
   border: none;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+  box-shadow: var(--shadow);
 }
 
 .devices-grid {
@@ -63,14 +63,14 @@
 }
 
 .device-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: var(--border-card);
+  border-radius: var(--radius-card);
   padding: 22px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow);
   transition: all 0.25s ease;
   position: relative;
   overflow: hidden;
@@ -78,9 +78,8 @@
 
 .device-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(56, 189, 248, 0.4);
-  box-shadow: 0 10px 30px rgba(56, 189, 248, 0.2);
-  background: rgba(30, 41, 59, 0.85);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
 }
 
 .device-card-header {
@@ -92,20 +91,20 @@
 
 .device-icon {
   font-size: 32px;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--bg-body);
   width: 50px;
   height: 50px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: var(--border-card);
 }
 
 .category-tag {
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 11px;
@@ -114,14 +113,14 @@
 
 .device-card h3 {
   font-size: 1.1rem;
-  color: #f8fafc;
+  color: var(--text-main);
   margin-bottom: 8px;
   font-weight: 700;
 }
 
 .device-desc {
   font-size: 0.88rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   line-height: 1.5;
   margin-bottom: 16px;
   display: -webkit-box;
@@ -135,15 +134,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 14px;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(0, 0, 0, 0.03);
   border-radius: 10px;
   margin-bottom: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: var(--border-card);
 }
 
 .stock-label {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
@@ -153,35 +152,36 @@
 }
 
 .stock-badge.available {
-  color: #4ade80;
+  color: #10b981;
 }
 
 .stock-badge.out-of-stock {
-  color: #fca5a5;
+  color: #ef4444;
 }
 
 .btn-request-device {
   width: 100%;
   padding: 12px;
-  background: linear-gradient(90deg, #38bdf8, #818cf8);
-  color: #0f172a;
+  background: var(--accent-gradient, linear-gradient(90deg, #38bdf8, #818cf8));
+  color: #ffffff;
   border: none;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
+  box-shadow: var(--shadow);
 }
 
 .btn-request-device:hover:not(.disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+  filter: brightness(1.05);
 }
 
 .btn-request-device.disabled {
-  background: rgba(51, 65, 85, 0.5);
-  color: #64748b;
+  background: var(--bg-body);
+  border: var(--border-card);
+  color: var(--text-muted);
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -189,8 +189,8 @@
 .empty-devices {
   text-align: center;
   padding: 4rem 2rem;
-  color: #94a3b8;
-  background: rgba(30, 41, 59, 0.4);
+  color: var(--text-muted);
+  background: var(--bg-card);
   border-radius: 14px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border: 1px dashed var(--border-card);
 }

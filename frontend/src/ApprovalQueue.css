@@ -11,13 +11,13 @@
   flex-wrap: wrap;
   gap: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: var(--border-card);
 }
 
 .queue-header-nav h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--text-main);
 }
 
 .queue-tabs {
@@ -28,9 +28,9 @@
 .queue-tab {
   padding: 8px 16px;
   border-radius: 10px;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  background: var(--bg-card);
+  border: var(--border-card);
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -38,23 +38,23 @@
 }
 
 .queue-tab:hover {
-  background: rgba(51, 65, 85, 0.8);
-  color: #f8fafc;
+  background: rgba(var(--accent-rgb), 0.05);
+  color: var(--text-main);
 }
 
 .queue-tab.active {
-  background: linear-gradient(90deg, #f59e0b, #d97706);
+  background: var(--accent-gradient, linear-gradient(90deg, #f59e0b, #d97706));
   color: #ffffff;
   border: none;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+  box-shadow: var(--shadow);
 }
 
 .queue-tab.admin-tab.active {
-  background: linear-gradient(90deg, #38bdf8 0%, #a855f7 50%, #f472b6 100%);
+  background: var(--accent-gradient, linear-gradient(90deg, #38bdf8 0%, #a855f7 50%, #f472b6 100%));
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 18px rgba(244, 114, 182, 0.35);
+  border: var(--border-card);
+  box-shadow: var(--shadow);
   font-weight: 700;
 }
 
@@ -65,15 +65,15 @@
 }
 
 .queue-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: var(--border-card);
+  border-radius: var(--radius-card);
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow);
 }
 
 .queue-card.admin-border {
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: var(--accent);
 }
 
 .card-top {
@@ -102,38 +102,47 @@
 
 .stage-badge.admin {
   background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
+  color: #0284c7;
   border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.theme-enterprise-dark .stage-badge.admin {
+  color: #38bdf8;
 }
 
 .clickable-title {
   font-size: 1.15rem;
-  color: #f8fafc;
+  color: var(--text-main);
   cursor: pointer;
   transition: color 0.2s ease;
+  font-weight: 700;
 }
 
 .clickable-title:hover {
-  color: #38bdf8;
+  color: var(--accent);
 }
 
 .priority-badge {
   background: rgba(56, 189, 248, 0.2);
-  color: #38bdf8;
+  color: #0284c7;
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
 }
 
+.theme-enterprise-dark .priority-badge {
+  color: #38bdf8;
+}
+
 .priority-badge.high {
   background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+  color: #ef4444;
 }
 
 .ticket-desc {
   font-size: 0.9rem;
-  color: #cbd5e1;
+  color: var(--text-muted);
   margin-bottom: 16px;
   line-height: 1.5;
 }
@@ -143,10 +152,12 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 10px;
   padding: 12px 16px;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(0, 0, 0, 0.03);
+  border: var(--border-card);
   border-radius: 10px;
   margin-bottom: 18px;
   font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .approval-proof-box {
@@ -154,7 +165,7 @@
   border: 1px solid rgba(34, 197, 94, 0.3);
   padding: 12px;
   border-radius: 10px;
-  color: #86efac;
+  color: #10b981;
   font-size: 0.88rem;
   margin-bottom: 16px;
 }
@@ -162,7 +173,7 @@
 .mgr-comment {
   font-style: italic;
   margin-top: 4px;
-  color: #cbd5e1;
+  color: var(--text-muted);
 }
 
 /* Action forms */
@@ -171,15 +182,15 @@
   flex-direction: column;
   gap: 12px;
   padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: var(--border-card);
 }
 
 .comment-input {
   padding: 10px 14px;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid #334155;
+  background: var(--bg-body);
+  border: var(--border-card);
   border-radius: 8px;
-  color: #f8fafc;
+  color: var(--text-main);
   font-size: 13px;
   outline: none;
 }
@@ -202,19 +213,23 @@
 }
 
 .btn-approve-mgr {
-  background: linear-gradient(90deg, #22c55e, #16a34a);
+  background: linear-gradient(90deg, #10b981, #059669);
   color: white;
 }
 
 .btn-deny-mgr {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-deny-mgr:hover {
   background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
 .admin-assign-box {
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: var(--bg-body);
+  border: var(--border-card);
   padding: 20px;
   border-radius: 12px;
   display: flex;
@@ -224,7 +239,8 @@
 
 .admin-assign-box h4 {
   font-size: 15px;
-  color: #38bdf8;
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .assign-form-row {
@@ -242,25 +258,25 @@
 .form-field label {
   font-size: 12px;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--text-muted);
 }
 
 .form-field input,
 .form-field select,
 .form-field textarea {
   padding: 10px 12px;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--bg-card);
+  border: var(--border-card);
   border-radius: 8px;
-  color: #f8fafc;
+  color: var(--text-main);
   font-size: 13px;
   outline: none;
 }
 
 .btn-fulfill-admin {
-  background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+  background: var(--accent-gradient, linear-gradient(135deg, #38bdf8 0%, #6366f1 100%));
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: none;
   padding: 12px 22px;
   border-radius: 10px;
   font-size: 14px;
@@ -269,16 +285,14 @@
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: 6px;
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.35);
+  box-shadow: var(--shadow);
 }
 
 .btn-fulfill-admin:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(56, 189, 248, 0.45);
-  background: linear-gradient(135deg, #7dd3fc 0%, #818cf8 100%);
+  filter: brightness(1.05);
 }
 
 .btn-fulfill-admin:active {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
 }
