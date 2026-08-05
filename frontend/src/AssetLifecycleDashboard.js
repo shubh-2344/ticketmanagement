@@ -7,10 +7,20 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      const timer = setTimeout(() => setAnimate(true), 50);
+      return () => clearTimeout(timer);
+    } else {
+      setAnimate(false);
+    }
+  }, [loading]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -144,7 +154,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Utilization Rate</div>
             <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: '#38bdf8' }}>{metrics.utilizationRate}%</div>
             <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${metrics.utilizationRate}%`, height: '100%', background: '#38bdf8' }}></div>
+              <div style={{ width: animate ? `${metrics.utilizationRate}%` : '0%', height: '100%', background: '#38bdf8', transition: 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}></div>
             </div>
           </div>
         </div>
@@ -158,19 +168,19 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
           <div style={{ display: 'flex', gap: '10px' }}>
             <button 
               onClick={() => setFilterStatus('all')} 
-              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'all' ? 'var(--accent)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'all' ? 'var(--accent)' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'all' ? '#ffffff' : 'var(--text-main)' }}
             >
               All Assignments
             </button>
             <button 
               onClick={() => setFilterStatus('overdue')} 
-              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'overdue' ? '#ef4444' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'overdue' ? '#ef4444' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'overdue' ? '#ffffff' : 'var(--text-main)' }}
             >
               ⚠️ Overdue Only
             </button>
             <button 
               onClick={() => setFilterStatus('pending_return')} 
-              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'pending_return' ? '#a855f7' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'pending_return' ? '#a855f7' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'pending_return' ? '#ffffff' : 'var(--text-main)' }}
             >
               📥 Return Requests
             </button>
@@ -186,7 +196,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '12px 8px' }}>Device</th>
                   <th style={{ padding: '12px 8px' }}>Assigned User</th>
                   <th style={{ padding: '12px 8px' }}>Assignment Date</th>
@@ -200,7 +210,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                 {filteredList.map(item => {
                   const remaining = getRemainingTime(item.expected_return_date, item.ticket_status);
                   return (
-                    <tr key={item.ticket_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', verticalAlign: 'middle' }}>
+                    <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)', verticalAlign: 'middle' }}>
                       <td style={{ padding: '16px 8px', fontWeight: '600' }}>{item.assigned_device_name}</td>
                       <td style={{ padding: '16px 8px' }}>
                         <div>{item.requester_name}</div>
@@ -228,7 +238,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                           <button 
                             onClick={() => onSelectTicket(item.ticket_id)}
-                            style={{ padding: '4px 10px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', cursor: 'pointer' }}
+                            style={{ padding: '4px 10px', borderRadius: '4px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer' }}
                           >
                             🔍 View Detail
                           </button>

@@ -268,23 +268,22 @@ body {
 }
 
 .nav-button.admin-btn {
-  background: rgba(244, 141, 56, 0.919);
-  border-color: rgba(253, 230, 138, 0.2);
-  color: #fef3c7;
+  background: var(--bg-sidebar);
+  border: var(--border-card);
+  color: var(--text-muted);
 }
 
 .nav-button.admin-btn:hover {
-  background: rgba(254, 243, 199, 0.18);
-  border-color: rgba(253, 230, 138, 0.4);
-  color: #fffbeb;
+  background: rgba(var(--accent-rgb, 79, 70, 229), 0.08);
+  color: var(--text-main);
   transform: translateX(4px);
 }
 
 .nav-button.admin-btn.active {
-  background: linear-gradient(135deg, #fffbeb 0%, #fde68a 100%);
-  color: #451a03;
-  border: 1px solid #fef3c7;
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);
+  background: var(--accent-gradient);
+  color: #ffffff !important;
+  border: var(--border-card);
+  box-shadow: var(--shadow);
   font-weight: 700;
 }
 
@@ -292,17 +291,33 @@ body {
   margin-left: auto;
   font-size: 9px;
   font-weight: 800;
-  background: rgba(254, 243, 199, 0.2);
-  border: 1px solid rgba(253, 230, 138, 0.35);
+  background: rgba(var(--accent-rgb, 79, 70, 229), 0.1);
+  border: 1px solid rgba(var(--accent-rgb, 79, 70, 229), 0.2);
   padding: 2px 7px;
   border-radius: 6px;
-  color: #fde68a;
+  color: var(--accent);
 }
 
 .nav-button.active .admin-tag {
-  background: rgba(69, 26, 3, 0.15);
-  border-color: rgba(69, 26, 3, 0.25);
-  color: #78350f;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+/* Page transitions */
+.fade-in-up {
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Main Content Surface */
@@ -688,20 +703,21 @@ body {
 
 /* 2. Enterprise Light */
 .theme-enterprise-light {
-  --bg-body: #f8fafc;
-  --bg-app: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
-  --bg-header: rgba(255, 255, 255, 0.9);
-  --bg-sidebar: rgba(241, 245, 249, 0.6);
+  --bg-body: #f1f5f9;
+  --bg-app: #f1f5f9;
+  --bg-header: #ffffff;
+  --bg-sidebar: #ffffff;
   --bg-card: #ffffff;
   --border-card: 1px solid #e2e8f0;
   --text-main: #0f172a;
   --text-muted: #64748b;
   --accent: #2563eb;
   --accent-secondary: #0d9488;
-  --accent-gradient: linear-gradient(135deg, #2563eb, #0d9488);
-  --shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  --accent-gradient: linear-gradient(135deg, #2563eb, #3b82f6);
+  --accent-rgb: 37, 99, 235;
+  --shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
   --radius-card: 14px;
-  --backdrop: blur(12px);
+  --backdrop: none;
 }
 .theme-enterprise-light .header-brand h1 {
   color: #0f172a !important;
@@ -715,6 +731,15 @@ body {
 .theme-enterprise-light .btn-logout {
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
+  background: rgba(15, 23, 42, 0.04) !important;
+}
+.theme-enterprise-light .nav-button {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+.theme-enterprise-light .nav-button:hover {
+  background: rgba(37, 99, 235, 0.06);
+  color: #2563eb;
 }
 
 /* 3. Azure Blue */

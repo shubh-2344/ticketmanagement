@@ -541,170 +541,168 @@ function App() {
         </nav>
 
         <main className="main-content">
-          {loading && (
+          {loading ? (
             <div className="loading-ai">
               <div className="spinner"></div>Loading Intelligent Portal...
             </div>
-          )}
+          ) : (
+            <div key={view} className="fade-in-up">
+              {view === 'dashboard' && (
+                (currentUser.role === 'admin' || currentUser.role === 'manager') ? (
+                  <ExecutiveDashboard 
+                    tickets={tickets} 
+                    onSelectTicket={handleViewTicketById} 
+                    onViewAllTickets={() => setView('tickets-list')} 
+                    onViewInventory={() => setView('inventory')} 
+                  />
+                ) : (
+                  <TicketList
+                    tickets={tickets}
+                    currentUser={currentUser}
+                    onViewTicket={handleViewTicket}
+                    viewMode={ticketViewMode}
+                  />
+                )
+              )}
 
-          {!loading && view === 'dashboard' && (
-            (currentUser.role === 'admin' || currentUser.role === 'manager') ? (
-              <ExecutiveDashboard 
-                tickets={tickets} 
-                onSelectTicket={handleViewTicketById} 
-                onViewAllTickets={() => setView('tickets-list')} 
-                onViewInventory={() => setView('inventory')} 
-              />
-            ) : (
-              <TicketList
-                tickets={tickets}
-                currentUser={currentUser}
-                onViewTicket={handleViewTicket}
-                viewMode={ticketViewMode}
-              />
-            )
-          )}
+              {view === 'tickets-list' && (
+                <TicketList
+                  tickets={tickets}
+                  currentUser={currentUser}
+                  onViewTicket={handleViewTicket}
+                  viewMode={ticketViewMode}
+                />
+              )}
 
-          {!loading && view === 'tickets-list' && (
-            <TicketList
-              tickets={tickets}
-              currentUser={currentUser}
-              onViewTicket={handleViewTicket}
-              viewMode={ticketViewMode}
-            />
-          )}
+              {view === 'devices' && (
+                <AvailableDevices
+                  API_URL={API_URL}
+                  onRequestDevice={handleRequestDeviceFromCatalog}
+                />
+              )}
 
-          {!loading && view === 'devices' && (
-            <AvailableDevices
-              API_URL={API_URL}
-              onRequestDevice={handleRequestDeviceFromCatalog}
-            />
-          )}
+              {view === 'create' && (
+                <CreateTicket
+                  onSubmit={handleCreateTicket}
+                  API_URL={API_URL}
+                  initialDevice={selectedDeviceForRequest}
+                />
+              )}
 
-          {!loading && view === 'create' && (
-            <CreateTicket
-              onSubmit={handleCreateTicket}
-              API_URL={API_URL}
-              initialDevice={selectedDeviceForRequest}
-            />
-          )}
+              {view === 'approvals' && (currentUser.role === 'manager' || currentUser.role === 'admin') && (
+                <ApprovalQueue
+                  tickets={tickets}
+                  currentUser={currentUser}
+                  onViewTicket={handleViewTicket}
+                  onRefresh={fetchTickets}
+                  API_URL={API_URL}
+                />
+              )}
 
-          {!loading && view === 'approvals' && (currentUser.role === 'manager' || currentUser.role === 'admin') && (
-            <ApprovalQueue
-              tickets={tickets}
-              currentUser={currentUser}
-              onViewTicket={handleViewTicket}
-              onRefresh={fetchTickets}
-              API_URL={API_URL}
-            />
-          )}
+              {view === 'inventory' && (
+                currentUser.role === 'admin' ? (
+                  <AdminInventory API_URL={API_URL} />
+                ) : (
+                  <div className="access-denied-card">
+                    <div className="denied-icon">🔒</div>
+                    <h2>Access Restricted</h2>
+                    <p>Normal user accounts do not have administrator permissions to access Inventory Control.</p>
+                    <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                      Return to Dashboard
+                    </button>
+                  </div>
+                )
+              )}
 
-          {/* ADMIN INVENTORY VIEW */}
-          {!loading && view === 'inventory' && (
-            currentUser.role === 'admin' ? (
-              <AdminInventory API_URL={API_URL} />
-            ) : (
-              <div className="access-denied-card">
-                <div className="denied-icon">🔒</div>
-                <h2>Access Restricted</h2>
-                <p>Normal user accounts do not have administrator permissions to access Inventory Control.</p>
-                <button className="btn-return-home" onClick={() => setView('dashboard')}>
-                  Return to Dashboard
-                </button>
-              </div>
-            )
-          )}
+              {view === 'users' && (
+                currentUser.role === 'admin' ? (
+                  <AdminUserControl
+                    API_URL={API_URL}
+                    currentViewMode={ticketViewMode}
+                    onUpdateViewMode={(newMode) => setTicketViewMode(newMode)}
+                  />
+                ) : (
+                  <div className="access-denied-card">
+                    <div className="denied-icon">🔒</div>
+                    <h2>Access Restricted</h2>
+                    <p>Normal user accounts do not have administrator permissions.</p>
+                    <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                      Return to Dashboard
+                    </button>
+                  </div>
+                )
+              )}
 
-          {/* ADMIN USER & VIEW CONTROL */}
-          {!loading && view === 'users' && (
-            currentUser.role === 'admin' ? (
-              <AdminUserControl
-                API_URL={API_URL}
-                currentViewMode={ticketViewMode}
-                onUpdateViewMode={(newMode) => setTicketViewMode(newMode)}
-              />
-            ) : (
-              <div className="access-denied-card">
-                <div className="denied-icon">🔒</div>
-                <h2>Access Restricted</h2>
-                <p>Normal user accounts do not have administrator permissions.</p>
-                <button className="btn-return-home" onClick={() => setView('dashboard')}>
-                  Return to Dashboard
-                </button>
-              </div>
-            )
-          )}
+              {view === 'admin-profile' && (
+                currentUser.role === 'admin' ? (
+                  <AdminProfile
+                    API_URL={API_URL}
+                    currentUser={currentUser}
+                    onProfileUpdated={fetchCurrentUser}
+                  />
+                ) : (
+                  <div className="access-denied-card">
+                    <div className="denied-icon">🔒</div>
+                    <h2>Access Restricted</h2>
+                    <p>Only administrators can access Admin Profile settings.</p>
+                    <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                      Return to Dashboard
+                    </button>
+                  </div>
+                )
+              )}
 
-          {/* ADMIN PROFILE & SETTINGS MENU */}
-          {!loading && view === 'admin-profile' && (
-            currentUser.role === 'admin' ? (
-              <AdminProfile
-                API_URL={API_URL}
-                currentUser={currentUser}
-                onProfileUpdated={fetchCurrentUser}
-              />
-            ) : (
-              <div className="access-denied-card">
-                <div className="denied-icon">🔒</div>
-                <h2>Access Restricted</h2>
-                <p>Only administrators can access Admin Profile settings.</p>
-                <button className="btn-return-home" onClick={() => setView('dashboard')}>
-                  Return to Dashboard
-                </button>
-              </div>
-            )
-          )}
+              {view === 'analytics' && (
+                <AnalyticsDashboard tickets={tickets} />
+              )}
 
-          {/* ENTERPRISE EXTENSIONS: ANALYTICS, ASSETS, AI DASHBOARD */}
-          {!loading && view === 'analytics' && (
-            <AnalyticsDashboard tickets={tickets} />
-          )}
+              {view === 'asset-lifecycle' && (
+                currentUser.role === 'admin' ? (
+                  <AssetLifecycleDashboard API_URL={API_URL} onSelectTicket={handleViewTicketById} />
+                ) : (
+                  <div className="access-denied-card">
+                    <div className="denied-icon">🔒</div>
+                    <h2>Access Restricted</h2>
+                    <p>Only administrators can access the Asset Lifecycle Tracking Dashboard.</p>
+                    <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                      Return to Dashboard
+                    </button>
+                  </div>
+                )
+              )}
 
-          {!loading && view === 'asset-lifecycle' && (
-            currentUser.role === 'admin' ? (
-              <AssetLifecycleDashboard API_URL={API_URL} onSelectTicket={handleViewTicketById} />
-            ) : (
-              <div className="access-denied-card">
-                <div className="denied-icon">🔒</div>
-                <h2>Access Restricted</h2>
-                <p>Only administrators can access the Asset Lifecycle Tracking Dashboard.</p>
-                <button className="btn-return-home" onClick={() => setView('dashboard')}>
-                  Return to Dashboard
-                </button>
-              </div>
-            )
-          )}
+              {view === 'ai-dashboard' && (
+                currentUser.role === 'admin' || currentUser.role === 'manager' ? (
+                  <AIDashboard API_URL={API_URL} onSelectTicket={handleViewTicketById} />
+                ) : (
+                  <div className="access-denied-card">
+                    <div className="denied-icon">🔒</div>
+                    <h2>Access Restricted</h2>
+                    <p>Only administrators or managers can access the AI Copilot Diagnostics Dashboard.</p>
+                    <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                      Return to Dashboard
+                    </button>
+                  </div>
+                )
+              )}
 
-          {!loading && view === 'ai-dashboard' && (
-            currentUser.role === 'admin' || currentUser.role === 'manager' ? (
-              <AIDashboard API_URL={API_URL} onSelectTicket={handleViewTicketById} />
-            ) : (
-              <div className="access-denied-card">
-                <div className="denied-icon">🔒</div>
-                <h2>Access Restricted</h2>
-                <p>Only administrators or managers can access the AI Copilot Diagnostics Dashboard.</p>
-                <button className="btn-return-home" onClick={() => setView('dashboard')}>
-                  Return to Dashboard
-                </button>
-              </div>
-            )
-          )}
-
-          {!loading && view === 'detail' && selectedTicket && (
-            <TicketDetail
-              ticket={selectedTicket}
-              currentUser={currentUser}
-              onApprove={handleApproveTicket}
-              onReject={handleRejectTicket}
-              onClose={handleCloseTicket}
-              onAdminUpdate={handleAdminUpdateTicket}
-              onAdminDelete={handleAdminDeleteTicket}
-              API_URL={API_URL}
-              onBack={() => {
-                setSelectedTicket(null);
-                setView('dashboard');
-              }}
-            />
+              {view === 'detail' && selectedTicket && (
+                <TicketDetail
+                  ticket={selectedTicket}
+                  currentUser={currentUser}
+                  onApprove={handleApproveTicket}
+                  onReject={handleRejectTicket}
+                  onClose={handleCloseTicket}
+                  onAdminUpdate={handleAdminUpdateTicket}
+                  onAdminDelete={handleAdminDeleteTicket}
+                  API_URL={API_URL}
+                  onBack={() => {
+                    setSelectedTicket(null);
+                    setView('dashboard');
+                  }}
+                />
+              )}
+            </div>
           )}
         </main>
       </div>

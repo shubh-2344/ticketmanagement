@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   SparklesIcon, 
   ClockIcon, 
@@ -9,7 +9,11 @@ import {
 } from './components/Icons';
 
 function ExecutiveDashboard({ tickets, onSelectTicket, onViewAllTickets, onViewInventory }) {
-  
+  const [animate, setAnimate] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimate(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
   const metrics = useMemo(() => {
     const total = tickets.length;
     const open = tickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
@@ -154,7 +158,7 @@ function ExecutiveDashboard({ tickets, onSelectTicket, onViewAllTickets, onViewI
             {metrics.utilization}%
           </div>
           <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', marginTop: '12px', overflow: 'hidden' }}>
-            <div style={{ width: `${metrics.utilization}%`, height: '100%', background: 'var(--accent-secondary, #06b6d4)' }}></div>
+            <div style={{ width: animate ? `${metrics.utilization}%` : '0%', height: '100%', background: 'var(--accent-secondary, #06b6d4)', transition: 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}></div>
           </div>
         </div>
       </div>
@@ -174,7 +178,7 @@ function ExecutiveDashboard({ tickets, onSelectTicket, onViewAllTickets, onViewI
                 <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '13px', width: '100px' }}>{cat}</span>
                   <div style={{ flex: '1', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden' }}>
-                    <div style={{ width: `${percentage}%`, height: '100%', background: 'var(--accent-gradient, linear-gradient(90deg, #4f46e5, #06b6d4))', borderRadius: '5px' }}></div>
+                    <div style={{ width: animate ? `${percentage}%` : '0%', height: '100%', background: 'var(--accent-gradient, linear-gradient(90deg, #4f46e5, #06b6d4))', borderRadius: '5px', transition: 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}></div>
                   </div>
                   <strong style={{ fontSize: '12px', width: '20px', textAlign: 'right' }}>{count}</strong>
                 </div>
@@ -195,7 +199,7 @@ function ExecutiveDashboard({ tickets, onSelectTicket, onViewAllTickets, onViewI
               <p style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>No recent activity to show.</p>
             ) : (
               metrics.feed.map(item => (
-                <div key={item.id} style={{ display: 'flex', gap: '12px', fontSize: '12.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '10px', cursor: 'pointer' }} onClick={() => onSelectTicket(item.id)}>
+                <div key={item.id} style={{ display: 'flex', gap: '12px', fontSize: '12.5px', borderBottom: 'var(--border-card)', paddingBottom: '10px', cursor: 'pointer' }} onClick={() => onSelectTicket(item.id)}>
                   <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{item.time}</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     <span style={{ fontWeight: '600' }}>{item.title}</span>
@@ -220,7 +224,7 @@ function ExecutiveDashboard({ tickets, onSelectTicket, onViewAllTickets, onViewI
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)' }}>
+                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '10px 8px' }}>Ticket Title</th>
                   <th style={{ padding: '10px 8px' }}>Requester</th>
                   <th style={{ padding: '10px 8px' }}>Target Resolution</th>
@@ -230,7 +234,7 @@ function ExecutiveDashboard({ tickets, onSelectTicket, onViewAllTickets, onViewI
               </thead>
               <tbody>
                 {tickets.filter(t => t.status !== 'closed' && t.priority === 'high').slice(0, 3).map(t => (
-                  <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <tr key={t.id} style={{ borderBottom: 'var(--border-card)' }}>
                     <td style={{ padding: '12px 8px', fontWeight: '600' }}>{t.title}</td>
                     <td style={{ padding: '12px 8px' }}>{t.requester_name}</td>
                     <td style={{ padding: '12px 8px', color: '#ef4444' }}>{new Date(t.target_resolution_date).toLocaleString()}</td>
@@ -242,7 +246,7 @@ function ExecutiveDashboard({ tickets, onSelectTicket, onViewAllTickets, onViewI
                     <td style={{ padding: '12px 8px', textAlign: 'right' }}>
                       <button 
                         onClick={() => onSelectTicket(t.id)}
-                        style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', cursor: 'pointer', fontSize: '11px' }}
+                        style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer', fontSize: '11px' }}
                       >
                         Inspect
                       </button>

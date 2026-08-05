@@ -1,7 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import './TicketList.css'; // Recycles common table/flex styles
 
 function AnalyticsDashboard({ tickets }) {
+  const [animate, setAnimate] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimate(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
   const getDepartment = (email) => {
     const emailLower = (email || '').toLowerCase();
     if (emailLower.includes('john') || emailLower.includes('engineer') || emailLower.includes('dev')) return 'Engineering';
@@ -139,7 +145,7 @@ function AnalyticsDashboard({ tickets }) {
                     <strong>{count}</strong>
                   </div>
                   <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${widthPct}%`, height: '100%', background: 'linear-gradient(90deg, #38bdf8, #818cf8)', borderRadius: '4px' }}></div>
+                    <div style={{ width: animate ? `${widthPct}%` : '0%', height: '100%', background: 'linear-gradient(90deg, #38bdf8, #818cf8)', borderRadius: '4px', transition: 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}></div>
                   </div>
                 </div>
               );
@@ -152,8 +158,8 @@ function AnalyticsDashboard({ tickets }) {
           <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px' }}>⚠️ Tickets by Priority</h3>
           <div style={{ display: 'flex', flex: '1', alignItems: 'center', justifyContent: 'space-around', flexWrap: 'wrap', gap: '20px' }}>
             {/* Custom SVG Donut Chart */}
-            <svg width="140" height="140" viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
-              <circle cx="18" cy="18" r="15.915" fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="4" />
+            <svg width="140" height="140" viewBox="0 0 36 36" style={{ transform: animate ? 'rotate(-90deg) scale(1)' : 'rotate(-90deg) scale(0.6)', opacity: animate ? 1 : 0, transition: 'transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 1.2s ease', transformOrigin: 'center' }}>
+              <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--border-card)" strokeWidth="4" />
               {/* High priority arc */}
               <circle 
                 cx="18" 
@@ -162,8 +168,9 @@ function AnalyticsDashboard({ tickets }) {
                 fill="none" 
                 stroke="#ef4444" 
                 strokeWidth="4" 
-                strokeDasharray={`${metrics.total > 0 ? (metrics.byPriority.high / metrics.total) * 100 : 15} ${100 - (metrics.total > 0 ? (metrics.byPriority.high / metrics.total) * 100 : 15)}`} 
+                strokeDasharray={animate ? `${metrics.total > 0 ? (metrics.byPriority.high / metrics.total) * 100 : 15} ${100 - (metrics.total > 0 ? (metrics.byPriority.high / metrics.total) * 100 : 15)}` : "0 100"} 
                 strokeDashoffset="0"
+                style={{ transition: 'stroke-dasharray 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
               />
               {/* Medium priority arc */}
               <circle 
@@ -173,8 +180,9 @@ function AnalyticsDashboard({ tickets }) {
                 fill="none" 
                 stroke="#f59e0b" 
                 strokeWidth="4" 
-                strokeDasharray={`${metrics.total > 0 ? (metrics.byPriority.medium / metrics.total) * 100 : 55} ${100 - (metrics.total > 0 ? (metrics.byPriority.medium / metrics.total) * 100 : 55)}`}
-                strokeDashoffset={`-${metrics.total > 0 ? (metrics.byPriority.high / metrics.total) * 100 : 15}`}
+                strokeDasharray={animate ? `${metrics.total > 0 ? (metrics.byPriority.medium / metrics.total) * 100 : 55} ${100 - (metrics.total > 0 ? (metrics.byPriority.medium / metrics.total) * 100 : 55)}` : "0 100"}
+                strokeDashoffset={animate ? `-${metrics.total > 0 ? (metrics.byPriority.high / metrics.total) * 100 : 15}` : "0"}
+                style={{ transition: 'stroke-dasharray 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), stroke-dashoffset 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
               />
               {/* Low priority arc */}
               <circle 
@@ -184,8 +192,9 @@ function AnalyticsDashboard({ tickets }) {
                 fill="none" 
                 stroke="#38bdf8" 
                 strokeWidth="4" 
-                strokeDasharray={`${metrics.total > 0 ? (metrics.byPriority.low / metrics.total) * 100 : 30} ${100 - (metrics.total > 0 ? (metrics.byPriority.low / metrics.total) * 100 : 30)}`}
-                strokeDashoffset={`-${metrics.total > 0 ? ((metrics.byPriority.high + metrics.byPriority.medium) / metrics.total) * 100 : 70}`}
+                strokeDasharray={animate ? `${metrics.total > 0 ? (metrics.byPriority.low / metrics.total) * 100 : 30} ${100 - (metrics.total > 0 ? (metrics.byPriority.low / metrics.total) * 100 : 30)}` : "0 100"}
+                strokeDashoffset={animate ? `-${metrics.total > 0 ? ((metrics.byPriority.high + metrics.byPriority.medium) / metrics.total) * 100 : 70}` : "0"}
+                style={{ transition: 'stroke-dasharray 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), stroke-dashoffset 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
               />
             </svg>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -217,7 +226,7 @@ function AnalyticsDashboard({ tickets }) {
                 <div key={category} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '12px', width: '130px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{category}</span>
                   <div style={{ flex: '1', height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', overflow: 'hidden' }}>
-                    <div style={{ width: `${widthPct}%`, height: '100%', background: 'linear-gradient(90deg, #a855f7, #6366f1)', borderRadius: '6px' }}></div>
+                    <div style={{ width: animate ? `${widthPct}%` : '0%', height: '100%', background: 'linear-gradient(90deg, #a855f7, #6366f1)', borderRadius: '6px', transition: 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}></div>
                   </div>
                   <strong style={{ fontSize: '12px', width: '20px', textRight: 'right' }}>{count}</strong>
                 </div>
