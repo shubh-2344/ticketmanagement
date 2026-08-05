@@ -11,8 +11,21 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
     priority: 'medium',
     inventory_id: initialDevice ? initialDevice.id : '',
     manager_id: '',
-    manager_name: ''
+    manager_name: '',
+    reservation_duration: '30',
+    expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   });
+
+  useEffect(() => {
+    if (formData.reservation_duration !== 'custom') {
+      const days = parseInt(formData.reservation_duration, 10) || 30;
+      const calculatedDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      setFormData((prev) => ({
+        ...prev,
+        expected_return_date: calculatedDate.toISOString().split('T')[0]
+      }));
+    }
+  }, [formData.reservation_duration]);
 
   const [inventoryList, setInventoryList] = useState([]);
   const [managerList, setManagerList] = useState([]);
@@ -115,6 +128,16 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       return;
     }
 
+    if (formData.type === 'device-request') {
+      const selectedDate = new Date(formData.expected_return_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate <= today) {
+        alert('Expected return date must be in the future.');
+        return;
+      }
+    }
+
     onSubmit(formData);
     setFormData({
       title: '',
@@ -124,7 +147,9 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       priority: 'medium',
       inventory_id: '',
       manager_id: managerList.length > 0 ? managerList[0].id : '',
-      manager_name: managerList.length > 0 ? managerList[0].name : ''
+      manager_name: managerList.length > 0 ? managerList[0].name : '',
+      reservation_duration: '30',
+      expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     });
   };
 
@@ -217,6 +242,40 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {formData.type === 'device-request' && (
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="reservation_duration">Required Reservation Duration *</label>
+              <select
+                id="reservation_duration"
+                name="reservation_duration"
+                value={formData.reservation_duration}
+                onChange={handleChange}
+                required
+              >
+                <option value="7">7 Days (1 Week)</option>
+                <option value="14">14 Days (2 Weeks)</option>
+                <option value="30">30 Days (1 Month)</option>
+                <option value="custom">Custom Return Date</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="expected_return_date">Expected Return Date *</label>
+              <input
+                type="date"
+                id="expected_return_date"
+                name="expected_return_date"
+                value={formData.expected_return_date}
+                onChange={handleChange}
+                disabled={formData.reservation_duration !== 'custom'}
+                required
+              />
+              <span className="field-hint">Date when the device will be returned to inventory.</span>
+            </div>
           </div>
         )}
 

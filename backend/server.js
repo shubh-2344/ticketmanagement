@@ -136,6 +136,9 @@ async function initializeDB() {
 
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS target_resolution_date TIMESTAMP;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS sla_hours INT DEFAULT 48;`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS expected_return_date TIMESTAMP;`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS reservation_duration VARCHAR(50);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS returned_at TIMESTAMP;`);
 
         await pool.query(`ALTER TABLE tickets ALTER COLUMN status TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN priority TYPE VARCHAR(50);`);
@@ -631,7 +634,7 @@ app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
 
 // CREATE new ticket
 app.post('/api/tickets', authenticateToken, async (req, res) => {
-    const { title, description, type, category, priority, inventory_id, manager_id, manager_name } = req.body;
+    const { title, description, type, category, priority, inventory_id, manager_id, manager_name, expected_return_date, reservation_duration } = req.body;
 
     if (!title || !description || !type || !category) {
         return res.status(400).json({ error: 'Missing required fields (title, description, type, category)' });
@@ -644,7 +647,7 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
                 `INSERT INTO users (id, name, email, password_hash, role) 
                  VALUES ($1, $2, $3, $4, $5) 
                  ON CONFLICT (email) DO NOTHING`,
-                [req.user.id, req.user.name || 'User', req.user.email || 'user@company.com', '', req.user.role || 'employee']
+                 [req.user.id, req.user.name || 'User', req.user.email || 'user@company.com', '', req.user.role || 'employee']
             );
         }
 
@@ -669,9 +672,10 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
                 id, title, description, type, category, priority, status,
                 requester_id, requester_name, requester_email,
                 manager_id, manager_name, inventory_id,
-                sla_hours, target_resolution_date
+                sla_hours, target_resolution_date,
+                expected_return_date, reservation_duration
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         `, [
             id,
             title.trim(),
@@ -687,7 +691,9 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
             safeManagerName,
             safeInventoryId,
             slaHours,
-            targetResolutionDate
+            targetResolutionDate,
+            expected_return_date ? new Date(expected_return_date) : null,
+            reservation_duration || null
         ]);
 
         res.status(201).json({
@@ -1021,6 +1027,302 @@ app.delete('/api/inventory/:id', authenticateToken, requireRole(['admin']), asyn
     } catch (err) {
         console.error('Delete inventory error:', err);
         res.status(500).json({ error: err.message || 'Failed to delete inventory item' });
+    }
+});
+
+// STAGE 4: DEVICE RETURN WORKFLOW & TRACKING APIs
+
+// Requester marks assigned device as returned
+app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const ticketResult = await pool.query('SELECT requester_id, status, assigned_device_name FROM tickets WHERE id = $1', [id]);
+        if (ticketResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        const ticket = ticketResult.rows[0];
+
+        // Check if user is the requester or an admin
+        if (req.user.role === 'employee' && ticket.requester_id !== req.user.id) {
+            return res.status(403).json({ error: 'Forbidden: You can only return devices assigned to your own requests' });
+        }
+
+        if (!ticket.assigned_device_name) {
+            return res.status(400).json({ error: 'No device has been assigned to this ticket' });
+        }
+
+        if (ticket.status !== 'approved') {
+            return res.status(400).json({ error: 'Device can only be marked as returned for approved requests' });
+        }
+
+        const result = await pool.query(`
+            UPDATE tickets
+            SET status = 'return_pending_verification',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+            RETURNING *
+        `, [id]);
+
+        res.json({
+            message: 'Device marked as returned. Awaiting Administrator verification.',
+            ticket: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Return device error:', err);
+        res.status(500).json({ error: err.message || 'Failed to request device return' });
+    }
+});
+
+// Admin verifies physical return of device
+app.put('/api/tickets/:id/verify-return', authenticateToken, requireRole(['admin']), async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const ticketResult = await pool.query('SELECT inventory_id, status, assigned_device_name FROM tickets WHERE id = $1', [id]);
+        if (ticketResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        const ticket = ticketResult.rows[0];
+
+        if (ticket.status !== 'return_pending_verification') {
+            return res.status(400).json({ error: 'Ticket is not awaiting return verification' });
+        }
+
+        // Complete return: update ticket status and return date
+        const result = await pool.query(`
+            UPDATE tickets
+            SET status = 'closed',
+                returned_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+            RETURNING *
+        `, [id]);
+
+        // Restock inventory item
+        if (ticket.inventory_id) {
+            await pool.query(`
+                UPDATE inventory
+                SET quantity = quantity + 1,
+                    status = 'Available'
+                WHERE id = $1
+            `, [ticket.inventory_id]);
+        }
+
+        res.json({
+            message: 'Device return verified successfully. Asset inventory restocked.',
+            ticket: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Verify return error:', err);
+        res.status(500).json({ error: err.message || 'Verification of device return failed' });
+    }
+});
+
+// Admin: Device Assignment & Return Tracking
+app.get('/api/admin/device-tracking', authenticateToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                t.id as ticket_id,
+                t.title as ticket_title,
+                t.requester_name,
+                t.requester_email,
+                t.assigned_device_name,
+                t.assigned_at,
+                t.expected_return_date,
+                t.status as ticket_status,
+                i.name as inventory_name,
+                i.category as inventory_category,
+                i.status as inventory_status
+            FROM tickets t
+            LEFT JOIN inventory i ON t.inventory_id = i.id
+            WHERE t.assigned_device_name IS NOT NULL
+              AND t.status IN ('approved', 'return_pending_verification')
+            ORDER BY t.expected_return_date ASC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Device tracking query error:', err);
+        res.status(500).json({ error: err.message || 'Failed to fetch device tracking lists' });
+    }
+});
+
+// Admin: Enterprise Asset Lifecycle Metrics
+app.get('/api/admin/asset-lifecycle', authenticateToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const statsResult = await pool.query(`
+            SELECT 
+                status, 
+                COUNT(*) as count,
+                COALESCE(SUM(quantity), 0) as sum_qty
+            FROM inventory
+            GROUP BY status
+        `);
+
+        // Counts of assigned/reserved/maintenance/available devices in tickets/inventory
+        const activeAssignments = await pool.query(`
+            SELECT COUNT(*) FROM tickets 
+            WHERE assigned_device_name IS NOT NULL 
+              AND status IN ('approved', 'return_pending_verification')
+        `);
+
+        // Overdue device returns
+        const overdueAssignments = await pool.query(`
+            SELECT COUNT(*) FROM tickets 
+            WHERE assigned_device_name IS NOT NULL 
+              AND status IN ('approved', 'return_pending_verification')
+              AND expected_return_date < CURRENT_TIMESTAMP
+        `);
+
+        // Upcoming device returns (next 7 days)
+        const upcomingAssignments = await pool.query(`
+            SELECT COUNT(*) FROM tickets 
+            WHERE assigned_device_name IS NOT NULL 
+              AND status IN ('approved', 'return_pending_verification')
+              AND expected_return_date >= CURRENT_TIMESTAMP
+              AND expected_return_date <= CURRENT_TIMESTAMP + INTERVAL '7 days'
+        `);
+
+        const statusCounts = {
+            Available: 0,
+            Assigned: parseInt(activeAssignments.rows[0].count, 10),
+            Reserved: 0,
+            Maintenance: 0
+        };
+
+        statsResult.rows.forEach(row => {
+            const rawStatus = row.status || 'Available';
+            if (rawStatus === 'Available') statusCounts.Available += parseInt(row.sum_qty, 10);
+            else if (rawStatus === 'Reserved') statusCounts.Reserved += parseInt(row.sum_qty, 10);
+            else if (rawStatus === 'Maintenance') statusCounts.Maintenance += parseInt(row.sum_qty, 10);
+        });
+
+        const totalInventory = statusCounts.Available + statusCounts.Assigned + statusCounts.Reserved + statusCounts.Maintenance;
+        const utilizationRate = totalInventory > 0 
+            ? Math.round(((statusCounts.Assigned + statusCounts.Reserved) / totalInventory) * 100) 
+            : 0;
+
+        res.json({
+            totalInventory,
+            statusCounts,
+            overdueReturns: parseInt(overdueAssignments.rows[0].count, 10),
+            upcomingReturns: parseInt(upcomingAssignments.rows[0].count, 10),
+            utilizationRate
+        });
+    } catch (err) {
+        console.error('Asset lifecycle stats error:', err);
+        res.status(500).json({ error: err.message || 'Failed to fetch asset metrics' });
+    }
+});
+
+// Admin/Manager: AI Copilot Dashboard Diagnostics
+app.get('/api/ai/analyze-tickets', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
+    try {
+        const ticketsResult = await pool.query('SELECT * FROM tickets ORDER BY created_at DESC');
+        const allTickets = ticketsResult.rows;
+
+        const analysis = allTickets.map(t => {
+            const descLower = (t.description || '').toLowerCase();
+            const titleLower = (t.title || '').toLowerCase();
+            const textContent = `${titleLower} ${descLower}`;
+
+            // Smart ticket categorization
+            let aiCategory = t.category || 'Software';
+            if (textContent.includes('login') || textContent.includes('password') || textContent.includes('auth') || textContent.includes('permission') || textContent.includes('account') || textContent.includes('sso')) {
+                aiCategory = 'Access & Credentials';
+            } else if (textContent.includes('wifi') || textContent.includes('internet') || textContent.includes('vpn') || textContent.includes('network') || textContent.includes('router') || textContent.includes('server')) {
+                aiCategory = 'Network & Infrastructure';
+            } else if (textContent.includes('macbook') || textContent.includes('dell') || textContent.includes('monitor') || textContent.includes('laptop') || textContent.includes('keyboard') || textContent.includes('mouse') || textContent.includes('hardware') || textContent.includes('screen') || textContent.includes('device')) {
+                aiCategory = 'Hardware & Assets';
+            } else if (textContent.includes('software') || textContent.includes('app') || textContent.includes('outlook') || textContent.includes('slack') || textContent.includes('license') || textContent.includes('install')) {
+                aiCategory = 'Software & Applications';
+            }
+
+            // Auto-prioritization recommendation
+            let aiPriority = t.priority || 'medium';
+            if (textContent.includes('urgent') || textContent.includes('broken') || textContent.includes('critical') || textContent.includes('blocked') || textContent.includes('down') || textContent.includes('fails') || textContent.includes('cannot work') || textContent.includes('stop') || textContent.includes('crash')) {
+                aiPriority = 'high';
+            }
+
+            // SLA breach risk prediction
+            let slaRisk = 'low';
+            if (t.status !== 'closed' && t.status !== 'resolved') {
+                const now = new Date();
+                const target = t.target_resolution_date ? new Date(t.target_resolution_date) : null;
+                if (target) {
+                    const diffHours = (target - now) / (1000 * 60 * 60);
+                    if (diffHours < 0) slaRisk = 'breached';
+                    else if (diffHours < 12) slaRisk = 'critical';
+                    else if (diffHours < 24) slaRisk = 'medium';
+                }
+            }
+
+            // Recommended engineer based on workload/category
+            let recommendedEngineer = 'General Helpdesk Support';
+            if (aiCategory === 'Hardware & Assets') {
+                recommendedEngineer = 'Alice Vance (Hardware Specialist)';
+            } else if (aiCategory === 'Network & Infrastructure') {
+                recommendedEngineer = 'Charlie Devops (Network Architect)';
+            } else if (aiCategory === 'Access & Credentials') {
+                recommendedEngineer = 'Security Ops Team';
+            } else {
+                recommendedEngineer = 'Bob Miller (Senior Software Engineer)';
+            }
+
+            // AI Generated Summary
+            const cleanedDesc = (t.description || '').trim();
+            const firstSentence = cleanedDesc.split(/[.!?]/)[0] || '';
+            const aiSummary = firstSentence.length > 100 
+                ? `${firstSentence.substring(0, 100)}...` 
+                : firstSentence || 'No description provided.';
+
+            // Duplicate detection check
+            const duplicates = allTickets.filter(other => 
+                other.id !== t.id && 
+                other.requester_id === t.requester_id && 
+                other.status !== 'closed' &&
+                other.title.toLowerCase().trim() === t.title.toLowerCase().trim()
+            ).map(dup => dup.id);
+
+            return {
+                ticket_id: t.id,
+                title: t.title,
+                status: t.status,
+                priority: t.priority,
+                category: t.category,
+                requester_name: t.requester_name,
+                created_at: t.created_at,
+                aiCategory,
+                aiPriority,
+                slaRisk,
+                recommendedEngineer,
+                aiSummary: `AI Summary: ${aiSummary}. Recommended Engineer: ${recommendedEngineer}. SLA Alert level: ${slaRisk.toUpperCase()}.`,
+                isPotentialDuplicate: duplicates.length > 0,
+                duplicateTicketIds: duplicates
+            };
+        });
+
+        // Compute aggregate metrics
+        const totalOpen = allTickets.filter(t => t.status !== 'closed').length;
+        const totalHighRisk = analysis.filter(a => a.status !== 'closed' && a.slaRisk === 'critical').length;
+        const totalBreached = analysis.filter(a => a.status !== 'closed' && a.slaRisk === 'breached').length;
+        const totalDuplicates = analysis.filter(a => a.status !== 'closed' && a.isPotentialDuplicate).length;
+
+        res.json({
+            analysis,
+            summary: {
+                totalOpen,
+                totalHighRisk,
+                totalBreached,
+                totalDuplicates
+            }
+        });
+    } catch (err) {
+        console.error('AI ticket analysis error:', err);
+        res.status(500).json({ error: err.message || 'AI Ticket diagnostics failed' });
     }
 });
 

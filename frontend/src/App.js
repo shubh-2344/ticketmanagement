@@ -11,11 +11,15 @@ import AdminUserControl from './AdminUserControl';
 import AdminProfile from './AdminProfile';
 import AvailableDevices from './AvailableDevices';
 import Toast from './Toast';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import AssetLifecycleDashboard from './AssetLifecycleDashboard';
+import AIDashboard from './AIDashboard';
 
 function App() {
   const [view, setView] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('dashboard-theme') || '');
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedDeviceForRequest, setSelectedDeviceForRequest] = useState(null);
@@ -247,6 +251,24 @@ function App() {
     setView('detail');
   };
 
+  const handleViewTicketById = (ticketId) => {
+    const foundTicket = tickets.find(t => t.id === ticketId);
+    if (foundTicket) {
+      setSelectedTicket(foundTicket);
+      setView('detail');
+    } else {
+      axios.get(`${API_URL}/tickets/${ticketId}`)
+        .then(res => {
+          setSelectedTicket(res.data);
+          setView('detail');
+        })
+        .catch(err => {
+          console.error('Error fetching ticket detail:', err);
+          alert('Could not open ticket details.');
+        });
+    }
+  };
+
   // Render Auth screen if not authenticated
   if (!token || !currentUser) {
     return <Auth API_URL={API_URL} onAuthSuccess={handleAuthSuccess} />;
@@ -264,7 +286,7 @@ function App() {
   };
 
   return (
-    <div className="app ai-theme">
+    <div className={`app ai-theme ${currentTheme}`}>
       {/* Top-Left Reusable Toast Notification */}
       <Toast toast={toast} onClose={() => setToast(null)} />
 
@@ -322,6 +344,36 @@ function App() {
                 {currentUser.role.toUpperCase()}
               </span>
             </div>
+            <div className="theme-selector-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted, #94a3b8)' }}>🎨 Theme:</span>
+              <select
+                value={currentTheme}
+                onChange={(e) => {
+                  const newTheme = e.target.value;
+                  setCurrentTheme(newTheme);
+                  localStorage.setItem('dashboard-theme', newTheme);
+                }}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  background: 'rgba(30, 41, 59, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'var(--text-main, #f8fafc)',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="">Professional Dark</option>
+                <option value="theme-glassmorphism">Glassmorphism</option>
+                <option value="theme-azure-enterprise">Azure Enterprise</option>
+                <option value="theme-midnight-blue">Midnight Blue</option>
+                <option value="theme-cyber-security">Cyber Security</option>
+                <option value="theme-material-design">Material Design</option>
+                <option value="theme-minimal-light">Minimal Light</option>
+                <option value="theme-high-contrast">High Contrast</option>
+              </select>
+            </div>
             <button className="btn-logout" onClick={handleLogout}>
               🚪 Logout
             </button>
@@ -361,13 +413,31 @@ function App() {
           </button>
 
           {(currentUser.role === 'manager' || currentUser.role === 'admin') && (
-            <button
-              className={`nav-button ${view === 'approvals' ? 'active' : ''}`}
-              onClick={() => setView('approvals')}
-            >
-              <span className="nav-icon">✅</span>
-              <span>Approvals Queue</span>
-            </button>
+            <>
+              <button
+                className={`nav-button ${view === 'approvals' ? 'active' : ''}`}
+                onClick={() => setView('approvals')}
+              >
+                <span className="nav-icon">✅</span>
+                <span>Approvals Queue</span>
+              </button>
+
+              <button
+                className={`nav-button ${view === 'analytics' ? 'active' : ''}`}
+                onClick={() => setView('analytics')}
+              >
+                <span className="nav-icon">📈</span>
+                <span>Analytics Insights</span>
+              </button>
+
+              <button
+                className={`nav-button ${view === 'ai-dashboard' ? 'active' : ''}`}
+                onClick={() => setView('ai-dashboard')}
+              >
+                <span className="nav-icon">🤖</span>
+                <span>AI Diagnostics</span>
+              </button>
+            </>
           )}
 
           {/* ADMIN ONLY NAVIGATION GROUP */}
@@ -380,6 +450,15 @@ function App() {
               >
                 <span className="nav-icon">📦</span>
                 <span>Inventory Control</span>
+                <span className="admin-tag">ADMIN</span>
+              </button>
+
+              <button
+                className={`nav-button admin-btn ${view === 'asset-lifecycle' ? 'active' : ''}`}
+                onClick={() => setView('asset-lifecycle')}
+              >
+                <span className="nav-icon">🖥️</span>
+                <span>Asset Lifecycle</span>
                 <span className="admin-tag">ADMIN</span>
               </button>
 
@@ -494,6 +573,41 @@ function App() {
                 <div className="denied-icon">🔒</div>
                 <h2>Access Restricted</h2>
                 <p>Only administrators can access Admin Profile settings.</p>
+                <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                  Return to Dashboard
+                </button>
+              </div>
+            )
+          )}
+
+          {/* ENTERPRISE EXTENSIONS: ANALYTICS, ASSETS, AI DASHBOARD */}
+          {!loading && view === 'analytics' && (
+            <AnalyticsDashboard tickets={tickets} />
+          )}
+
+          {!loading && view === 'asset-lifecycle' && (
+            currentUser.role === 'admin' ? (
+              <AssetLifecycleDashboard API_URL={API_URL} onSelectTicket={handleViewTicketById} />
+            ) : (
+              <div className="access-denied-card">
+                <div className="denied-icon">🔒</div>
+                <h2>Access Restricted</h2>
+                <p>Only administrators can access the Asset Lifecycle Tracking Dashboard.</p>
+                <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                  Return to Dashboard
+                </button>
+              </div>
+            )
+          )}
+
+          {!loading && view === 'ai-dashboard' && (
+            currentUser.role === 'admin' || currentUser.role === 'manager' ? (
+              <AIDashboard API_URL={API_URL} onSelectTicket={handleViewTicketById} />
+            ) : (
+              <div className="access-denied-card">
+                <div className="denied-icon">🔒</div>
+                <h2>Access Restricted</h2>
+                <p>Only administrators or managers can access the AI Copilot Diagnostics Dashboard.</p>
                 <button className="btn-return-home" onClick={() => setView('dashboard')}>
                   Return to Dashboard
                 </button>

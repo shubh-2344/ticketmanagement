@@ -7,32 +7,52 @@
   font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Core CSS Variables for Theme Support */
+:root {
+  --bg-body: #0b0f19;
+  --bg-app: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #090d16 100%);
+  --bg-header: rgba(15, 23, 42, 0.75);
+  --bg-sidebar: rgba(15, 23, 42, 0.4);
+  --bg-card: rgba(15, 23, 42, 0.7);
+  --border-card: 1px solid rgba(255, 255, 255, 0.08);
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --accent: #3b82f6;
+  --accent-gradient: linear-gradient(90deg, #38bdf8, #818cf8);
+  --shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  --radius-card: 20px;
+  --backdrop: blur(16px);
+}
+
 body {
   font-family: 'Century Gothic', CenturyGothic, AppleGothic, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #0b0f19;
-  color: #f1f5f9;
+  background-color: var(--bg-body);
+  color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .ai-theme {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #090d16 100%);
+  background: var(--bg-app);
   background-attachment: fixed;
+  transition: background 0.3s ease;
 }
 
 /* Header */
 .header {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-header);
+  backdrop-filter: var(--backdrop);
+  -webkit-backdrop-filter: var(--backdrop);
+  border-bottom: var(--border-card);
   padding: 16px 28px;
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: background 0.3s ease, border-bottom 0.3s ease;
 }
 
 .header-content {
@@ -111,10 +131,10 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--bg-sidebar);
   padding: 6px 14px 6px 8px;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: var(--border-card);
 }
 
 .user-avatar {
@@ -210,15 +230,15 @@ body {
   gap: 12px;
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(30, 41, 59, 0.45);
-  border-radius: 12px;
+  border: var(--border-card);
+  background: var(--bg-sidebar);
+  border-radius: var(--radius-card);
   font-size: 14px;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(8px);
+  backdrop-filter: var(--backdrop);
 }
 
 .nav-button:hover {
@@ -288,14 +308,15 @@ body {
 /* Main Content Surface */
 .main-content {
   flex: 1;
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 20px;
+  background: var(--bg-card);
+  backdrop-filter: var(--backdrop);
+  -webkit-backdrop-filter: var(--backdrop);
+  border-radius: var(--radius-card);
   padding: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  border: var(--border-card);
+  box-shadow: var(--shadow);
   min-height: 550px;
+  transition: all 0.3s ease;
 }
 
 /* Loading Spinner */
@@ -643,4 +664,152 @@ body {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+/* --- ENTERPRISE CONFIGURABLE THEMES --- */
+
+/* 2. Glassmorphism Theme */
+.theme-glassmorphism {
+  --bg-body: #05070c;
+  --bg-app: linear-gradient(135deg, #0f172a 0%, #090d16 100%);
+  --bg-header: rgba(255, 255, 255, 0.03);
+  --bg-sidebar: rgba(255, 255, 255, 0.02);
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --border-card: 1px solid rgba(255, 255, 255, 0.08);
+  --backdrop: blur(25px);
+  --accent-gradient: linear-gradient(90deg, #ec4899, #8b5cf6);
+  --accent: #8b5cf6;
+}
+
+/* 3. Azure Enterprise Theme */
+.theme-azure-enterprise {
+  --bg-body: #f3f4f6;
+  --bg-app: linear-gradient(180deg, #e0f2fe 0%, #f3f4f6 100%);
+  --bg-header: #ffffff;
+  --bg-sidebar: rgba(2, 132, 199, 0.05);
+  --bg-card: #ffffff;
+  --border-card: 1px solid #e2e8f0;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --accent: #0284c7;
+  --accent-gradient: linear-gradient(90deg, #0284c7, #0369a1);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --backdrop: none;
+  --radius-card: 12px;
+}
+.theme-azure-enterprise .header-brand h1 {
+  color: #0369a1 !important;
+}
+.theme-azure-enterprise .nav-section-title {
+  color: #0284c7 !important;
+}
+.theme-azure-enterprise .user-name {
+  color: #1e293b !important;
+}
+
+/* 4. Midnight Blue Theme */
+.theme-midnight-blue {
+  --bg-body: #020617;
+  --bg-app: radial-gradient(circle at top, #1e3a8a 0%, #020617 80%);
+  --bg-header: rgba(15, 23, 42, 0.85);
+  --bg-sidebar: rgba(30, 41, 59, 0.5);
+  --bg-card: rgba(30, 41, 59, 0.7);
+  --border-card: 1px solid rgba(59, 130, 246, 0.25);
+  --accent: #3b82f6;
+  --accent-gradient: linear-gradient(90deg, #3b82f6, #60a5fa);
+  --backdrop: blur(10px);
+}
+
+/* 5. Cyber Security Theme */
+.theme-cyber-security {
+  --bg-body: #000000;
+  --bg-app: radial-gradient(circle, #051607 0%, #000000 100%);
+  --bg-header: #020d03;
+  --bg-sidebar: #010802;
+  --bg-card: #020d03;
+  --border-card: 1px solid #10b981;
+  --text-main: #10b981;
+  --text-muted: #059669;
+  --accent: #10b981;
+  --accent-gradient: linear-gradient(90deg, #10b981, #34d399);
+  --shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+  --backdrop: none;
+  --radius-card: 4px;
+}
+.theme-cyber-security * {
+  font-family: 'Courier New', Courier, monospace !important;
+}
+
+/* 6. Material Design Theme */
+.theme-material-design {
+  --bg-body: #eceff1;
+  --bg-app: #eceff1;
+  --bg-header: #37474f;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --border-card: 1px solid #cfd8dc;
+  --text-main: #263238;
+  --text-muted: #546e7a;
+  --accent: #00897b;
+  --accent-gradient: linear-gradient(90deg, #00897b, #00acc1);
+  --shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  --backdrop: none;
+  --radius-card: 8px;
+}
+.theme-material-design .header-brand h1 {
+  color: #ffffff !important;
+}
+.theme-material-design .user-name {
+  color: #ffffff !important;
+}
+
+/* 7. Minimal Light Theme */
+.theme-minimal-light {
+  --bg-body: #ffffff;
+  --bg-app: #ffffff;
+  --bg-header: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --border-card: 1px solid #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --accent: #0f172a;
+  --accent-gradient: linear-gradient(90deg, #0f172a, #334155);
+  --shadow: none;
+  --backdrop: none;
+  --radius-card: 0px;
+}
+.theme-minimal-light .header {
+  border-bottom: 1px solid #e2e8f0;
+}
+.theme-minimal-light .header-brand h1 {
+  color: #0f172a !important;
+}
+.theme-minimal-light .user-name {
+  color: #0f172a !important;
+}
+
+/* 8. High-Contrast Accessibility Mode */
+.theme-high-contrast {
+  --bg-body: #000000;
+  --bg-app: #000000;
+  --bg-header: #000000;
+  --bg-sidebar: #000000;
+  --bg-card: #000000;
+  --border-card: 2px solid #ffff00;
+  --text-main: #ffffff;
+  --text-muted: #ffff00;
+  --accent: #ffff00;
+  --accent-gradient: linear-gradient(90deg, #ffff00, #ffff00);
+  --shadow: none;
+  --backdrop: none;
+  --radius-card: 0px;
+}
+.theme-high-contrast * {
+  color: #ffffff !important;
+  border-color: #ffff00 !important;
+}
+.theme-high-contrast a, .theme-high-contrast button {
+  color: #ffff00 !important;
+  text-decoration: underline !important;
 }

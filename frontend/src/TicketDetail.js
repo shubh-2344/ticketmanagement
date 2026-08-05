@@ -33,6 +33,79 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
   const [extendHours, setExtendHours] = useState(24);
   const [extendReason, setExtendReason] = useState('');
 
+  const handleReturnDevice = async () => {
+    try {
+      const confirmed = await window.showConfirm({
+        title: 'Return Device',
+        message: 'Are you sure you want to mark this device as returned?',
+        confirmText: 'Return',
+        cancelText: 'Cancel',
+        confirmType: 'warning'
+      });
+      if (!confirmed) return;
+
+      await axios.put(`${API_URL}/tickets/${ticket.id}/return-device`);
+      alert('Device marked as returned. Awaiting Administrator verification.');
+      window.location.reload();
+    } catch (err) {
+      console.error('Error marking device as returned:', err);
+      alert(err.response?.data?.error || 'Failed to mark device as returned.');
+    }
+  };
+
+  const handleVerifyReturn = async () => {
+    try {
+      const confirmed = await window.showConfirm({
+        title: 'Verify Physical Return',
+        message: 'Have you physically verified that the device is returned to stock?',
+        confirmText: 'Verify Return',
+        cancelText: 'Cancel',
+        confirmType: 'success'
+      });
+      if (!confirmed) return;
+
+      await axios.put(`${API_URL}/tickets/${ticket.id}/verify-return`);
+      alert('Device return verified successfully. Asset inventory restocked.');
+      window.location.reload();
+    } catch (err) {
+      console.error('Error verifying device return:', err);
+      alert(err.response?.data?.error || 'Verification of return failed.');
+    }
+  };
+
+  const aiDiagnostics = React.useMemo(() => {
+    const descLower = (ticket.description || '').toLowerCase();
+    const titleLower = (ticket.title || '').toLowerCase();
+    const text = `${titleLower} ${descLower}`;
+
+    let category = ticket.category || 'Software';
+    if (text.includes('login') || text.includes('password') || text.includes('auth') || text.includes('permission') || text.includes('account') || text.includes('sso')) {
+      category = 'Access & Credentials';
+    } else if (text.includes('wifi') || text.includes('internet') || text.includes('vpn') || text.includes('network') || text.includes('router') || text.includes('server')) {
+      category = 'Network & Infrastructure';
+    } else if (text.includes('macbook') || text.includes('dell') || text.includes('monitor') || text.includes('laptop') || text.includes('keyboard') || text.includes('mouse') || text.includes('hardware') || text.includes('screen') || text.includes('device')) {
+      category = 'Hardware & Assets';
+    }
+
+    let recommendedEngineer = 'General IT Helpdesk';
+    if (category === 'Hardware & Assets') recommendedEngineer = 'Alice Vance (Hardware Specialist)';
+    else if (category === 'Network & Infrastructure') recommendedEngineer = 'Charlie Devops (Network Architect)';
+    else if (category === 'Access & Credentials') recommendedEngineer = 'Security Ops Team';
+    else recommendedEngineer = 'Bob Miller (Senior Software Engineer)';
+
+    const firstSentence = ticket.description ? ticket.description.split(/[.!?]/)[0] : '';
+    const aiSummary = firstSentence.length > 120 ? firstSentence.substring(0, 120) + '...' : firstSentence || 'Awaiting description...';
+
+    const slaRisk = (ticket.priority === 'high' || ticket.priority === 'urgent') ? 'CRITICAL RISK' : 'HEALTHY';
+
+    return {
+      category,
+      recommendedEngineer,
+      aiSummary,
+      slaRisk
+    };
+  }, [ticket]);
+
   const handleExtendSLA = async (e) => {
     e.preventDefault();
     if (!extendReason.trim()) {
@@ -328,6 +401,38 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           {/* SLA Resolution Progress Dashboard */}
           {renderSLADashboard()}
 
+          <section className="section ai-copilot-panel-card" style={{
+            background: 'rgba(99, 102, 241, 0.05)',
+            border: '1px dashed rgba(99, 102, 241, 0.3)',
+            borderRadius: '12px',
+            padding: '16px',
+            position: 'relative',
+            overflow: 'hidden',
+            marginBottom: '20px'
+          }}>
+            <div className="ai-glow-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span className="ai-copilot-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#818cf8', display: 'inline-block', boxShadow: '0 0 8px #818cf8' }}></span>
+              <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#a5b4fc', fontWeight: '600' }}>🤖 AI Copilot Diagnostics</h3>
+            </div>
+            <div className="ai-copilot-body" style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>
+              <p style={{ margin: '0 0 12px 0', lineHeight: '1.4' }}><strong>Auto Summary:</strong> {aiDiagnostics.aiSummary}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem' }}>
+                  <span style={{ color: '#94a3b8', marginRight: '6px' }}>Category Fit:</span>
+                  <strong style={{ color: '#38bdf8' }}>{aiDiagnostics.category}</strong>
+                </div>
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem' }}>
+                  <span style={{ color: '#94a3b8', marginRight: '6px' }}>Breach Threat:</span>
+                  <strong style={{ color: aiDiagnostics.slaRisk === 'CRITICAL RISK' ? '#ef4444' : '#10b981' }}>{aiDiagnostics.slaRisk}</strong>
+                </div>
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem' }}>
+                  <span style={{ color: '#94a3b8', marginRight: '6px' }}>Suggested Expert:</span>
+                  <strong style={{ color: '#c084fc' }}>{aiDiagnostics.recommendedEngineer}</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section className="section">
             <h2>Description</h2>
             <p className="description">{ticket.description}</p>
@@ -358,6 +463,26 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 <span className="label">Created Date:</span>
                 <span className="value">{formatDate(ticket.created_at)}</span>
               </div>
+              {ticket.type === 'device-request' && (
+                <>
+                  <div className="detail-item">
+                    <span className="label">Reservation Duration:</span>
+                    <span className="value">
+                      {ticket.reservation_duration === 'custom' ? 'Custom Date' : `${ticket.reservation_duration} Days`}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Expected Return Date:</span>
+                    <span className="value text-amber">{formatDate(ticket.expected_return_date) || 'Not specified'}</span>
+                  </div>
+                  {ticket.returned_at && (
+                    <div className="detail-item">
+                      <span className="label">Returned Date:</span>
+                      <span className="value text-cyan">{formatDate(ticket.returned_at)}</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </section>
 
@@ -560,6 +685,35 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 onClick={() => onClose(ticket.id)}
               >
                 ✓ Close Ticket
+              </button>
+            </div>
+          )}
+
+          {/* Device Return Actions */}
+          {ticket.status === 'approved' && ticket.assigned_device_name && !ticket.returned_at && (isRequester || isAdmin || isManager) && (
+            <div className="action-panel">
+              <h3>Device Return Workflow</h3>
+              <p className="admin-help-text">Click below to submit this device back to IT inventory.</p>
+              <button
+                className="btn btn-approve"
+                style={{ background: 'linear-gradient(135deg, #a855f7, #7c3aed)', width: '100%' }}
+                onClick={handleReturnDevice}
+              >
+                📦 Mark Device as Returned
+              </button>
+            </div>
+          )}
+
+          {ticket.status === 'return_pending_verification' && isAdmin && (
+            <div className="action-panel admin-panel-card">
+              <h3>📦 Verify Device Return</h3>
+              <p className="admin-help-text">Please confirm that the user has returned the device to IT inventory.</p>
+              <button
+                className="btn btn-approve"
+                style={{ width: '100%' }}
+                onClick={handleVerifyReturn}
+              >
+                ✓ Confirm Physical Return
               </button>
             </div>
           )}
