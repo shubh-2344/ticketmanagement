@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import axios from 'axios';
 import './Auth.css';
+
+const generateStars = (count) => {
+  const shadows = [];
+  for (let i = 0; i < count; i++) {
+    const x = Math.floor(Math.random() * 2000);
+    const y = Math.floor(Math.random() * 2000);
+    shadows.push(`${x}px ${y}px #FFF`);
+  }
+  return shadows.join(', ');
+};
 
 function Auth({ API_URL, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,6 +22,32 @@ function Auth({ API_URL, onAuthSuccess }) {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const starStyles = useMemo(() => {
+    const s1 = generateStars(700);
+    const s2 = generateStars(200);
+    const s3 = generateStars(100);
+    return `
+      #stars {
+        box-shadow: ${s1};
+      }
+      #stars::after {
+        box-shadow: ${s1};
+      }
+      #stars2 {
+        box-shadow: ${s2};
+      }
+      #stars2::after {
+        box-shadow: ${s2};
+      }
+      #stars3 {
+        box-shadow: ${s3};
+      }
+      #stars3::after {
+        box-shadow: ${s3};
+      }
+    `;
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -45,6 +81,10 @@ function Auth({ API_URL, onAuthSuccess }) {
 
   return (
     <div className="auth-container">
+      <style dangerouslySetInnerHTML={{ __html: starStyles }} />
+      <div id="stars"></div>
+      <div id="stars2"></div>
+      <div id="stars3"></div>
       <div className="auth-card">
         <div className="auth-header">
           <img src="/logo.png" alt="Portal Logo" className="auth-logo-img" />
