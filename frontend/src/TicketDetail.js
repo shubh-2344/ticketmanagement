@@ -231,14 +231,18 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
   const handleAdminDeviceAssignSubmit = async (e) => {
     e.preventDefault();
     if (!deviceAssignData.assigned_device_name.trim()) {
-      alert('Please enter or select the assigned device name.');
+      alert(ticket.type === 'issue' ? 'Please enter a resolution summary.' : 'Please enter or select the assigned device name.');
       return;
     }
 
+    const isIssue = ticket.type === 'issue';
+
     const confirmed = await window.showConfirm({
-      title: 'Confirm Hardware Assignment',
-      message: `Are you sure you want to assign "${deviceAssignData.assigned_device_name}" to fulfill this request?`,
-      confirmText: 'Assign & Fulfill',
+      title: isIssue ? 'Confirm Ticket Resolution' : 'Confirm Hardware Assignment',
+      message: isIssue 
+        ? `Are you sure you want to resolve and complete ticket "${ticket.title}"?`
+        : `Are you sure you want to assign "${deviceAssignData.assigned_device_name}" to fulfill this request?`,
+      confirmText: isIssue ? 'Resolve Ticket' : 'Assign & Fulfill',
       cancelText: 'Cancel',
       confirmType: 'success'
     });
@@ -250,12 +254,12 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         assigned_device_name: deviceAssignData.assigned_device_name,
         assignment_description: deviceAssignData.assignment_description
       });
-      alert('Device assigned and ticket fulfilled successfully!');
+      alert(isIssue ? 'Incident resolved and completed successfully!' : 'Device assigned and ticket fulfilled successfully!');
       setShowDeviceAssignForm(false);
       window.location.reload();
     } catch (err) {
-      console.error('Error assigning device:', err);
-      alert(err.response?.data?.error || 'Device assignment failed.');
+      console.error('Error fulfilling ticket:', err);
+      alert(err.response?.data?.error || 'Action failed.');
     }
   };
 
@@ -533,8 +537,8 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
           </section>
 
-          {/* STAGE 2: Manager Review Details */}
-          {ticket.approver_name && (
+          {/* STAGE 2: Manager Review Details (ONLY for Device Request Tickets) */}
+          {ticket.type === 'device-request' && ticket.approver_name && (
             <section className={`section ${ticket.status === 'rejected' ? 'rejection-info' : 'approval-info'}`}>
               <h2>STAGE 2: Manager Review Status</h2>
               <div className="details-grid">
