@@ -1,5 +1,6 @@
 import React from 'react';
 import './TicketList.css';
+import ViewToggle from './components/ViewToggle';
 import { 
   DevicesIcon, 
   HardwareIcon, 
@@ -7,7 +8,7 @@ import {
   SoftwareIcon 
 } from './components/Icons';
 
-function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
+function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onViewModeChange }) {
   const getStatusBadge = (status, type) => {
     switch (status) {
       case 'pending_manager_approval':
@@ -19,7 +20,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
       case 'rejected':
         return { text: 'Denied by Manager', bg: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5' };
       case 'closed':
-        return { text: 'Closed', bg: 'rgba(100, 116, 139, 0.2)', border: '1px solid rgba(100, 116, 139, 0.4)', color: '#cbd5e1' };
+        return { text: 'Closed / Resolved', bg: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#4ade80' };
       default:
         return { text: status.toUpperCase(), bg: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#38bdf8' };
     }
@@ -54,9 +55,11 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
 
   return (
     <div className="ticket-list">
-      <div className="list-title-bar">
+      <div className="list-title-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>{currentUser.role === 'employee' ? 'My Submitted Tickets' : 'All System Tickets'}</h2>
-        <span className="layout-indicator-tag">Layout: {viewMode.toUpperCase()}</span>
+        {onViewModeChange && (
+          <ViewToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
+        )}
       </div>
 
       {tickets.length === 0 ? (

@@ -1002,7 +1002,7 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
 
         const result = await pool.query(`
             UPDATE tickets
-            SET status = 'approved',
+            SET status = 'closed',
                 inventory_id = COALESCE($1, inventory_id),
                 assigned_device_name = $2,
                 assignment_description = $3,

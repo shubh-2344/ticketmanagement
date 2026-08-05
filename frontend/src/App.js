@@ -563,7 +563,8 @@ function App() {
                   tickets={tickets}
                   currentUser={currentUser}
                   onViewTicket={handleViewTicket}
-                  viewMode={ticketViewMode}
+                  viewMode={globalViewMode}
+                  onViewModeChange={handleGlobalViewModeChange}
                 />
               )}
 
