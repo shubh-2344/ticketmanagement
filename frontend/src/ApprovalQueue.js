@@ -130,7 +130,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
               className={`queue-tab admin-tab ${activeTab === 'issue_queue' ? 'active' : ''}`}
               onClick={() => setActiveTab('issue_queue')}
             >
-              🚨 Open Incidents ({issueQueue.length})
+              Open Incidents ({issueQueue.length})
             </button>
           )}
 

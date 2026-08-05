@@ -455,7 +455,7 @@ function App() {
                 className={`nav-button ${view === 'open-incidents' ? 'active' : ''}`}
                 onClick={() => setView('open-incidents')}
               >
-                <span className="nav-icon">🚨</span>
+                <span className="nav-icon"><InventoryIcon size={18} /></span>
                 <span>Open Incidents</span>
               </button>
 
