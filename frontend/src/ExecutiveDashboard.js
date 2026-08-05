@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import CountUp from './components/CountUp';
 import { 
   SparklesIcon, 
   ClockIcon, 
@@ -133,7 +134,9 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Backlog</span>
             <span style={{ color: 'var(--accent)' }}><DashboardIcon size={22} /></span>
           </div>
-          <div style={{ fontSize: '32px', fontWeight: '800' }}>{metrics.open} Open</div>
+          <div style={{ fontSize: '32px', fontWeight: '800' }}>
+            <CountUp end={metrics.open} duration={1200} suffix=" Open" />
+          </div>
           <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>From {metrics.total} total submitted tickets</p>
         </div>
 
@@ -143,7 +146,9 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SLA Compliance</span>
             <span style={{ color: '#10b981' }}><SuccessIcon size={22} /></span>
           </div>
-          <div style={{ fontSize: '32px', fontWeight: '800', color: '#10b981' }}>{metrics.slaCompliance}%</div>
+          <div style={{ fontSize: '32px', fontWeight: '800', color: '#10b981' }}>
+            <CountUp end={metrics.slaCompliance} duration={1200} suffix="%" />
+          </div>
           <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Target threshold met: 90%</p>
         </div>
 
@@ -154,7 +159,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <span style={{ color: '#ef4444' }}><ClockIcon size={22} /></span>
           </div>
           <div style={{ fontSize: '32px', fontWeight: '800', color: metrics.slaBreached > 0 ? '#ef4444' : 'var(--text-main)' }}>
-            {metrics.slaBreached} Overdue
+            <CountUp end={metrics.slaBreached} duration={1200} suffix=" Overdue" />
           </div>
           <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: '#f59e0b' }}>⚠️ {metrics.slaAtRisk} critical risk tickets</p>
         </div>
@@ -166,7 +171,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <span style={{ color: 'var(--accent-secondary, #06b6d4)' }}><DevicesIcon size={22} /></span>
           </div>
           <div style={{ fontSize: '32px', fontWeight: '800', color: 'var(--accent-secondary, #06b6d4)' }}>
-            {metrics.utilization}%
+            <CountUp end={metrics.utilization} duration={1200} suffix="%" />
           </div>
           <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', marginTop: '12px', overflow: 'hidden' }}>
             <div style={{ width: animate ? `${metrics.utilization}%` : '0%', height: '100%', background: 'var(--accent-secondary, #06b6d4)', transition: 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}></div>

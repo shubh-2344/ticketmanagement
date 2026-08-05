@@ -15,6 +15,7 @@ import AnalyticsDashboard from './AnalyticsDashboard';
 import AssetLifecycleDashboard from './AssetLifecycleDashboard';
 import AIDashboard from './AIDashboard';
 import ExecutiveDashboard from './ExecutiveDashboard';
+import NetworkBackground from './components/NetworkBackground';
 import { 
   DashboardIcon, 
   DevicesIcon, 
@@ -326,6 +327,8 @@ function App() {
 
   return (
     <div className={`app ai-theme ${activeTheme}`}>
+      <NetworkBackground opacity={0.07} />
+
       {/* Top-Left Reusable Toast Notification */}
       <Toast toast={toast} onClose={() => setToast(null)} />
 
@@ -362,7 +365,6 @@ function App() {
             <h1>
               Ticket Management
             </h1>
-            <span className="ai-status-pulse">● System Live</span>
           </div>
 
           <div className="header-right">

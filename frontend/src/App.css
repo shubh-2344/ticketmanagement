@@ -893,3 +893,16 @@ body {
   color: #ffff00 !important;
   text-decoration: underline !important;
 }
+
+/* KPI Card & Enterprise Analytics Enhancements */
+.kpi-hover-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25) !important;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 12px var(--accent);
+  z-index: 5;
+}
