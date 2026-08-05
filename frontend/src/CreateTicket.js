@@ -226,6 +226,16 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
           </div>
         </div>
 
+        {formData.type === 'issue' && (
+          <div className="admin-direct-banner" style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '14px 16px', borderRadius: '10px', marginBottom: '20px', color: '#38bdf8', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '20px' }}>🛡️</span>
+            <div>
+              <strong style={{ display: 'block', fontSize: '13.5px', color: '#f8fafc', marginBottom: '2px' }}>Direct System Administrator Route</strong>
+              <span>Issue reports submit directly to System Administrators & Specialist Engineers for immediate resolution, bypassing manager review.</span>
+            </div>
+          </div>
+        )}
+
         {formData.type === 'device-request' && (
           <div className="form-group">
             <label htmlFor="inventory_id">Select Item from Company Inventory (Optional)</label>

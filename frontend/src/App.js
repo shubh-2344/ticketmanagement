@@ -337,7 +337,7 @@ function App() {
         <div className="confirm-modal-overlay" onClick={confirmConfig.onCancel}>
           <div className="confirm-modal-box" onClick={(e) => e.stopPropagation()}>
             <div className={`confirm-icon-badge ${confirmConfig.confirmType}`}>
-              {confirmConfig.confirmType === 'danger' ? '🗑️' : confirmConfig.confirmType === 'warning' ? '⚠️' : '❓'}
+              {confirmConfig.confirmType === 'danger' ? '🗑️' : confirmConfig.confirmType === 'warning' ? '⚠️' : (confirmConfig.confirmType === 'success' || confirmConfig.confirmType === 'info' ? '✅' : '❓')}
             </div>
             <h3 className="confirm-modal-title">{confirmConfig.title}</h3>
             <p className="confirm-modal-message">{confirmConfig.message}</p>
@@ -527,6 +527,8 @@ function App() {
                     onSelectTicket={handleViewTicketById} 
                     onViewAllTickets={() => setView('tickets-list')} 
                     onViewInventory={() => setView('inventory')} 
+                    API_URL={API_URL}
+                    onRefresh={fetchTickets}
                   />
                 ) : (
                   <TicketList

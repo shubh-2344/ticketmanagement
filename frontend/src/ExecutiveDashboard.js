@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import axios from 'axios';
 import CountUp from './components/CountUp';
 import { 
   SparklesIcon, 
@@ -9,33 +10,99 @@ import {
   SuccessIcon
 } from './components/Icons';
 
-function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTickets, onViewInventory }) {
+function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTickets, onViewInventory, API_URL, onRefresh }) {
   const [animate, setAnimate] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
   useEffect(() => {
     const timer = setTimeout(() => setAnimate(true), 50);
     return () => clearTimeout(timer);
   }, []);
+
+  // Real-time live countdown ticker updating every 1 second without page refresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Helper function to calculate SLA details dynamically
+  const getTicketSLAInfo = (t, currentTime) => {
+    const target = t.target_resolution_date 
+      ? new Date(t.target_resolution_date).getTime() 
+      : (new Date(t.created_at).getTime() + (t.priority === 'high' ? 24 : t.priority === 'low' ? 72 : 48) * 3600000);
+    
+    const diff = target - currentTime;
+    const isClosed = t.status === 'closed' || t.status === 'resolved' || t.status === 'approved';
+
+    let slaStatus = 'Normal';
+    if (diff <= 0) {
+      slaStatus = 'Breached';
+    } else if (diff <= 12 * 3600 * 1000) {
+      slaStatus = 'At Risk';
+    }
+
+    // Dynamic Risk Level Calculation
+    let riskLevel = 'Low';
+    if (slaStatus === 'Breached') {
+      riskLevel = 'High';
+    } else if (slaStatus === 'At Risk') {
+      if (t.priority === 'high' || t.priority === 'urgent' || diff <= 4 * 3600 * 1000) {
+        riskLevel = 'High';
+      } else if (diff <= 8 * 3600 * 1000) {
+        riskLevel = 'Medium';
+      } else {
+        riskLevel = 'Low';
+      }
+    }
+
+    // Dynamic Time Remaining String (live real-time countdown format)
+    let timeRemainingStr = '';
+    if (isClosed) {
+      timeRemainingStr = 'Resolved';
+    } else if (diff <= 0) {
+      const overdueMs = Math.abs(diff);
+      const hrs = Math.floor(overdueMs / 3600000);
+      const mins = Math.floor((overdueMs % 3600000) / 60000);
+      const secs = Math.floor((overdueMs % 60000) / 1000);
+      timeRemainingStr = `Overdue: ${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs}s`;
+    } else {
+      const hrs = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      timeRemainingStr = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs}s`;
+    }
+
+    const escalationLevel = t.escalation_level || 'Engineer';
+    const assignedEngineer = t.assigned_engineer || t.approver_name || t.manager_name || 'IT Helpdesk Specialist';
+
+    return {
+      target,
+      diff,
+      slaStatus,
+      riskLevel,
+      timeRemainingStr,
+      escalationLevel,
+      assignedEngineer,
+      isClosed
+    };
+  };
+
+  // KPI Metrics Calculation
   const metrics = useMemo(() => {
     const total = tickets.length;
     const open = tickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
     const closed = tickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
     
-    // SLA Met / Breached calculation
     let slaBreached = 0;
     let slaAtRisk = 0;
-    const now = Date.now();
 
     tickets.forEach(t => {
       if (t.status !== 'closed' && t.status !== 'resolved') {
-        const target = t.target_resolution_date ? new Date(t.target_resolution_date).getTime() : 0;
-        if (target) {
-          if (now > target) {
-            slaBreached++;
-          } else if (target - now < 12 * 60 * 60 * 1000) {
-            // Less than 12 hours remaining
-            slaAtRisk++;
-          }
-        }
+        const info = getTicketSLAInfo(t, now);
+        if (info.slaStatus === 'Breached') slaBreached++;
+        else if (info.slaStatus === 'At Risk') slaAtRisk++;
       }
     });
 
@@ -46,9 +113,8 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
           const returned = t.returned_at ? new Date(t.returned_at).getTime() : Date.now();
           return !target || returned <= target;
         }).length / closed) * 100)
-      : 94; // Mock fallback
+      : 94;
 
-    // Category breakdown
     const categories = { Laptop: 0, Monitor: 0, Software: 0, Access: 0, Other: 0 };
     tickets.forEach(t => {
       const cat = t.category || 'Other';
@@ -59,12 +125,10 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       else categories.Other++;
     });
 
-    // Asset utilization rate
-    const totalDevices = 120; // Simulated fleet total
+    const totalDevices = 120;
     const assignedDevices = tickets.filter(t => t.assigned_device_name && t.status !== 'closed').length;
     const utilization = Math.min(100, Math.round((assignedDevices / totalDevices) * 100));
 
-    // Dynamic Activity Feed
     const feed = tickets
       .slice(0, 5)
       .map(t => {
@@ -89,7 +153,56 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       utilization,
       feed
     };
-  }, [tickets]);
+  }, [tickets, now]);
+
+  // Actionable Tickets Filter for SLA Risk Monitor: Show ONLY 'At Risk' or 'Breached' tickets
+  const actionableTickets = useMemo(() => {
+    return tickets
+      .map(t => ({ ticket: t, sla: getTicketSLAInfo(t, now) }))
+      .filter(({ ticket, sla }) => !sla.isClosed && (sla.slaStatus === 'At Risk' || sla.slaStatus === 'Breached'));
+  }, [tickets, now]);
+
+  // Escalation Handler cycling: Engineer -> Team Lead -> Manager -> Admin
+  const handleEscalateTicket = async (ticket, currentLevel) => {
+    let nextLevel = 'Team Lead';
+    let nextEngineer = 'Lead Systems Specialist';
+
+    if (currentLevel === 'Engineer') {
+      nextLevel = 'Team Lead';
+      nextEngineer = 'Lead Systems Specialist';
+    } else if (currentLevel === 'Team Lead') {
+      nextLevel = 'Manager';
+      nextEngineer = 'IT Operations Manager';
+    } else if (currentLevel === 'Manager') {
+      nextLevel = 'Admin';
+      nextEngineer = 'Chief Admin Officer';
+    } else {
+      return;
+    }
+
+    const confirmed = await window.showConfirm({
+      title: '⚡ Escalate Ticket',
+      message: `Are you sure you want to escalate "${ticket.title}" to ${nextLevel} level (${nextEngineer})?`,
+      confirmText: `Escalate to ${nextLevel}`,
+      cancelText: 'Cancel',
+      confirmType: 'success' // Blue/green confirmation theme
+    });
+    if (!confirmed) return;
+
+    try {
+      if (API_URL) {
+        await axios.put(`${API_URL}/tickets/${ticket.id}/escalate`, {
+          escalation_level: nextLevel,
+          assigned_engineer: nextEngineer
+        });
+      }
+      alert(`Ticket successfully escalated to ${nextLevel}!`);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Escalation error:', err);
+      alert(err.response?.data?.error || 'Failed to escalate ticket');
+    }
+  };
 
   const isManager = currentUser?.role === 'manager';
 
@@ -155,7 +268,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
         {/* KPI 3 */}
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SLA Breach Alerts</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SLA Risk Monitor</span>
             <span style={{ color: '#ef4444' }}><ClockIcon size={22} /></span>
           </div>
           <div style={{ fontSize: '32px', fontWeight: '800', color: metrics.slaBreached > 0 ? '#ef4444' : 'var(--text-main)' }}>
@@ -228,47 +341,173 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
         </div>
       </div>
 
-      {/* Mini SLA and Urgent warnings section */}
+      {/* SLA Risk Monitor Section (Actionable Tickets Only) */}
       <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
-        <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px' }}>🚨 SLA Breach Risk Warnings</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, letterSpacing: '-0.3px' }}>🚨 SLA Risk Monitor</h3>
+            <span style={{ fontSize: '11px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 8px', borderRadius: '12px', fontWeight: '700' }}>
+              {actionableTickets.length} Actionable
+            </span>
+          </div>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>⏱️ Live Real-Time Updates</span>
+        </div>
         
-        {tickets.filter(t => t.status !== 'closed' && t.priority === 'high').length === 0 ? (
-          <div style={{ padding: '20px 0', textAlign: 'center', color: '#10b981', fontSize: '13px' }}>
-            🎉 Zero High Priority backlog items. SLA healthy!
+        {actionableTickets.length === 0 ? (
+          <div style={{ padding: '28px 0', textAlign: 'center', color: '#10b981', fontSize: '14px', fontWeight: '600' }}>
+            🎉 Zero active SLA risk or breached tickets. System SLA healthy!
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '10px 8px' }}>Ticket Title</th>
-                  <th style={{ padding: '10px 8px' }}>Requester</th>
-                  <th style={{ padding: '10px 8px' }}>Target Resolution</th>
-                  <th style={{ padding: '10px 8px' }}>Status</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>Actions</th>
+                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '12px' }}>
+                  <th style={{ padding: '12px 10px' }}>Ticket Title</th>
+                  <th style={{ padding: '12px 10px' }}>Assigned Engineer</th>
+                  <th style={{ padding: '12px 10px' }}>Priority</th>
+                  <th style={{ padding: '12px 10px' }}>Time Remaining</th>
+                  <th style={{ padding: '12px 10px' }}>SLA Status</th>
+                  <th style={{ padding: '12px 10px' }}>Risk Level</th>
+                  <th style={{ padding: '12px 10px' }}>Escalation Level</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {tickets.filter(t => t.status !== 'closed' && t.priority === 'high').slice(0, 3).map(t => (
-                  <tr key={t.id} style={{ borderBottom: 'var(--border-card)' }}>
-                    <td style={{ padding: '12px 8px', fontWeight: '600' }}>{t.title}</td>
-                    <td style={{ padding: '12px 8px' }}>{t.requester_name}</td>
-                    <td style={{ padding: '12px 8px', color: '#ef4444' }}>{new Date(t.target_resolution_date).toLocaleString()}</td>
-                    <td style={{ padding: '12px 8px' }}>
-                      <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '700' }}>
-                        {t.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                      <button 
-                        onClick={() => onSelectTicket(t.id)}
-                        style={{ padding: '4px 8px', borderRadius: '4px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer', fontSize: '11px' }}
+                {actionableTickets.map(({ ticket, sla }) => {
+                  const isHighRiskOrBreached = sla.riskLevel === 'High' || sla.slaStatus === 'Breached';
+                  const canEscalate = isHighRiskOrBreached && sla.escalationLevel !== 'Admin';
+
+                  return (
+                    <tr key={ticket.id} style={{ borderBottom: 'var(--border-card)', transition: 'background 0.2s ease' }}>
+                      {/* 1. Ticket Title */}
+                      <td 
+                        style={{ padding: '12px 10px', fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }}
+                        onClick={() => onSelectTicket(ticket.id)}
+                        title="Click to view details"
                       >
-                        Inspect
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        {ticket.title}
+                      </td>
+
+                      {/* 2. Assigned Engineer */}
+                      <td style={{ padding: '12px 10px', color: 'var(--text-main)', fontWeight: '500' }}>
+                        👤 {sla.assignedEngineer}
+                      </td>
+
+                      {/* 3. Priority */}
+                      <td style={{ padding: '12px 10px' }}>
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          textTransform: 'uppercase',
+                          background: ticket.priority === 'high' || ticket.priority === 'urgent' ? 'rgba(239, 68, 68, 0.15)' : ticket.priority === 'medium' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                          color: ticket.priority === 'high' || ticket.priority === 'urgent' ? '#ef4444' : ticket.priority === 'medium' ? '#f59e0b' : '#38bdf8',
+                          border: `1px solid ${ticket.priority === 'high' || ticket.priority === 'urgent' ? 'rgba(239, 68, 68, 0.3)' : ticket.priority === 'medium' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`
+                        }}>
+                          {ticket.priority.toUpperCase()}
+                        </span>
+                      </td>
+
+                      {/* 4. Time Remaining (Real-time live ticker!) */}
+                      <td style={{ 
+                        padding: '12px 10px', 
+                        fontWeight: '800', 
+                        fontFamily: 'monospace',
+                        fontSize: '13px',
+                        color: sla.slaStatus === 'Breached' ? '#ef4444' : '#f59e0b' 
+                      }}>
+                        ⏳ {sla.timeRemainingStr}
+                      </td>
+
+                      {/* 5. SLA Status (At Risk / Breached) */}
+                      <td style={{ padding: '12px 10px' }}>
+                        <span style={{
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          background: sla.slaStatus === 'Breached' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                          color: sla.slaStatus === 'Breached' ? '#ef4444' : '#f59e0b',
+                          border: `1px solid ${sla.slaStatus === 'Breached' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`
+                        }}>
+                          {sla.slaStatus === 'Breached' ? '🚨 BREACHED' : '⚠️ AT RISK'}
+                        </span>
+                      </td>
+
+                      {/* 6. Risk Level (Low / Medium / High) */}
+                      <td style={{ padding: '12px 10px' }}>
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          background: sla.riskLevel === 'High' ? 'rgba(239, 68, 68, 0.15)' : sla.riskLevel === 'Medium' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                          color: sla.riskLevel === 'High' ? '#ef4444' : sla.riskLevel === 'Medium' ? '#f59e0b' : '#38bdf8'
+                        }}>
+                          {sla.riskLevel.toUpperCase()}
+                        </span>
+                      </td>
+
+                      {/* 7. Escalation Level */}
+                      <td style={{ padding: '12px 10px' }}>
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          background: 'rgba(168, 85, 247, 0.15)',
+                          color: '#c084fc',
+                          border: '1px solid rgba(168, 85, 247, 0.3)'
+                        }}>
+                          📌 {sla.escalationLevel}
+                        </span>
+                      </td>
+
+                      {/* 8. Actions (View / Escalate) */}
+                      <td style={{ padding: '12px 10px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          <button 
+                            onClick={() => onSelectTicket(ticket.id)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              background: 'var(--bg-body)',
+                              border: 'var(--border-card)',
+                              color: 'var(--text-main)',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}
+                          >
+                            👁️ View
+                          </button>
+
+                          {/* Show Escalate action ONLY for High Risk or Breached tickets */}
+                          {canEscalate && (
+                            <button 
+                              onClick={() => handleEscalateTicket(ticket, sla.escalationLevel)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                                border: 'none',
+                                color: '#ffffff',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                fontWeight: '700',
+                                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                              }}
+                              title={`Escalate along path: Engineer → Team Lead → Manager → Admin`}
+                            >
+                              ⚡ Escalate
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

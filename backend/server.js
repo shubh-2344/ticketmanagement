@@ -146,6 +146,8 @@ async function initializeDB() {
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS expected_return_date TIMESTAMP;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS reservation_duration VARCHAR(50);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS returned_at TIMESTAMP;`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_engineer VARCHAR(100);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS escalation_level VARCHAR(50) DEFAULT 'Engineer';`);
 
         await pool.query(`ALTER TABLE tickets ALTER COLUMN status TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN priority TYPE VARCHAR(50);`);
@@ -846,6 +848,39 @@ app.put('/api/tickets/:id', authenticateToken, requireRole(['admin']), async (re
     } catch (err) {
         console.error('Admin modify ticket error:', err);
         res.status(500).json({ error: err.message || 'Failed to modify ticket' });
+    }
+});
+
+// ESCALATE TICKET API (Escalate ticket through Engineer -> Team Lead -> Manager -> Admin)
+app.put('/api/tickets/:id/escalate', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { escalation_level, assigned_engineer } = req.body;
+
+    if (!escalation_level) {
+        return res.status(400).json({ error: 'Escalation level is required' });
+    }
+
+    try {
+        const result = await pool.query(`
+            UPDATE tickets
+            SET escalation_level = $1,
+                assigned_engineer = COALESCE($2, assigned_engineer),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $3
+            RETURNING *
+        `, [escalation_level, assigned_engineer || null, id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        res.json({
+            message: `Ticket escalated to ${escalation_level} level successfully`,
+            ticket: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Escalate ticket error:', err);
+        res.status(500).json({ error: err.message || 'Failed to escalate ticket' });
     }
 });
 

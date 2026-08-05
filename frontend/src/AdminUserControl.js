@@ -165,6 +165,15 @@ function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
                         >
                           👔 Manager
                         </button>
+
+                        <button
+                          className={`btn-role-opt admin ${u.role === 'admin' ? 'active' : ''}`}
+                          onClick={() => handleRoleChange(u.id, 'admin')}
+                          disabled={updatingUserId === u.id}
+                          style={{ background: u.role === 'admin' ? 'linear-gradient(135deg, #0284c7, #7c3aed)' : 'transparent', color: u.role === 'admin' ? '#ffffff' : 'inherit' }}
+                        >
+                          🛡️ System Admin Specialist
+                        </button>
                       </div>
                     </td>
                   </tr>

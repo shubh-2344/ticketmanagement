@@ -32,6 +32,17 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
       return;
     }
 
+    const confirmed = await window.showConfirm({
+      title: action === 'approve' ? 'Approve Ticket Request' : 'Deny Ticket Request',
+      message: action === 'approve' 
+        ? 'Are you sure you want to approve this request and forward it for fulfillment?' 
+        : 'Are you sure you want to deny this request?',
+      confirmText: action === 'approve' ? 'Approve Request' : 'Deny Request',
+      cancelText: 'Cancel',
+      confirmType: action === 'approve' ? 'success' : 'danger'
+    });
+    if (!confirmed) return;
+
     try {
       await axios.put(`${API_URL}/tickets/${ticketId}/manager-review`, {
         action,
@@ -52,6 +63,15 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL 
       alert('Please enter or select the assigned device name.');
       return;
     }
+
+    const confirmed = await window.showConfirm({
+      title: 'Assign Hardware Asset',
+      message: `Are you sure you want to assign "${data.assigned_device_name}" to fulfill this request?`,
+      confirmText: 'Confirm Assignment',
+      cancelText: 'Cancel',
+      confirmType: 'success'
+    });
+    if (!confirmed) return;
 
     try {
       await axios.put(`${API_URL}/tickets/${ticketId}/admin-assign`, {

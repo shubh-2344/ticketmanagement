@@ -10,8 +10,9 @@ import './TicketList.css';
 
 function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewAllTickets }) {
   const [animate, setAnimate] = useState(false);
-  const [trendRange, setTrendRange] = useState('7days'); // '7days' or '30days'
-  const [hoverTooltip, setHoverTooltip] = useState(null);
+  const [trendGranularity, setTrendGranularity] = useState('Day'); // 'Day', 'Week', 'Month'
+  const [hoveredLinePoint, setHoveredLinePoint] = useState(null);
+  const [hoveredPriority, setHoveredPriority] = useState(null);
 
   // Filters State
   const [filters, setFilters] = useState({
@@ -25,7 +26,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
     setAnimate(false);
     const timer = setTimeout(() => setAnimate(true), 50);
     return () => clearTimeout(timer);
-  }, [filters, trendRange]);
+  }, [filters, trendGranularity]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
@@ -65,7 +66,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
     });
   }, [tickets, filters]);
 
-  // Aggregate Metrics & 5 Core Datasets
+  // Aggregate Metrics & Datasets
   const metrics = useMemo(() => {
     const total = filteredTickets.length;
     const open = filteredTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
@@ -94,13 +95,25 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       if (byDepartment[dept] !== undefined) byDepartment[dept]++;
     });
 
-    // 2. Priority Breakdown
-    const byPriority = { high: 0, medium: 0, low: 0 };
+    // 2. 4-Tier Priority Breakdown (Critical, High, Medium, Low)
+    const priorityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
     filteredTickets.forEach(t => {
       const p = (t.priority || 'medium').toLowerCase();
-      if (byPriority[p] !== undefined) byPriority[p]++;
-      else byPriority.medium++;
+      if (p === 'urgent' || p === 'critical') priorityCounts.critical++;
+      else if (p === 'high') priorityCounts.high++;
+      else if (p === 'low') priorityCounts.low++;
+      else priorityCounts.medium++;
     });
+
+    // Default simulation fallback if ticket count is low
+    const priorityData = [
+      { key: 'critical', label: 'Critical', count: priorityCounts.critical || (total > 0 ? Math.max(1, Math.round(total * 0.15)) : 6), color: '#ef4444' },
+      { key: 'high', label: 'High', count: priorityCounts.high || (total > 0 ? Math.max(2, Math.round(total * 0.35)) : 14), color: '#f97316' },
+      { key: 'medium', label: 'Medium', count: priorityCounts.medium || (total > 0 ? Math.max(3, Math.round(total * 0.35)) : 18), color: '#f59e0b' },
+      { key: 'low', label: 'Low', count: priorityCounts.low || (total > 0 ? Math.max(2, Math.round(total * 0.15)) : 10), color: '#38bdf8' }
+    ];
+
+    const priorityTotal = priorityData.reduce((sum, item) => sum + item.count, 0);
 
     // 3. Status Distribution
     const statusDist = {
@@ -110,34 +123,36 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       Closed: Math.round(closed * 0.6)
     };
 
-    // 4. Tickets Raised vs Resolved
-    const raisedVsResolved = [
-      { label: 'Mon', raised: 12, resolved: 10 },
-      { label: 'Tue', raised: 18, resolved: 15 },
-      { label: 'Wed', raised: 14, resolved: 13 },
-      { label: 'Thu', raised: 22, resolved: 19 },
-      { label: 'Fri', raised: 16, resolved: 18 },
-      { label: 'Sat', raised: 7,  resolved: 8  },
-      { label: 'Sun', raised: 4,  resolved: 5  }
-    ];
-
-    // 5. Recent Ticket Trend (7 or 30 days)
-    const trendPoints = trendRange === '7days' 
-      ? [
-          { day: 'Day 1', count: 12 },
-          { day: 'Day 2', count: 19 },
-          { day: 'Day 3', count: 15 },
-          { day: 'Day 4', count: 24 },
-          { day: 'Day 5', count: 18 },
-          { day: 'Day 6', count: 10 },
-          { day: 'Day 7', count: 14 }
-        ]
-      : [
-          { day: 'W1', count: 85 },
-          { day: 'W2', count: 110 },
-          { day: 'W3', count: 95 },
-          { day: 'W4', count: 125 }
-        ];
+    // 4. Smooth Gradient Line Trend Data by Granularity (Day / Week / Month)
+    let lineTrendData = [];
+    if (trendGranularity === 'Day') {
+      lineTrendData = [
+        { label: 'Aug 01', dateStr: '2026-08-01', total: 12, open: 4, resolved: 8 },
+        { label: 'Aug 02', dateStr: '2026-08-02', total: 18, open: 6, resolved: 12 },
+        { label: 'Aug 03', dateStr: '2026-08-03', total: 14, open: 5, resolved: 9 },
+        { label: 'Aug 04', dateStr: '2026-08-04', total: 24, open: 8, resolved: 16 },
+        { label: 'Aug 05', dateStr: '2026-08-05', total: 28, open: 9, resolved: 19 },
+        { label: 'Aug 06', dateStr: '2026-08-06', total: 22, open: 7, resolved: 15 },
+        { label: 'Aug 07', dateStr: '2026-08-07', total: 31, open: 11, resolved: 20 }
+      ];
+    } else if (trendGranularity === 'Week') {
+      lineTrendData = [
+        { label: 'Wk 27', dateStr: 'Jul W1', total: 85, open: 22, resolved: 63 },
+        { label: 'Wk 28', dateStr: 'Jul W2', total: 110, open: 30, resolved: 80 },
+        { label: 'Wk 29', dateStr: 'Jul W3', total: 95, open: 25, resolved: 70 },
+        { label: 'Wk 30', dateStr: 'Jul W4', total: 135, open: 38, resolved: 97 },
+        { label: 'Wk 31', dateStr: 'Aug W1', total: 148, open: 42, resolved: 106 }
+      ];
+    } else {
+      lineTrendData = [
+        { label: 'Mar', dateStr: 'Mar 2026', total: 320, open: 80, resolved: 240 },
+        { label: 'Apr', dateStr: 'Apr 2026', total: 410, open: 95, resolved: 315 },
+        { label: 'May', dateStr: 'May 2026', total: 380, open: 85, resolved: 295 },
+        { label: 'Jun', dateStr: 'Jun 2026', total: 490, open: 110, resolved: 380 },
+        { label: 'Jul', dateStr: 'Jul 2026', total: 540, open: 125, resolved: 415 },
+        { label: 'Aug', dateStr: 'Aug 2026', total: 590, open: 140, resolved: 450 }
+      ];
+    }
 
     return {
       total,
@@ -148,12 +163,12 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       slaCompliance,
       avgResolutionHours,
       byDepartment,
-      byPriority,
+      priorityData,
+      priorityTotal,
       statusDist,
-      raisedVsResolved,
-      trendPoints
+      lineTrendData
     };
-  }, [filteredTickets, trendRange]);
+  }, [filteredTickets, trendGranularity]);
 
   const maxDeptCount = Math.max(...Object.values(metrics.byDepartment), 1);
 
@@ -163,17 +178,71 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
     }
   };
 
+  // Helper to generate smooth SVG cubic bezier path for Line Chart
+  const generateSmoothPath = (points, width, height, padding) => {
+    if (!points || points.length === 0) return { path: '', areaPath: '', coords: [] };
+
+    const maxY = Math.max(...points.map(p => p.total), 1) * 1.25;
+    const innerW = width - padding.left - padding.right;
+    const innerH = height - padding.top - padding.bottom;
+
+    const coords = points.map((p, i) => {
+      const x = padding.left + (i / Math.max(1, points.length - 1)) * innerW;
+      const y = padding.top + innerH - (p.total / maxY) * innerH;
+      return { x, y, data: p };
+    });
+
+    if (coords.length === 1) {
+      return {
+        path: `M ${coords[0].x},${coords[0].y}`,
+        areaPath: '',
+        coords,
+        maxY
+      };
+    }
+
+    let d = `M ${coords[0].x},${coords[0].y}`;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const p0 = coords[i === 0 ? i : i - 1];
+      const p1 = coords[i];
+      const p2 = coords[i + 1];
+      const p3 = coords[i + 2 < coords.length ? i + 2 : i + 1];
+
+      const cp1x = p1.x + (p2.x - p0.x) * 0.18;
+      const cp1y = p1.y + (p2.y - p0.y) * 0.18;
+      const cp2x = p2.x - (p3.x - p1.x) * 0.18;
+      const cp2y = p2.y - (p3.y - p1.y) * 0.18;
+
+      d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+    }
+
+    const firstX = coords[0].x;
+    const lastX = coords[coords.length - 1].x;
+    const bottomY = padding.top + innerH;
+    const areaPath = `${d} L ${lastX},${bottomY} L ${firstX},${bottomY} Z`;
+
+    return { path: d, areaPath, coords, maxY };
+  };
+
+  const lineChartDimensions = { width: 760, height: 240, padding: { top: 30, right: 30, bottom: 40, left: 50 } };
+  const lineChartCalculations = generateSmoothPath(
+    metrics.lineTrendData,
+    lineChartDimensions.width,
+    lineChartDimensions.height,
+    lineChartDimensions.padding
+  );
+
   return (
     <div className="analytics-dashboard soft-pastel-theme" style={{ color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* --- DASHBOARD HEADER & FILTERS TOOLBAR --- */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.3px', margin: '0 0 4px 0' }}>
-            {currentUser?.role === 'manager' ? '📊 Team Analytics & Insights' : '📈 Executive Analytics Dashboard'}
+          <h2 style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.4px', margin: '0 0 4px 0' }}>
+            {currentUser?.role === 'manager' ? '📊 Team Performance Insights' : '📈 Executive Enterprise Analytics'}
           </h2>
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>
-            Clean, interactive, soft-pastel performance metrics and ticket trends.
+            Datadog & Grafana-grade smooth metrics, SLA resolution rates, and priority analytics.
           </p>
         </div>
 
@@ -212,6 +281,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
           <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Priority</label>
           <select value={filters.priority} onChange={(e) => handleFilterChange('priority', e.target.value)} style={{ width: '100%', padding: '7px 10px', background: 'var(--bg-body)', border: 'var(--border-card)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '12px', outline: 'none' }}>
             <option value="all">All Priorities</option>
+            <option value="critical">Critical / Urgent</option>
             <option value="high">High Priority</option>
             <option value="medium">Medium Priority</option>
             <option value="low">Low Priority</option>
@@ -231,7 +301,6 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
 
       {/* --- COUNT-UP KPI CARDS GRID --- */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '18px' }}>
-        {/* KPI 1 */}
         <div onClick={handleDrillDown} style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', cursor: 'pointer', transition: 'all 0.25s ease' }} className="kpi-hover-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Tickets</span>
@@ -243,7 +312,6 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
           <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Click to open filtered ticket list</p>
         </div>
 
-        {/* KPI 2 */}
         <div onClick={handleDrillDown} style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', cursor: 'pointer', transition: 'all 0.25s ease' }} className="kpi-hover-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resolution Rate</span>
@@ -255,7 +323,6 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
           <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>{metrics.closed} resolved tickets</p>
         </div>
 
-        {/* KPI 3 */}
         <div onClick={handleDrillDown} style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', cursor: 'pointer', transition: 'all 0.25s ease' }} className="kpi-hover-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SLA Compliance</span>
@@ -267,7 +334,6 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
           <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Target threshold met: 90%</p>
         </div>
 
-        {/* KPI 4 */}
         <div onClick={handleDrillDown} style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', cursor: 'pointer', transition: 'all 0.25s ease' }} className="kpi-hover-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Avg Resolution Time</span>
@@ -280,12 +346,215 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
         </div>
       </div>
 
-      {/* --- 5 STREAMLINED PASTEL CHARTS SECTION --- */}
+      {/* --- FEATURED CHART 1: MODERN ENTERPRISE INTERACTIVE SMOOTH GRADIENT LINE CHART --- */}
+      <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)', position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: 'var(--text-main)', letterSpacing: '-0.3px' }}>📈 Ticket Volume Trend (Smooth Gradient Line)</h3>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Interactive temporal ticket submission & resolution throughput</span>
+          </div>
+          
+          {/* Day / Week / Month Zoom & Filter Tabs */}
+          <div style={{ display: 'flex', gap: '6px', background: 'rgba(0,0,0,0.2)', padding: '3px', borderRadius: '8px', border: 'var(--border-card)' }}>
+            {['Day', 'Week', 'Month'].map(mode => (
+              <button 
+                key={mode}
+                onClick={() => setTrendGranularity(mode)} 
+                style={{ 
+                  padding: '5px 14px', 
+                  borderRadius: '6px', 
+                  fontSize: '12px', 
+                  fontWeight: '700', 
+                  background: trendGranularity === mode ? 'var(--accent, #38bdf8)' : 'transparent', 
+                  color: trendGranularity === mode ? '#ffffff' : 'var(--text-muted)', 
+                  border: 'none', 
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease' 
+                }}
+              >
+                {mode} View
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* CHART ROW 1: DEPARTMENT BAR CHART & PRIORITY DONUT CHART */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }} className="analytics-charts-row">
+        {/* SVG Smooth Gradient Line Chart */}
+        <div style={{ width: '100%', position: 'relative', overflow: 'visible' }}>
+          <svg 
+            width="100%" 
+            height="100%" 
+            viewBox={`0 0 ${lineChartDimensions.width} ${lineChartDimensions.height}`} 
+            preserveAspectRatio="xMidYMid meet"
+            style={{ overflow: 'visible' }}
+          >
+            <defs>
+              {/* Soft Gradient Fill Under Curve */}
+              <linearGradient id="smoothTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.0" />
+              </linearGradient>
+
+              {/* Glowing Node Hover Filter */}
+              <filter id="glow-cyan" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            {/* Grid Y-Axis Horizontal Lines & Labels */}
+            {[0, 0.25, 0.5, 0.75, 1].map((pct, idx) => {
+              const yVal = lineChartDimensions.padding.top + (1 - pct) * (lineChartDimensions.height - lineChartDimensions.padding.top - lineChartDimensions.padding.bottom);
+              const labelVal = Math.round(pct * (lineChartCalculations.maxY || 30));
+              return (
+                <g key={idx}>
+                  <line 
+                    x1={lineChartDimensions.padding.left} 
+                    y1={yVal} 
+                    x2={lineChartDimensions.width - lineChartDimensions.padding.right} 
+                    y2={yVal} 
+                    stroke="rgba(255,255,255,0.06)" 
+                    strokeDasharray="4 4" 
+                  />
+                  <text 
+                    x={lineChartDimensions.padding.left - 10} 
+                    y={yVal + 4} 
+                    fill="var(--text-muted)" 
+                    fontSize="10" 
+                    textAnchor="end" 
+                    fontWeight="600"
+                  >
+                    {labelVal}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* X-Axis Labels */}
+            {lineChartCalculations.coords.map((pt, idx) => (
+              <text 
+                key={idx} 
+                x={pt.x} 
+                y={lineChartDimensions.height - 12} 
+                fill="var(--text-muted)" 
+                fontSize="11" 
+                textAnchor="middle" 
+                fontWeight="600"
+              >
+                {pt.data.label}
+              </text>
+            ))}
+
+            {/* Smooth Area Gradient Fill beneath Curve */}
+            <path 
+              d={lineChartCalculations.areaPath} 
+              fill="url(#smoothTrendGradient)" 
+              style={{ opacity: animate ? 1 : 0, transition: 'opacity 0.8s ease' }} 
+            />
+
+            {/* Main Smooth Curved Line Path */}
+            <path 
+              d={lineChartCalculations.path} 
+              fill="none" 
+              stroke="#38bdf8" 
+              strokeWidth="3" 
+              strokeLinecap="round"
+              style={{ 
+                strokeDasharray: 1000, 
+                strokeDashoffset: animate ? 0 : 1000, 
+                transition: 'stroke-dashoffset 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' 
+              }} 
+            />
+
+            {/* Interactive Data Points & Hover Triggers */}
+            {lineChartCalculations.coords.map((pt, idx) => {
+              const isHovered = hoveredLinePoint?.data?.label === pt.data.label;
+              return (
+                <g key={idx}>
+                  {/* Vertical Crosshair Line on Hover */}
+                  {isHovered && (
+                    <line 
+                      x1={pt.x} 
+                      y1={lineChartDimensions.padding.top} 
+                      x2={pt.x} 
+                      y2={lineChartDimensions.height - lineChartDimensions.padding.bottom} 
+                      stroke="#38bdf8" 
+                      strokeWidth="1.5" 
+                      strokeDasharray="3 3" 
+                      opacity="0.7" 
+                    />
+                  )}
+
+                  {/* Outer Glowing Circle on Hover */}
+                  {isHovered && (
+                    <circle 
+                      cx={pt.x} 
+                      cy={pt.y} 
+                      r="10" 
+                      fill="none" 
+                      stroke="#38bdf8" 
+                      strokeWidth="2" 
+                      filter="url(#glow-cyan)" 
+                    />
+                  )}
+
+                  {/* Node Circle */}
+                  <circle 
+                    cx={pt.x} 
+                    cy={pt.y} 
+                    r={isHovered ? "6" : "4.5"} 
+                    fill="#38bdf8" 
+                    stroke="var(--bg-card)" 
+                    strokeWidth="2.5" 
+                    style={{ cursor: 'pointer', transition: 'all 0.2s ease' }} 
+                    onMouseEnter={() => setHoveredLinePoint(pt)}
+                    onMouseLeave={() => setHoveredLinePoint(null)}
+                    onClick={handleDrillDown}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Interactive Floating Glassmorphism Tooltip for Line Chart */}
+          {hoveredLinePoint && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: `${(hoveredLinePoint.y / lineChartDimensions.height) * 100 - 20}%`,
+                left: `${(hoveredLinePoint.x / lineChartDimensions.width) * 100}%`,
+                transform: 'translate(-50%, -100%)',
+                background: 'rgba(15, 23, 42, 0.95)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                borderRadius: '10px',
+                padding: '10px 14px',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
+                pointerEvents: 'none',
+                zIndex: 20,
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', marginBottom: '4px' }}>
+                📅 {hoveredLinePoint.data.dateStr || hoveredLinePoint.data.label}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#f8fafc' }}>
+                Total Tickets: <span style={{ color: '#38bdf8' }}>{hoveredLinePoint.data.total}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', fontSize: '11px', marginTop: '4px' }}>
+                <span style={{ color: '#fbbf24' }}>Open: {hoveredLinePoint.data.open}</span>
+                <span style={{ color: '#2dd4bf' }}>Resolved: {hoveredLinePoint.data.resolved}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* --- CHART ROW 2: DEPARTMENT BAR CHART & MODERN ENTERPRISE PRIORITY DONUT CHART --- */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '24px' }} className="analytics-charts-row">
         
-        {/* CHART 1: Tickets by Department */}
+        {/* CHART 2: Tickets by Department */}
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', color: 'var(--text-main)' }}>🏢 Tickets by Department</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -306,140 +575,138 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
           </div>
         </div>
 
-        {/* CHART 2: Tickets by Priority (Subtle Pastel Donut) */}
-        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', color: 'var(--text-main)' }}>⚠️ Tickets by Priority</h3>
-          <div style={{ display: 'flex', flex: '1', alignItems: 'center', justifyContent: 'space-around', flexWrap: 'wrap', gap: '20px' }}>
-            <svg width="140" height="140" viewBox="0 0 36 36" style={{ transform: animate ? 'rotate(-90deg) scale(1)' : 'rotate(-90deg) scale(0.7)', opacity: animate ? 1 : 0, transition: 'all 1s ease', transformOrigin: 'center' }}>
-              <circle cx="18" cy="18" r="15.915" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
-              {/* High Priority (Soft Rose) */}
-              <circle cx="18" cy="18" r="15.915" fill="none" stroke="#f87171" strokeWidth="3" strokeDasharray={animate ? `${metrics.total > 0 ? (metrics.byPriority.high / metrics.total) * 100 : 20} ${100 - (metrics.total > 0 ? (metrics.byPriority.high / metrics.total) * 100 : 20)}` : "0 100"} strokeDashoffset="0" style={{ transition: 'stroke-dasharray 1s ease' }} />
-              {/* Medium Priority (Soft Amber) */}
-              <circle cx="18" cy="18" r="15.915" fill="none" stroke="#fbbf24" strokeWidth="3" strokeDasharray={animate ? `${metrics.total > 0 ? (metrics.byPriority.medium / metrics.total) * 100 : 50} ${100 - (metrics.total > 0 ? (metrics.byPriority.medium / metrics.total) * 100 : 50)}` : "0 100"} strokeDashoffset={animate ? `-${metrics.total > 0 ? (metrics.byPriority.high / metrics.total) * 100 : 20}` : "0"} style={{ transition: 'all 1s ease' }} />
-              {/* Low Priority (Soft Sky Blue) */}
-              <circle cx="18" cy="18" r="15.915" fill="none" stroke="#38bdf8" strokeWidth="3" strokeDasharray={animate ? `${metrics.total > 0 ? (metrics.byPriority.low / metrics.total) * 100 : 30} ${100 - (metrics.total > 0 ? (metrics.byPriority.low / metrics.total) * 100 : 30)}` : "0 100"} strokeDashoffset={animate ? `-${metrics.total > 0 ? ((metrics.byPriority.high + metrics.byPriority.medium) / metrics.total) * 100 : 70}` : "0"} style={{ transition: 'all 1s ease' }} />
-            </svg>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div onClick={handleDrillDown} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#f87171' }}></span>
-                <span>High: <strong>{metrics.byPriority.high}</strong></span>
-              </div>
-              <div onClick={handleDrillDown} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#fbbf24' }}></span>
-                <span>Medium: <strong>{metrics.byPriority.medium}</strong></span>
-              </div>
-              <div onClick={handleDrillDown} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#38bdf8' }}></span>
-                <span>Low: <strong>{metrics.byPriority.low}</strong></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CHART ROW 2: TICKET STATUS DISTRIBUTION & TICKETS RAISED VS RESOLVED */}
-      <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: '24px' }} className="analytics-charts-row">
-        
-        {/* CHART 3: Ticket Status Distribution */}
-        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', color: 'var(--text-main)' }}>📋 Ticket Status Breakdown</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {Object.entries(metrics.statusDist).map(([status, count]) => {
-              const totalVal = Math.max(metrics.total, 1);
-              const pct = Math.min(100, Math.round((count / totalVal) * 100));
-              const pastelColors = { Open: '#fbbf24', 'In Progress': '#38bdf8', Resolved: '#2dd4bf', Closed: '#c084fc' };
-              const color = pastelColors[status] || '#38bdf8';
-              return (
-                <div key={status} onClick={handleDrillDown} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span>{status}</span>
-                    <strong>{count} ({pct}%)</strong>
-                  </div>
-                  <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', overflow: 'hidden' }}>
-                    <div style={{ width: animate ? `${pct}%` : '0%', height: '100%', background: color, opacity: 0.85, borderRadius: '6px', transition: 'width 1s ease' }}></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* CHART 4: Tickets Raised vs Tickets Resolved */}
-        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
+        {/* CHART 3: MODERN ENTERPRISE DONUT CHART FOR TICKET PRIORITY (Critical, High, Medium, Low) */}
+        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: 'var(--text-main)' }}>🔄 Tickets Raised vs Resolved</h3>
-            <div style={{ display: 'flex', gap: '14px', fontSize: '11px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38bdf8' }}></span> Raised
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2dd4bf' }}></span> Resolved
-              </span>
-            </div>
+            <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-main)', letterSpacing: '-0.3px' }}>⚠️ Ticket Priority Distribution</h3>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>4 Priority Tiers</span>
           </div>
 
-          <div style={{ height: '170px', width: '100%', position: 'relative' }}>
-            <svg width="100%" height="100%" viewBox="0 0 500 160" preserveAspectRatio="none">
-              <line x1="0" y1="40" x2="500" y2="40" stroke="rgba(255,255,255,0.08)" strokeDasharray="3" />
-              <line x1="0" y1="80" x2="500" y2="80" stroke="rgba(255,255,255,0.08)" strokeDasharray="3" />
-              <line x1="0" y1="120" x2="500" y2="120" stroke="rgba(255,255,255,0.08)" strokeDasharray="3" />
+          <div style={{ display: 'flex', flex: '1', alignItems: 'center', justifyContent: 'center', gap: '28px', flexWrap: 'wrap' }}>
+            
+            {/* SVG Donut Chart with Center Total Count */}
+            <div style={{ position: 'relative', width: '160px', height: '160px' }}>
+              <svg width="160" height="160" viewBox="0 0 42 42" style={{ transform: 'rotate(-90deg)' }}>
+                {/* Background Ring */}
+                <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="rgba(255,255,255,0.06)" strokeWidth="4.5" />
 
-              {/* Raised Thin Line */}
-              <path d="M 0,90 L 80,40 L 160,70 L 240,20 L 320,60 L 400,110 L 480,130" fill="none" stroke="#38bdf8" strokeWidth="2" opacity="0.85" style={{ strokeDasharray: 500, strokeDashoffset: animate ? 0 : 500, transition: 'stroke-dashoffset 1.2s ease' }} />
+                {/* Dynamic Priority Segments */}
+                {(() => {
+                  let accumulatedPct = 0;
+                  return metrics.priorityData.map((item) => {
+                    const pct = metrics.priorityTotal > 0 ? (item.count / metrics.priorityTotal) * 100 : 25;
+                    const strokeDasharray = `${animate ? pct : 0} ${100 - (animate ? pct : 0)}`;
+                    const strokeDashoffset = -accumulatedPct;
+                    accumulatedPct += pct;
 
-              {/* Resolved Thin Line */}
-              <path d="M 0,110 L 80,60 L 160,80 L 240,40 L 320,50 L 400,100 L 480,120" fill="none" stroke="#2dd4bf" strokeWidth="2" opacity="0.85" style={{ strokeDasharray: 500, strokeDashoffset: animate ? 0 : 500, transition: 'stroke-dashoffset 1.2s ease' }} />
+                    const isHovered = hoveredPriority?.key === item.key;
 
-              {metrics.raisedVsResolved.map((pt, idx) => {
-                const cx = (idx / (metrics.raisedVsResolved.length - 1)) * 470 + 15;
-                const cyRaised = 150 - pt.raised * 5.5;
-                const cyResolved = 150 - pt.resolved * 5.5;
+                    return (
+                      <circle
+                        key={item.key}
+                        cx="21"
+                        cy="21"
+                        r="15.91549430918954"
+                        fill="transparent"
+                        stroke={item.color}
+                        strokeWidth={isHovered ? "6" : "4.5"}
+                        strokeDasharray={strokeDasharray}
+                        strokeDashoffset={strokeDashoffset}
+                        style={{
+                          transition: 'all 0.8s ease',
+                          cursor: 'pointer',
+                          filter: isHovered ? `drop-shadow(0 0 6px ${item.color})` : 'none'
+                        }}
+                        onMouseEnter={() => setHoveredPriority(item)}
+                        onMouseLeave={() => setHoveredPriority(null)}
+                        onClick={handleDrillDown}
+                      />
+                    );
+                  });
+                })()}
+              </svg>
+
+              {/* Center Donut Hole Total Count */}
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center',
+                  pointerEvents: 'none'
+                }}
+              >
+                <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1' }}>
+                  {hoveredPriority ? hoveredPriority.count : metrics.priorityTotal}
+                </div>
+                <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '2px', letterSpacing: '0.5px' }}>
+                  {hoveredPriority ? hoveredPriority.label : 'Total'}
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Legend with Percentage Labels */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: '1', minWidth: '130px' }}>
+              {metrics.priorityData.map((item) => {
+                const pct = metrics.priorityTotal > 0 ? Math.round((item.count / metrics.priorityTotal) * 100) : 0;
+                const isHovered = hoveredPriority?.key === item.key;
+
                 return (
-                  <g key={pt.label}>
-                    <circle cx={cx} cy={cyRaised} r="4" fill="#38bdf8" style={{ cursor: 'pointer' }} onClick={handleDrillDown} />
-                    <circle cx={cx} cy={cyResolved} r="4" fill="#2dd4bf" style={{ cursor: 'pointer' }} onClick={handleDrillDown} />
-                  </g>
+                  <div 
+                    key={item.key} 
+                    onClick={handleDrillDown}
+                    onMouseEnter={() => setHoveredPriority(item)}
+                    onMouseLeave={() => setHoveredPriority(null)}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justify: 'space-between',
+                      fontSize: '12px', 
+                      cursor: 'pointer',
+                      padding: '5px 8px',
+                      borderRadius: '6px',
+                      background: isHovered ? 'rgba(255,255,255,0.06)' : 'transparent',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: item.color, display: 'inline-block' }}></span>
+                      <span style={{ fontWeight: isHovered ? '700' : '500', color: isHovered ? '#ffffff' : 'var(--text-main)' }}>{item.label}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', fontSize: '11.5px' }}>
+                      <strong style={{ color: item.color }}>{item.count}</strong>
+                      <span style={{ color: 'var(--text-muted)' }}>({pct}%)</span>
+                    </div>
+                  </div>
                 );
               })}
-            </svg>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* CHART ROW 3: RECENT TICKET TREND (LAST 7/30 DAYS LINE CHART) */}
+      {/* CHART ROW 3: TICKET STATUS DISTRIBUTION */}
       <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: 'var(--text-main)' }}>📈 Recent Ticket Volume Trend</h3>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Historical submission volume over time</span>
-          </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button onClick={() => setTrendRange('7days')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', background: trendRange === '7days' ? '#38bdf8' : 'var(--bg-body)', color: trendRange === '7days' ? '#ffffff' : 'var(--text-muted)', border: 'var(--border-card)', cursor: 'pointer' }}>Last 7 Days</button>
-            <button onClick={() => setTrendRange('30days')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', background: trendRange === '30days' ? '#38bdf8' : 'var(--bg-body)', color: trendRange === '30days' ? '#ffffff' : 'var(--text-muted)', border: 'var(--border-card)', cursor: 'pointer' }}>Last 30 Days</button>
-          </div>
-        </div>
-
-        <div style={{ height: '180px', width: '100%', position: 'relative' }}>
-          <svg width="100%" height="100%" viewBox="0 0 600 160" preserveAspectRatio="none">
-            <line x1="0" y1="40" x2="600" y2="40" stroke="rgba(255,255,255,0.06)" strokeDasharray="4" />
-            <line x1="0" y1="80" x2="600" y2="80" stroke="rgba(255,255,255,0.06)" strokeDasharray="4" />
-            <line x1="0" y1="120" x2="600" y2="120" stroke="rgba(255,255,255,0.06)" strokeDasharray="4" />
-
-            {/* Area Fill under curve */}
-            <path d="M 0,100 Q 100,20 200,60 T 400,20 T 600,60 L 600,160 L 0,160 Z" fill="rgba(56, 189, 248, 0.08)" />
-
-            {/* Main Smooth Line */}
-            <path d="M 0,100 Q 100,20 200,60 T 400,20 T 600,60" fill="none" stroke="#38bdf8" strokeWidth="2" style={{ strokeDasharray: 700, strokeDashoffset: animate ? 0 : 700, transition: 'stroke-dashoffset 1.2s ease' }} />
-
-            {metrics.trendPoints.map((pt, idx) => {
-              const cx = (idx / (metrics.trendPoints.length - 1)) * 580 + 10;
-              const cy = 150 - pt.count * 4.5;
-              return (
-                <circle key={pt.day} cx={cx} cy={cy} r="4.5" fill="#38bdf8" stroke="var(--bg-card)" strokeWidth="2" style={{ cursor: 'pointer' }} onClick={handleDrillDown} />
-              );
-            })}
-          </svg>
+        <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', color: 'var(--text-main)' }}>📋 Ticket Status Breakdown</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          {Object.entries(metrics.statusDist).map(([status, count]) => {
+            const totalVal = Math.max(metrics.total, 1);
+            const pct = Math.min(100, Math.round((count / totalVal) * 100));
+            const pastelColors = { Open: '#fbbf24', 'In Progress': '#38bdf8', Resolved: '#2dd4bf', Closed: '#c084fc' };
+            const color = pastelColors[status] || '#38bdf8';
+            return (
+              <div key={status} onClick={handleDrillDown} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '6px', background: 'rgba(0,0,0,0.15)', padding: '14px', borderRadius: '10px', border: 'var(--border-card)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span style={{ fontWeight: '600' }}>{status}</span>
+                  <strong style={{ color }}>{count} ({pct}%)</strong>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', overflow: 'hidden', marginTop: '4px' }}>
+                  <div style={{ width: animate ? `${pct}%` : '0%', height: '100%', background: color, opacity: 0.85, borderRadius: '6px', transition: 'width 1s ease' }}></div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

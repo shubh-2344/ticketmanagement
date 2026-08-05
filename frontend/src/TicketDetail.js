@@ -235,6 +235,15 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       return;
     }
 
+    const confirmed = await window.showConfirm({
+      title: 'Confirm Hardware Assignment',
+      message: `Are you sure you want to assign "${deviceAssignData.assigned_device_name}" to fulfill this request?`,
+      confirmText: 'Assign & Fulfill',
+      cancelText: 'Cancel',
+      confirmType: 'success'
+    });
+    if (!confirmed) return;
+
     try {
       await axios.put(`${API_URL}/tickets/${ticket.id}/admin-assign`, {
         inventory_id: deviceAssignData.inventory_id || null,
@@ -289,16 +298,34 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     }
   };
 
-  const handleApprove = () => {
-    onApprove(ticket.id, comment);
+  const handleApprove = async () => {
+    const confirmed = await window.showConfirm({
+      title: 'Approve Ticket Request',
+      message: 'Are you sure you want to approve this ticket request?',
+      confirmText: 'Approve Request',
+      cancelText: 'Cancel',
+      confirmType: 'success'
+    });
+    if (confirmed) {
+      onApprove(ticket.id, comment);
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!comment.trim()) {
       alert('Please add a reason before denying');
       return;
     }
-    onReject(ticket.id, comment);
+    const confirmed = await window.showConfirm({
+      title: 'Deny Ticket Request',
+      message: 'Are you sure you want to deny this request?',
+      confirmText: 'Deny Request',
+      cancelText: 'Cancel',
+      confirmType: 'danger'
+    });
+    if (confirmed) {
+      onReject(ticket.id, comment);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -695,8 +722,8 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
           )}
 
-          {/* Device Return Actions */}
-          {ticket.status === 'approved' && ticket.assigned_device_name && !ticket.returned_at && (isRequester || isAdmin || isManager) && (
+          {/* Device Return Actions (ONLY for Hardware Device Request Tickets) */}
+          {ticket.type === 'device-request' && ticket.status === 'approved' && ticket.assigned_device_name && !ticket.returned_at && (isRequester || isAdmin || isManager) && (
             <div className="action-panel">
               <h3>Device Return Workflow</h3>
               <p className="admin-help-text">Click below to submit this device back to IT inventory.</p>
@@ -710,7 +737,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
           )}
 
-          {ticket.status === 'return_pending_verification' && isAdmin && (
+          {ticket.type === 'device-request' && ticket.status === 'return_pending_verification' && isAdmin && (
             <div className="action-panel admin-panel-card">
               <h3>📦 Verify Device Return</h3>
               <p className="admin-help-text">Please confirm that the user has returned the device to IT inventory.</p>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-function NetworkBackground({ opacity = 0.08 }) {
+function NetworkBackground({ opacity = 0.07 }) {
   return (
     <svg 
       className="global-network-bg" 
@@ -37,38 +37,70 @@ function NetworkBackground({ opacity = 0.08 }) {
       </defs>
 
       {/* --- Background Circuit Board Traces (dimmed lines) --- */}
-      <path d="M 50,100 L 300,100 L 380,180 L 380,300 L 420,340 L 520,340 L 520,480" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.5" fill="none" />
-      <path d="M 50,550 L 150,550 L 220,620 L 350,620 L 400,670 L 400,770" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.5" fill="none" />
-      <path d="M 1870,100 L 1700,100 L 1600,200 L 1600,300 L 1500,400 L 1400,400 L 1400,480" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.5" fill="none" />
-      <path d="M 1870,550 L 1750,550 L 1680,620 L 1500,620 L 1450,670 L 1450,770" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.5" fill="none" />
-      <path d="M 50,900 L 250,900 L 320,830 L 500,830 L 580,750 L 700,750" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.5" fill="none" />
-      <path d="M 1870,900 L 1650,900 L 1580,830 L 1400,830 L 1320,750 L 1220,750" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.5" fill="none" />
+      <path d="M 50,100 L 300,100 L 380,180 L 380,300 L 420,340 L 520,340 L 520,480" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1.5" fill="none" />
+      <path d="M 50,550 L 150,550 L 220,620 L 350,620 L 400,670 L 400,770" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1.5" fill="none" />
+      <path d="M 1870,100 L 1700,100 L 1600,200 L 1600,300 L 1500,400 L 1400,400 L 1400,480" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1.5" fill="none" />
+      <path d="M 1870,550 L 1750,550 L 1680,620 L 1500,620 L 1450,670 L 1450,770" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1.5" fill="none" />
+      <path d="M 50,900 L 250,900 L 320,830 L 500,830 L 580,750 L 700,750" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1.5" fill="none" />
+      <path d="M 1870,900 L 1650,900 L 1580,830 L 1400,830 L 1320,750 L 1220,750" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1.5" fill="none" />
       
-      {/* --- Connecting Device Traces with LIVE Moving Signal Flows --- */}
-      <path d="M 215,240 L 215,480" stroke="rgba(56, 189, 248, 0.2)" strokeWidth="1.5" fill="none" />
-      <path className="pulse-path" d="M 215,240 L 215,480" stroke="#00f0ff" strokeWidth="2.2" fill="none" filter="url(#bg-glow-cyan)" />
+      {/* --- Live Signal Flow Paths --- */}
+      <path d="M 215,240 L 215,480" stroke="rgba(56, 189, 248, 0.25)" strokeWidth="1.5" fill="none" />
+      <path className="pulse-path" d="M 215,240 L 215,480" stroke="#00f0ff" strokeWidth="2.5" fill="none" filter="url(#bg-glow-cyan)" />
 
-      <path d="M 215,550 L 215,770" stroke="rgba(56, 189, 248, 0.2)" strokeWidth="1.5" fill="none" />
-      <path className="pulse-path" d="M 215,550 L 215,770" stroke="#38bdf8" strokeWidth="2.2" fill="none" filter="url(#bg-glow-cyan)" />
+      <path d="M 215,550 L 215,770" stroke="rgba(56, 189, 248, 0.25)" strokeWidth="1.5" fill="none" />
+      <path className="pulse-path" d="M 215,550 L 215,770" stroke="#818cf8" strokeWidth="2.5" fill="none" filter="url(#bg-glow-purple)" />
 
-      <path d="M 1650,150 L 1650,480" stroke="rgba(56, 189, 248, 0.2)" strokeWidth="1.5" fill="none" />
-      <path className="pulse-path" d="M 1650,150 L 1650,480" stroke="#00f0ff" strokeWidth="2.2" fill="none" filter="url(#bg-glow-cyan)" />
+      <path d="M 1650,150 L 1650,480" stroke="rgba(56, 189, 248, 0.25)" strokeWidth="1.5" fill="none" />
+      <path className="pulse-path" d="M 1650,150 L 1650,480" stroke="#00f0ff" strokeWidth="2.5" fill="none" filter="url(#bg-glow-cyan)" />
 
-      <path d="M 1650,550 L 1650,770" stroke="rgba(56, 189, 248, 0.2)" strokeWidth="1.5" fill="none" />
-      <path className="pulse-path" d="M 1650,550 L 1650,770" stroke="#38bdf8" strokeWidth="2.2" fill="none" filter="url(#bg-glow-cyan)" />
+      <path d="M 1650,550 L 1650,770" stroke="rgba(56, 189, 248, 0.25)" strokeWidth="1.5" fill="none" />
+      <path className="pulse-path" d="M 1650,550 L 1650,770" stroke="#818cf8" strokeWidth="2.5" fill="none" filter="url(#bg-glow-purple)" />
 
-      <path d="M 215,530 L 700,530 L 800,630 L 1120,630 L 1220,530 L 1650,530" stroke="rgba(56, 189, 248, 0.15)" strokeWidth="1.5" fill="none" />
+      <path d="M 215,530 L 700,530 L 800,630 L 1120,630 L 1220,530 L 1650,530" stroke="rgba(56, 189, 248, 0.2)" strokeWidth="1.5" fill="none" />
       <path className="pulse-path" d="M 215,530 L 700,530 L 800,630 L 1120,630 L 1220,530 L 1650,530" stroke="#00f0ff" strokeWidth="2" fill="none" filter="url(#bg-glow-cyan)" />
 
-      {/* --- Circuit Board Nodes & Blinking Signal LEDs --- */}
-      <circle cx="380" cy="180" r="4.5" fill="#00f0ff" className="led-blink" />
-      <circle cx="420" cy="340" r="4.5" fill="#38bdf8" className="led-blink-delayed" />
-      <circle cx="220" cy="620" r="4.5" fill="#38bdf8" className="led-blink" />
-      <circle cx="1600" cy="200" r="4.5" fill="#00f0ff" className="led-blink-delayed" />
-      <circle cx="1500" cy="400" r="4.5" fill="#38bdf8" className="led-blink" />
-      <circle cx="1680" cy="620" r="4.5" fill="#38bdf8" className="led-blink-delayed" />
-      <circle cx="320" cy="830" r="4.5" fill="#00f0ff" className="led-blink" />
-      <circle cx="1580" cy="830" r="4.5" fill="#38bdf8" className="led-blink-delayed" />
+      {/* --- Circuit Board Nodes & Blinking LEDs --- */}
+      <circle cx="300" cy="100" r="4" fill="#38bdf8" />
+      <circle cx="380" cy="180" r="5" fill="#00f0ff" className="led-blink" />
+      <circle cx="420" cy="340" r="5" fill="#38bdf8" className="led-blink-delayed" />
+      <circle cx="220" cy="620" r="5" fill="#38bdf8" className="led-blink" />
+      <circle cx="1700" cy="100" r="4" fill="#38bdf8" />
+      <circle cx="1600" cy="200" r="5" fill="#00f0ff" className="led-blink-delayed" />
+      <circle cx="1500" cy="400" r="5" fill="#38bdf8" className="led-blink" />
+      <circle cx="1680" cy="620" r="5" fill="#38bdf8" className="led-blink-delayed" />
+      <circle cx="320" cy="830" r="5" fill="#00f0ff" className="led-blink" />
+      <circle cx="1580" cy="830" r="5" fill="#38bdf8" className="led-blink-delayed" />
+
+      {/* --- Rotating Micro-Gears --- */}
+      <g transform="translate(120, 340)" className="gear-spin">
+        <circle cx="20" cy="20" r="12" fill="none" stroke="#38bdf8" strokeWidth="2" />
+        <circle cx="20" cy="20" r="4" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+        <path d="M 20,2 L 20,8 M 20,32 L 20,38 M 2,20 L 8,20 M 32,20 L 38,20 M 7,7 L 12,12 M 28,28 L 33,33 M 33,7 L 28,12 M 7,33 L 12,28" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
+      </g>
+
+      <g transform="translate(1780, 830)" className="gear-spin-reverse">
+        <circle cx="20" cy="20" r="12" fill="none" stroke="#38bdf8" strokeWidth="2" />
+        <circle cx="20" cy="20" r="4" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+        <path d="M 20,2 L 20,8 M 20,32 L 20,38 M 2,20 L 8,20 M 32,20 L 38,20 M 7,7 L 12,12 M 28,28 L 33,33 M 33,7 L 28,12 M 7,33 L 12,28" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
+      </g>
+
+      {/* --- Moving Live Data Signal Particles --- */}
+      <circle r="4" fill="#00f0ff" filter="url(#bg-glow-cyan)">
+        <animateMotion dur="6s" repeatCount="indefinite" path="M 215,240 L 215,480" />
+      </circle>
+      <circle r="4" fill="#818cf8" filter="url(#bg-glow-purple)">
+        <animateMotion dur="5s" repeatCount="indefinite" path="M 215,550 L 215,770" />
+      </circle>
+      <circle r="4" fill="#00f0ff" filter="url(#bg-glow-cyan)">
+        <animateMotion dur="6s" repeatCount="indefinite" path="M 1650,150 L 1650,480" />
+      </circle>
+      <circle r="4" fill="#818cf8" filter="url(#bg-glow-purple)">
+        <animateMotion dur="5s" repeatCount="indefinite" path="M 1650,550 L 1650,770" />
+      </circle>
+      <circle r="5" fill="#00f0ff" filter="url(#bg-glow-cyan)">
+        <animateMotion dur="10s" repeatCount="indefinite" path="M 215,530 L 700,530 L 800,630 L 1120,630 L 1220,530 L 1650,530" />
+      </circle>
     </svg>
   );
 }
