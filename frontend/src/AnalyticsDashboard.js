@@ -88,12 +88,41 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
     const slaCompliance = closed > 0 ? Math.round((slaMetCount / closed) * 100) : 95;
     const avgResolutionHours = 24.5;
 
-    // 1. Department Breakdown
-    const byDepartment = { Engineering: 0, Product: 0, Marketing: 0, 'IT Operations': 0, 'Customer Support': 0 };
+    // 1. Category Breakdown (8 Standard Categories)
+    const byCategory = {
+      'Hardware': 0,
+      'Software': 0,
+      'Network': 0,
+      'Security': 0,
+      'Access Request': 0,
+      'Incident': 0,
+      'Asset Request': 0,
+      'Others': 0
+    };
+
     filteredTickets.forEach(t => {
-      const dept = getDepartment(t.requester_email);
-      if (byDepartment[dept] !== undefined) byDepartment[dept]++;
+      const cat = (t.category || '').toLowerCase();
+      const type = (t.type || '').toLowerCase();
+      if (type === 'device-request') byCategory['Asset Request']++;
+      else if (cat.includes('hard') || cat.includes('laptop') || cat.includes('desktop') || cat.includes('monitor')) byCategory['Hardware']++;
+      else if (cat.includes('soft') || cat.includes('app') || cat.includes('bug')) byCategory['Software']++;
+      else if (cat.includes('net') || cat.includes('wifi') || cat.includes('vpn')) byCategory['Network']++;
+      else if (cat.includes('sec') || cat.includes('auth')) byCategory['Security']++;
+      else if (cat.includes('access') || cat.includes('perm')) byCategory['Access Request']++;
+      else if (type === 'issue') byCategory['Incident']++;
+      else byCategory['Others']++;
     });
+
+    const categoryColors = {
+      'Hardware': '#38bdf8',
+      'Software': '#818cf8',
+      'Network': '#34d399',
+      'Security': '#f59e0b',
+      'Access Request': '#ec4899',
+      'Incident': '#ef4444',
+      'Asset Request': '#c084fc',
+      'Others': '#94a3b8'
+    };
 
     // 2. 4-Tier Priority Breakdown (Critical, High, Medium, Low)
     const priorityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
@@ -162,15 +191,14 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       resolutionRate,
       slaCompliance,
       avgResolutionHours,
-      byDepartment,
+      byCategory,
+      categoryColors,
       priorityData,
       priorityTotal,
       statusDist,
       lineTrendData
     };
   }, [filteredTickets, trendGranularity]);
-
-  const maxDeptCount = Math.max(...Object.values(metrics.byDepartment), 1);
 
   const handleDrillDown = () => {
     if (onViewAllTickets) {
@@ -554,20 +582,30 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       {/* --- CHART ROW 2: DEPARTMENT BAR CHART & MODERN ENTERPRISE PRIORITY DONUT CHART --- */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '24px' }} className="analytics-charts-row">
         
-        {/* CHART 2: Tickets by Department */}
+        {/* CHART 2: Tickets by Category */}
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', color: 'var(--text-main)' }}>🏢 Tickets by Department</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {Object.entries(metrics.byDepartment).map(([dept, count]) => {
-              const widthPct = Math.max(10, Math.round((count / maxDeptCount) * 100));
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-main)', letterSpacing: '-0.3px' }}>🏷️ Tickets by Category</h3>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>8 Categories</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {Object.entries(metrics.byCategory).map(([catName, count]) => {
+              const totalVal = Math.max(metrics.total, 1);
+              const pct = Math.round((count / totalVal) * 100);
+              const maxCatCount = Math.max(...Object.values(metrics.byCategory), 1);
+              const widthPct = Math.max(8, Math.round((count / maxCatCount) * 100));
+              const color = metrics.categoryColors[catName] || '#38bdf8';
               return (
-                <div key={dept} onClick={handleDrillDown} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div key={catName} onClick={handleDrillDown} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-main)' }}>
-                    <span>{dept}</span>
-                    <strong>{count}</strong>
+                    <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, display: 'inline-block' }}></span>
+                      {catName}
+                    </span>
+                    <strong>{count} <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'normal' }}>({pct}%)</span></strong>
                   </div>
-                  <div style={{ width: '100%', height: '10px', background: 'rgba(56, 189, 248, 0.12)', borderRadius: '8px', overflow: 'hidden' }}>
-                    <div style={{ width: animate ? `${widthPct}%` : '0%', height: '100%', background: 'linear-gradient(90deg, #38bdf8, #818cf8)', opacity: 0.85, borderRadius: '8px', transition: 'width 1s cubic-bezier(0.34, 1.56, 0.64, 1)' }}></div>
+                  <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', overflow: 'hidden' }}>
+                    <div style={{ width: animate ? `${widthPct}%` : '0%', height: '100%', background: color, opacity: 0.85, borderRadius: '6px', transition: 'width 1s cubic-bezier(0.34, 1.56, 0.64, 1)' }}></div>
                   </div>
                 </div>
               );

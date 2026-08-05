@@ -15,6 +15,7 @@ import AnalyticsDashboard from './AnalyticsDashboard';
 import AssetLifecycleDashboard from './AssetLifecycleDashboard';
 import AIDashboard from './AIDashboard';
 import ExecutiveDashboard from './ExecutiveDashboard';
+import OpenIncidents from './OpenIncidents';
 import NetworkBackground from './components/NetworkBackground';
 import { 
   DashboardIcon, 
@@ -451,6 +452,14 @@ function App() {
               </button>
 
               <button
+                className={`nav-button ${view === 'open-incidents' ? 'active' : ''}`}
+                onClick={() => setView('open-incidents')}
+              >
+                <span className="nav-icon">🚨</span>
+                <span>Open Incidents</span>
+              </button>
+
+              <button
                 className={`nav-button ${view === 'analytics' ? 'active' : ''}`}
                 onClick={() => setView('analytics')}
               >
@@ -566,6 +575,16 @@ function App() {
 
               {view === 'approvals' && (currentUser.role === 'manager' || currentUser.role === 'admin') && (
                 <ApprovalQueue
+                  tickets={tickets}
+                  currentUser={currentUser}
+                  onViewTicket={handleViewTicket}
+                  onRefresh={fetchTickets}
+                  API_URL={API_URL}
+                />
+              )}
+
+              {view === 'open-incidents' && (currentUser.role === 'manager' || currentUser.role === 'admin') && (
+                <OpenIncidents
                   tickets={tickets}
                   currentUser={currentUser}
                   onViewTicket={handleViewTicket}

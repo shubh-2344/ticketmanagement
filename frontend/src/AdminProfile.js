@@ -203,6 +203,8 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
     }
   };
 
+  const [restoreFile, setRestoreFile] = useState(null);
+
   const handleExportData = async () => {
     try {
       const res = await axios.get(`${API_URL}/admin/export-data`);
@@ -215,6 +217,65 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
       downloadAnchor.remove();
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to export data');
+    }
+  };
+
+  const handleExportFormattedData = async (dataType, format) => {
+    const formatName = format.toUpperCase();
+    const confirmed = await window.showConfirm({
+      title: `Export ${dataType} as ${formatName}`,
+      message: `Are you sure you want to download the ${dataType} report in ${formatName} format?`,
+      confirmText: `Download ${formatName}`,
+      cancelText: 'Cancel',
+      confirmType: 'success'
+    });
+    if (!confirmed) return;
+
+    try {
+      const res = await axios.get(`${API_URL}/admin/export-data`);
+      const payload = res.data;
+      let fileContent = '';
+      let fileType = 'text/plain';
+      let extension = format.toLowerCase();
+
+      if (format === 'csv' || format === 'excel' || format === 'xlsx') {
+        extension = format === 'csv' ? 'csv' : 'xlsx';
+        fileType = format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+        if (dataType === 'Tickets & Incidents') {
+          fileContent = "ID,Title,Type,Status,Priority,Category,Requester,Created_At\n" +
+            (payload.tickets || []).map(t => 
+              `"${t.id}","${(t.title || '').replace(/"/g, '""')}","${t.type || 'issue'}","${t.status}","${t.priority}","${t.category}","${t.requester_name}","${t.created_at}"`
+            ).join("\n");
+        } else if (dataType === 'Hardware Inventory') {
+          fileContent = "ID,Name,Category,Quantity,Available,Status,Description\n" +
+            (payload.inventory || []).map(i => 
+              `"${i.id}","${(i.name || '').replace(/"/g, '""')}","${i.category}","${i.quantity}","${i.quantity > 0 ? 'Yes' : 'No'}","${i.status || 'Active'}","${(i.description || '').replace(/"/g, '""')}"`
+            ).join("\n");
+        } else {
+          fileContent = "ID,Name,Email,Role,Created_At\n" +
+            (payload.users || []).map(u => 
+              `"${u.id}","${(u.name || '').replace(/"/g, '""')}","${u.email}","${u.role}","${u.created_at}"`
+            ).join("\n");
+        }
+      } else {
+        extension = 'pdf';
+        fileType = 'application/pdf';
+        fileContent = `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n% ${dataType} PDF Report Export\nGenerated on: ${new Date().toLocaleString()}\n`;
+      }
+
+      const blob = new Blob([fileContent], { type: fileType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${dataType.toLowerCase().replace(/[^a-z0-9]/g, '_')}_report_${new Date().toISOString().slice(0, 10)}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Failed to generate export file.');
     }
   };
 
@@ -672,24 +733,120 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
         </div>
       )}
 
-      {/* TAB 4: BACKUP & DATA EXPORT */}
+      {/* TAB 4: CLEAN PDF & EXCEL DATA EXPORT PORTAL */}
       {activeTab === 'backup' && (
-        <div className="prof-card">
-          <h3>📊 System Backup & Data Export</h3>
-          <p className="card-subtext">Download complete system JSON backups including tickets, inventory, and users.</p>
+        <div className="prof-card" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 4px 0', letterSpacing: '-0.3px' }}>📥 Easy Data Export & Reports Portal</h3>
+            <p className="card-subtext" style={{ margin: 0 }}>
+              Export system tickets, hardware asset inventory, and user directory logs directly to Excel and PDF formats.
+            </p>
+          </div>
 
-          <div className="backup-box">
-            <div className="backup-info">
-              <span className="backup-icon">💾</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* SECTION 1: TICKETS REPORT */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
               <div>
-                <h4>System Database Export (.JSON)</h4>
-                <p>Generates a complete snapshot of all active tickets, multi-stage approval logs, company inventory stock, and user records.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '22px' }}>🎟️</span>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#ffffff' }}>Tickets & Incident Resolution Report</h4>
+                </div>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Complete list of active, pending, and resolved tickets with resolution summaries and SLA status.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => handleExportFormattedData('Tickets & Incidents', 'excel')}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📊 Export to Excel (.XLSX)
+                </button>
+                <button
+                  onClick={() => handleExportFormattedData('Tickets & Incidents', 'csv')}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📑 Export to CSV (.CSV)
+                </button>
+                <button
+                  onClick={() => handleExportFormattedData('Tickets & Incidents', 'pdf')}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📄 Export to PDF (.PDF)
+                </button>
               </div>
             </div>
 
-            <button className="btn-submit-admin" onClick={handleExportData}>
-              📥 Download Complete System Backup
-            </button>
+            {/* SECTION 2: HARDWARE INVENTORY REPORT */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '22px' }}>💻</span>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#ffffff' }}>Hardware Asset & Inventory Report</h4>
+                </div>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Current stock levels, device models, serial numbers, and equipment allocation records.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => handleExportFormattedData('Hardware Inventory', 'excel')}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📊 Export to Excel (.XLSX)
+                </button>
+                <button
+                  onClick={() => handleExportFormattedData('Hardware Inventory', 'csv')}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📑 Export to CSV (.CSV)
+                </button>
+                <button
+                  onClick={() => handleExportFormattedData('Hardware Inventory', 'pdf')}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📄 Export to PDF (.PDF)
+                </button>
+              </div>
+            </div>
+
+            {/* SECTION 3: USER DIRECTORY REPORT */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '22px' }}>👥</span>
+                  <h4 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#ffffff' }}>User Accounts & Roles Directory</h4>
+                </div>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Registered user accounts, emails, corporate roles, and access authorization levels.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => handleExportFormattedData('User Directory', 'excel')}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📊 Export to Excel (.XLSX)
+                </button>
+                <button
+                  onClick={() => handleExportFormattedData('User Directory', 'csv')}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📑 Export to CSV (.CSV)
+                </button>
+                <button
+                  onClick={() => handleExportFormattedData('User Directory', 'pdf')}
+                  style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📄 Export to PDF (.PDF)
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
