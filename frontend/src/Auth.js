@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import './Auth.css';
+import { LogoIcon } from './components/Icons';
 
-function Auth({ API_URL, onAuthSuccess }) {
+function Auth({ API_URL, onAuthSuccess, globalSettings }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
@@ -43,8 +44,12 @@ function Auth({ API_URL, onAuthSuccess }) {
     }
   };
 
+  const containerStyle = globalSettings?.branding_login_background_url 
+    ? { backgroundImage: `url(${globalSettings.branding_login_background_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {};
+
   return (
-    <div className="auth-container">
+    <div className="auth-container" style={containerStyle}>
       <svg className="network-background" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
@@ -214,23 +219,11 @@ function Auth({ API_URL, onAuthSuccess }) {
       </svg>
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-logo-svg">
-            <svg width="80" height="40" viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Ticket */}
-              <g transform="translate(10, 5) rotate(-15)">
-                <rect x="0" y="0" width="30" height="18" rx="2" stroke="#38bdf8" strokeWidth="2" fill="none" />
-                <path d="M 0,9 A 3,3 0 0 1 3,9" fill="none" stroke="#38bdf8" strokeWidth="2" />
-                <path d="M 30,9 A 3,3 0 0 1 27,9" fill="none" stroke="#38bdf8" strokeWidth="2" />
-                <line x1="8" y1="9" x2="22" y2="9" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="2,2" />
-              </g>
-              {/* Box */}
-              <g transform="translate(45, 8)">
-                <path d="M 12,0 L 24,6 L 12,12 L 0,6 Z" stroke="#818cf8" strokeWidth="2" fill="none" />
-                <path d="M 0,6 L 0,18 L 12,24 L 12,12 Z" stroke="#818cf8" strokeWidth="2" fill="none" />
-                <path d="M 24,6 L 24,18 L 12,24 L 12,12 Z" stroke="#818cf8" strokeWidth="2" fill="none" />
-              </g>
-            </svg>
-          </div>
+          {globalSettings?.branding_logo_url ? (
+            <img src={globalSettings.branding_logo_url} alt="Company Logo" style={{ maxHeight: '56px', width: 'auto', marginBottom: '12px', borderRadius: '6px' }} />
+          ) : (
+            <LogoIcon size={44} style={{ color: 'var(--accent, #38bdf8)', marginBottom: '12px' }} />
+          )}
           <h2>Ticket & Inventory</h2>
           <p className="auth-subtitle">Management System</p>
           <p className="auth-tagline">Track. Manage. Optimize.</p>

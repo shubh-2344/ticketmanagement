@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './TicketDetail.css';
+import { 
+  EditIcon, 
+  TrashIcon, 
+  ClockIcon, 
+  SparklesIcon 
+} from './components/Icons';
 
 function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBack, onAdminUpdate, onAdminDelete, API_URL }) {
   const [comment, setComment] = useState('');
@@ -309,15 +315,15 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
   const getStatusBadge = (status, type) => {
     switch (status) {
       case 'pending_manager_approval':
-        return { text: '🟡 Pending Manager Review', bg: '#f59e0b' };
+        return { text: 'Pending Manager Review', bg: '#f59e0b' };
       case 'pending_admin_assignment':
-        return { text: type === 'issue' ? '🟣 Pending Admin Action' : '🟣 Pending Admin Device Assignment', bg: '#8b5cf6' };
+        return { text: type === 'issue' ? 'Pending Admin Action' : 'Pending Admin Device Assignment', bg: '#8b5cf6' };
       case 'approved':
-        return { text: type === 'issue' ? '🟢 Resolved & Closed' : '🟢 Device Assigned & Fulfilled', bg: '#10b981' };
+        return { text: type === 'issue' ? 'Resolved & Closed' : 'Device Assigned & Fulfilled', bg: '#10b981' };
       case 'rejected':
-        return { text: '🔴 Denied by Manager', bg: '#ef4444' };
+        return { text: 'Denied by Manager', bg: '#ef4444' };
       case 'closed':
-        return { text: '⚪ Closed', bg: '#64748b' };
+        return { text: 'Closed', bg: '#64748b' };
       default:
         return { text: status.toUpperCase(), bg: '#3b82f6' };
     }
@@ -341,11 +347,11 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
 
         {isAdmin && (
           <div className="admin-quick-actions">
-            <button className="btn-admin-edit" onClick={() => setShowAdminEditModal(true)}>
-              ✏️ Admin Edit Ticket
+            <button className="btn-admin-edit" onClick={() => setShowAdminEditModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <EditIcon size={14} /> Admin Edit Ticket
             </button>
-            <button className="btn-admin-delete" onClick={handleAdminDeleteClick}>
-              🗑️ Admin Delete
+            <button className="btn-admin-delete" onClick={handleAdminDeleteClick} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <TrashIcon size={14} /> Admin Delete
             </button>
           </div>
         )}

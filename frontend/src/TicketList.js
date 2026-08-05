@@ -1,22 +1,40 @@
 import React from 'react';
 import './TicketList.css';
+import { 
+  DevicesIcon, 
+  HardwareIcon, 
+  AccessIcon, 
+  SoftwareIcon 
+} from './components/Icons';
 
 function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
   const getStatusBadge = (status, type) => {
     switch (status) {
       case 'pending_manager_approval':
-        return { text: '🟡 Manager Review', bg: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24' };
+        return { text: 'Manager Review', bg: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24' };
       case 'pending_admin_assignment':
-        return { text: type === 'issue' ? '🟣 Pending Admin Action' : '🟣 Admin Device Assignment', bg: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.4)', color: '#c084fc' };
+        return { text: type === 'issue' ? 'Pending Admin Action' : 'Admin Device Assignment', bg: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.4)', color: '#c084fc' };
       case 'approved':
-        return { text: type === 'issue' ? '🟢 Resolved' : '🟢 Device Assigned', bg: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', color: '#4ade80' };
+        return { text: type === 'issue' ? 'Resolved' : 'Device Assigned', bg: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', color: '#4ade80' };
       case 'rejected':
-        return { text: '🔴 Denied by Manager', bg: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5' };
+        return { text: 'Denied by Manager', bg: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5' };
       case 'closed':
-        return { text: '⚪ Closed', bg: 'rgba(100, 116, 139, 0.2)', border: '1px solid rgba(100, 116, 139, 0.4)', color: '#cbd5e1' };
+        return { text: 'Closed', bg: 'rgba(100, 116, 139, 0.2)', border: '1px solid rgba(100, 116, 139, 0.4)', color: '#cbd5e1' };
       default:
         return { text: status.toUpperCase(), bg: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#38bdf8' };
     }
+  };
+
+  const getCategoryIcon = (category) => {
+    const cat = (category || '').toLowerCase();
+    if (cat.includes('hardware') || cat.includes('laptop') || cat.includes('monitor') || cat.includes('keyboard')) {
+      return <DevicesIcon size={14} style={{ marginRight: '6px' }} />;
+    } else if (cat.includes('access') || cat.includes('permission') || cat.includes('network')) {
+      return <AccessIcon size={14} style={{ marginRight: '6px' }} />;
+    } else if (cat.includes('software') || cat.includes('app') || cat.includes('install')) {
+      return <SoftwareIcon size={14} style={{ marginRight: '6px' }} />;
+    }
+    return <HardwareIcon size={14} style={{ marginRight: '6px' }} />;
   };
 
   const getTypeColor = (type) => {
@@ -68,7 +86,10 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
                     <td>
                       <div className="table-title-cell">
                         <strong>{t.title}</strong>
-                        <span className="mini-type-tag">{t.type === 'device-request' ? '🖥️ Device' : '🔧 Issue'}</span>
+                        <span className="mini-type-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          {getCategoryIcon(t.category)}
+                          {t.type === 'device-request' ? 'Device' : 'Issue'}
+                        </span>
                       </div>
                     </td>
                     <td>{t.requester_name}</td>
@@ -95,7 +116,9 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
             return (
               <div key={ticket.id} className="compact-row" onClick={() => onViewTicket(ticket)}>
                 <div className="compact-left">
-                  <span className="compact-type">{ticket.type === 'device-request' ? '🖥️' : '🔧'}</span>
+                  <span className="compact-type" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {getCategoryIcon(ticket.category)}
+                  </span>
                   <div className="compact-title-group">
                     <h4>{ticket.title}</h4>
                     <small>By {ticket.requester_name}{ticket.type !== 'issue' && ` • Manager: ${ticket.manager_name || 'Manager'}`}</small>
@@ -128,9 +151,10 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
                   <div className="ticket-badges">
                     <span
                       className="badge"
-                      style={{ backgroundColor: getTypeColor(ticket.type) }}
+                      style={{ backgroundColor: getTypeColor(ticket.type), display: 'inline-flex', alignItems: 'center' }}
                     >
-                      {ticket.type === 'device-request' ? '🖥️ Device' : '🔧 Issue'}
+                      {getCategoryIcon(ticket.category)}
+                      {ticket.type === 'device-request' ? 'Device' : 'Issue'}
                     </span>
                     <span
                       className="badge status-pill"
@@ -160,7 +184,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid' }) {
 
                 {ticket.assigned_device_name && (
                   <div className="device-assigned-preview">
-                    <span>{ticket.type === 'issue' ? '🔧 Resolution' : '💻 Assigned Device'}: <strong>{ticket.assigned_device_name}</strong></span>
+                    <span>{ticket.type === 'issue' ? 'Resolution' : 'Assigned Device'}: <strong>{ticket.assigned_device_name}</strong></span>
                   </div>
                 )}
 

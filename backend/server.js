@@ -80,7 +80,14 @@ async function initializeDB() {
 
         await pool.query(`
             INSERT INTO system_settings (key, value)
-            VALUES ('ticket_view_mode', 'grid')
+            VALUES 
+                ('ticket_view_mode', 'grid'),
+                ('global_theme', ''),
+                ('branding_primary_color', ''),
+                ('branding_secondary_color', ''),
+                ('branding_logo_url', ''),
+                ('branding_favicon_url', ''),
+                ('branding_login_background_url', '')
             ON CONFLICT (key) DO NOTHING
         `);
 
@@ -221,7 +228,7 @@ app.get('/health', (req, res) => {
 });
 
 // System Settings Endpoints (Global Ticket View Settings for All Users)
-app.get('/api/settings', authenticateToken, async (req, res) => {
+app.get('/api/settings', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM system_settings');
         const settings = {};
@@ -236,23 +243,84 @@ app.get('/api/settings', authenticateToken, async (req, res) => {
 });
 
 app.put('/api/settings', authenticateToken, requireRole(['admin']), async (req, res) => {
-    const { ticket_view_mode } = req.body;
-
-    if (!ticket_view_mode || !['grid', 'table', 'compact'].includes(ticket_view_mode)) {
-        return res.status(400).json({ error: 'Invalid view mode. Must be "grid", "table", or "compact"' });
-    }
+    const { 
+        ticket_view_mode, 
+        global_theme,
+        branding_primary_color,
+        branding_secondary_color,
+        branding_logo_url,
+        branding_favicon_url,
+        branding_login_background_url
+    } = req.body;
 
     try {
-        await pool.query(`
-            INSERT INTO system_settings (key, value)
-            VALUES ('ticket_view_mode', $1)
-            ON CONFLICT (key) DO UPDATE SET value = $1
-        `, [ticket_view_mode]);
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            if (ticket_view_mode) {
+                if (['grid', 'table', 'compact'].includes(ticket_view_mode)) {
+                    await client.query(`
+                        INSERT INTO system_settings (key, value) VALUES ('ticket_view_mode', $1)
+                        ON CONFLICT (key) DO UPDATE SET value = $1
+                    `, [ticket_view_mode]);
+                }
+            }
+            if (global_theme !== undefined) {
+                await client.query(`
+                    INSERT INTO system_settings (key, value) VALUES ('global_theme', $1)
+                    ON CONFLICT (key) DO UPDATE SET value = $1
+                `, [global_theme]);
+            }
+            if (branding_primary_color !== undefined) {
+                await client.query(`
+                    INSERT INTO system_settings (key, value) VALUES ('branding_primary_color', $1)
+                    ON CONFLICT (key) DO UPDATE SET value = $1
+                `, [branding_primary_color]);
+            }
+            if (branding_secondary_color !== undefined) {
+                await client.query(`
+                    INSERT INTO system_settings (key, value) VALUES ('branding_secondary_color', $1)
+                    ON CONFLICT (key) DO UPDATE SET value = $1
+                `, [branding_secondary_color]);
+            }
+            if (branding_logo_url !== undefined) {
+                await client.query(`
+                    INSERT INTO system_settings (key, value) VALUES ('branding_logo_url', $1)
+                    ON CONFLICT (key) DO UPDATE SET value = $1
+                `, [branding_logo_url]);
+            }
+            if (branding_favicon_url !== undefined) {
+                await client.query(`
+                    INSERT INTO system_settings (key, value) VALUES ('branding_favicon_url', $1)
+                    ON CONFLICT (key) DO UPDATE SET value = $1
+                `, [branding_favicon_url]);
+            }
+            if (branding_login_background_url !== undefined) {
+                await client.query(`
+                    INSERT INTO system_settings (key, value) VALUES ('branding_login_background_url', $1)
+                    ON CONFLICT (key) DO UPDATE SET value = $1
+                `, [branding_login_background_url]);
+            }
 
-        res.json({ message: 'Global ticket view setting updated for all users', ticket_view_mode });
+            await client.query('COMMIT');
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+
+        // Fetch and return the updated settings
+        const result = await pool.query('SELECT * FROM system_settings');
+        const settings = {};
+        result.rows.forEach(row => {
+            settings[row.key] = row.value;
+        });
+        res.json({ message: 'Global system settings updated successfully', settings });
     } catch (err) {
         console.error('Update settings error:', err);
-        res.status(500).json({ error: err.message || 'Failed to update settings' });
+        res.status(500).json({ error: err.message || 'Failed to update system settings' });
     }
 });
 

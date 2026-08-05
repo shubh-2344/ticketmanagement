@@ -14,6 +14,19 @@ import Toast from './Toast';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import AssetLifecycleDashboard from './AssetLifecycleDashboard';
 import AIDashboard from './AIDashboard';
+import ExecutiveDashboard from './ExecutiveDashboard';
+import { 
+  DashboardIcon, 
+  DevicesIcon, 
+  CreateIcon, 
+  ApprovalsIcon, 
+  InventoryIcon, 
+  UsersIcon, 
+  SettingsIcon, 
+  LogoutIcon, 
+  SparklesIcon,
+  LogoIcon
+} from './components/Icons';
 
 function App() {
   const [view, setView] = useState('dashboard');
@@ -21,6 +34,7 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('dashboard-theme') || '');
   const [tickets, setTickets] = useState([]);
+  const [globalSettings, setGlobalSettings] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedDeviceForRequest, setSelectedDeviceForRequest] = useState(null);
   const [ticketViewMode, setTicketViewMode] = useState('grid');
@@ -92,9 +106,12 @@ function App() {
   }, [token]);
 
   useEffect(() => {
+    fetchGlobalSettings();
+  }, []);
+
+  useEffect(() => {
     if (currentUser && token) {
       fetchTickets();
-      fetchGlobalSettings();
     }
   }, [currentUser, token]);
 
@@ -111,6 +128,7 @@ function App() {
   const fetchGlobalSettings = async () => {
     try {
       const response = await axios.get(`${API_URL}/settings`);
+      setGlobalSettings(response.data);
       if (response.data && response.data.ticket_view_mode) {
         setTicketViewMode(response.data.ticket_view_mode);
       }
@@ -118,6 +136,26 @@ function App() {
       console.error('Error fetching global settings:', error);
     }
   };
+
+  useEffect(() => {
+    if (globalSettings) {
+      const root = document.documentElement;
+      if (globalSettings.branding_primary_color) {
+        root.style.setProperty('--accent', globalSettings.branding_primary_color);
+      } else {
+        root.style.removeProperty('--accent');
+      }
+      if (globalSettings.branding_secondary_color) {
+        root.style.setProperty('--accent-secondary', globalSettings.branding_secondary_color);
+      } else {
+        root.style.removeProperty('--accent-secondary');
+      }
+      if (globalSettings.branding_favicon_url) {
+        let link = document.querySelector("link[rel~='icon']");
+        if (link) link.href = globalSettings.branding_favicon_url;
+      }
+    }
+  }, [globalSettings]);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -271,7 +309,7 @@ function App() {
 
   // Render Auth screen if not authenticated
   if (!token || !currentUser) {
-    return <Auth API_URL={API_URL} onAuthSuccess={handleAuthSuccess} />;
+    return <Auth API_URL={API_URL} onAuthSuccess={handleAuthSuccess} globalSettings={globalSettings} />;
   }
 
   const getRoleBadgeColor = (role) => {
@@ -285,8 +323,10 @@ function App() {
     }
   };
 
+  const activeTheme = globalSettings?.global_theme || currentTheme || 'theme-enterprise-dark';
+
   return (
-    <div className={`app ai-theme ${currentTheme}`}>
+    <div className={`app ai-theme ${activeTheme}`}>
       {/* Top-Left Reusable Toast Notification */}
       <Toast toast={toast} onClose={() => setToast(null)} />
 
@@ -315,7 +355,11 @@ function App() {
       <header className="header">
         <div className="header-content">
           <div className="header-brand">
-            <img src="/logo.png" alt="Portal Logo" className="header-logo-img" />
+            {globalSettings?.branding_logo_url ? (
+              <img src={globalSettings.branding_logo_url} alt="Portal Logo" className="header-logo-img" style={{ maxHeight: '36px', width: 'auto', borderRadius: '4px' }} />
+            ) : (
+              <LogoIcon size={32} style={{ color: 'var(--accent)', marginRight: '8px' }} />
+            )}
             <h1>
               Ticket Management
             </h1>
@@ -385,11 +429,24 @@ function App() {
       <div className="container">
         <nav className="sidebar">
           <div className="nav-section-title">MAIN MENU</div>
+
+          {/* Executive Dashboard Link (Admins & Managers) */}
+          {(currentUser.role === 'admin' || currentUser.role === 'manager') && (
+            <button
+              className={`nav-button ${view === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setView('dashboard')}
+            >
+              <span className="nav-icon"><DashboardIcon size={18} /></span>
+              <span>Dashboard</span>
+            </button>
+          )}
+
+          {/* Tickets List Link */}
           <button
-            className={`nav-button ${view === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setView('dashboard')}
+            className={`nav-button ${view === (currentUser.role === 'employee' ? 'dashboard' : 'tickets-list') ? 'active' : ''}`}
+            onClick={() => setView(currentUser.role === 'employee' ? 'dashboard' : 'tickets-list')}
           >
-            <span className="nav-icon">📊</span>
+            <span className="nav-icon"><InventoryIcon size={18} /></span>
             <span>{currentUser.role === 'employee' ? 'My Tickets' : 'All Tickets'}</span>
           </button>
 
@@ -397,7 +454,7 @@ function App() {
             className={`nav-button ${view === 'devices' ? 'active' : ''}`}
             onClick={() => setView('devices')}
           >
-            <span className="nav-icon">💻</span>
+            <span className="nav-icon"><DevicesIcon size={18} /></span>
             <span>Available Devices</span>
           </button>
 
@@ -408,7 +465,7 @@ function App() {
               setView('create');
             }}
           >
-            <span className="nav-icon">➕</span>
+            <span className="nav-icon"><CreateIcon size={18} /></span>
             <span>Create Ticket</span>
           </button>
 
@@ -418,7 +475,7 @@ function App() {
                 className={`nav-button ${view === 'approvals' ? 'active' : ''}`}
                 onClick={() => setView('approvals')}
               >
-                <span className="nav-icon">✅</span>
+                <span className="nav-icon"><ApprovalsIcon size={18} /></span>
                 <span>Approvals Queue</span>
               </button>
 
@@ -426,7 +483,7 @@ function App() {
                 className={`nav-button ${view === 'analytics' ? 'active' : ''}`}
                 onClick={() => setView('analytics')}
               >
-                <span className="nav-icon">📈</span>
+                <span className="nav-icon"><SparklesIcon size={18} /></span>
                 <span>Analytics Insights</span>
               </button>
 
@@ -434,7 +491,7 @@ function App() {
                 className={`nav-button ${view === 'ai-dashboard' ? 'active' : ''}`}
                 onClick={() => setView('ai-dashboard')}
               >
-                <span className="nav-icon">🤖</span>
+                <span className="nav-icon"><SparklesIcon size={18} style={{ color: '#c084fc' }} /></span>
                 <span>AI Diagnostics</span>
               </button>
             </>
@@ -448,7 +505,7 @@ function App() {
                 className={`nav-button admin-btn ${view === 'inventory' ? 'active' : ''}`}
                 onClick={() => setView('inventory')}
               >
-                <span className="nav-icon">📦</span>
+                <span className="nav-icon"><InventoryIcon size={18} /></span>
                 <span>Inventory Control</span>
                 <span className="admin-tag">ADMIN</span>
               </button>
@@ -457,7 +514,7 @@ function App() {
                 className={`nav-button admin-btn ${view === 'asset-lifecycle' ? 'active' : ''}`}
                 onClick={() => setView('asset-lifecycle')}
               >
-                <span className="nav-icon">🖥️</span>
+                <span className="nav-icon"><DevicesIcon size={18} /></span>
                 <span>Asset Lifecycle</span>
                 <span className="admin-tag">ADMIN</span>
               </button>
@@ -466,7 +523,7 @@ function App() {
                 className={`nav-button admin-btn ${view === 'users' ? 'active' : ''}`}
                 onClick={() => setView('users')}
               >
-                <span className="nav-icon">👥</span>
+                <span className="nav-icon"><UsersIcon size={18} /></span>
                 <span>User & View Control</span>
                 <span className="admin-tag">ADMIN</span>
               </button>
@@ -475,7 +532,7 @@ function App() {
                 className={`nav-button admin-btn ${view === 'admin-profile' ? 'active' : ''}`}
                 onClick={() => setView('admin-profile')}
               >
-                <span className="nav-icon">⚙️</span>
+                <span className="nav-icon"><SettingsIcon size={18} /></span>
                 <span>Admin Profile & Pwd</span>
                 <span className="admin-tag">ADMIN</span>
               </button>
@@ -491,6 +548,24 @@ function App() {
           )}
 
           {!loading && view === 'dashboard' && (
+            (currentUser.role === 'admin' || currentUser.role === 'manager') ? (
+              <ExecutiveDashboard 
+                tickets={tickets} 
+                onSelectTicket={handleViewTicketById} 
+                onViewAllTickets={() => setView('tickets-list')} 
+                onViewInventory={() => setView('inventory')} 
+              />
+            ) : (
+              <TicketList
+                tickets={tickets}
+                currentUser={currentUser}
+                onViewTicket={handleViewTicket}
+                viewMode={ticketViewMode}
+              />
+            )
+          )}
+
+          {!loading && view === 'tickets-list' && (
             <TicketList
               tickets={tickets}
               currentUser={currentUser}

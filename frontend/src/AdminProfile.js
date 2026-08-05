@@ -29,9 +29,67 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState(null);
 
+  const [brandingData, setBrandingData] = useState({
+    global_theme: '',
+    branding_primary_color: '',
+    branding_secondary_color: '',
+    branding_logo_url: '',
+    branding_favicon_url: '',
+    branding_login_background_url: ''
+  });
+
   useEffect(() => {
     fetchUsers();
+    fetchBrandingSettings();
   }, []);
+
+  const fetchBrandingSettings = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/settings`);
+      setBrandingData({
+        global_theme: response.data.global_theme || '',
+        branding_primary_color: response.data.branding_primary_color || '',
+        branding_secondary_color: response.data.branding_secondary_color || '',
+        branding_logo_url: response.data.branding_logo_url || '',
+        branding_favicon_url: response.data.branding_favicon_url || '',
+        branding_login_background_url: response.data.branding_login_background_url || ''
+      });
+    } catch (err) {
+      console.error('Error fetching settings in profile:', err);
+    }
+  };
+
+  const handleBrandingSave = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.put(`${API_URL}/settings`, brandingData);
+      alert('Global Branding & Theme settings updated successfully!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Error saving branding settings:', err);
+      alert(err.response?.data?.error || 'Failed to save settings');
+    }
+  };
+
+  const handleResetBranding = async () => {
+    const confirmed = window.confirm('Are you sure you want to reset all custom colors and logos back to system defaults?');
+    if (!confirmed) return;
+    try {
+      await axios.put(`${API_URL}/settings`, {
+        global_theme: '',
+        branding_primary_color: '',
+        branding_secondary_color: '',
+        branding_logo_url: '',
+        branding_favicon_url: '',
+        branding_login_background_url: ''
+      });
+      alert('Global Branding & Theme settings reset successfully!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Error resetting branding settings:', err);
+      alert(err.response?.data?.error || 'Failed to reset settings');
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -190,6 +248,12 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
           onClick={() => setActiveTab('manage-users')}
         >
           👥 User Management & Passwords
+        </button>
+        <button
+          className={`prof-tab ${activeTab === 'branding' ? 'active' : ''}`}
+          onClick={() => setActiveTab('branding')}
+        >
+          🎨 Branding & Themes
         </button>
         <button
           className={`prof-tab ${activeTab === 'backup' ? 'active' : ''}`}
@@ -488,6 +552,123 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* TAB: BRANDING & THEME CONFIGURATION */}
+      {activeTab === 'branding' && (
+        <div className="prof-card">
+          <h3>🎨 Global System Branding & Themes</h3>
+          <p className="card-subtext">Configure corporate colors, logos, and the global theme preset applied for all users.</p>
+
+          <form onSubmit={handleBrandingSave} className="prof-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            <div className="form-group">
+              <label>Global Application Theme Preset</label>
+              <select
+                value={brandingData.global_theme}
+                onChange={(e) => setBrandingData({ ...brandingData, global_theme: e.target.value })}
+                style={{ padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', width: '100%', borderRadius: '8px' }}
+              >
+                <option value="">Enterprise Dark (Default)</option>
+                <option value="theme-enterprise-light">Enterprise Light (White Theme)</option>
+                <option value="theme-azure-blue">Azure Blue</option>
+                <option value="theme-midnight-navy">Midnight Navy</option>
+                <option value="theme-carbon-black">Carbon Black</option>
+                <option value="theme-glassmorphism">Glassmorphism</option>
+                <option value="theme-cyber-blue">Cyber Blue</option>
+                <option value="theme-material-enterprise">Material Enterprise</option>
+                <option value="theme-high-contrast">High-Contrast Accessibility Theme</option>
+              </select>
+              <span className="field-hint" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>The selected theme is applied globally for all logged-in portal users.</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="form-group">
+                <label>Custom Brand Primary Accent Color</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    type="color"
+                    value={brandingData.branding_primary_color || '#4f46e5'}
+                    onChange={(e) => setBrandingData({ ...brandingData, branding_primary_color: e.target.value })}
+                    style={{ width: '40px', height: '40px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+                  />
+                  <input
+                    type="text"
+                    value={brandingData.branding_primary_color}
+                    onChange={(e) => setBrandingData({ ...brandingData, branding_primary_color: e.target.value })}
+                    placeholder="#4f46e5"
+                    style={{ flex: '1', padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px' }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Custom Brand Secondary Accent Color</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input
+                    type="color"
+                    value={brandingData.branding_secondary_color || '#06b6d4'}
+                    onChange={(e) => setBrandingData({ ...brandingData, branding_secondary_color: e.target.value })}
+                    style={{ width: '40px', height: '40px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+                  />
+                  <input
+                    type="text"
+                    value={brandingData.branding_secondary_color}
+                    onChange={(e) => setBrandingData({ ...brandingData, branding_secondary_color: e.target.value })}
+                    placeholder="#06b6d4"
+                    style={{ flex: '1', padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Custom Brand Logo Icon URL</label>
+              <input
+                type="url"
+                value={brandingData.branding_logo_url}
+                onChange={(e) => setBrandingData({ ...brandingData, branding_logo_url: e.target.value })}
+                placeholder="e.g. https://company.com/logo.png"
+                style={{ padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px', width: '100%' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Custom Brand Favicon URL</label>
+              <input
+                type="url"
+                value={brandingData.branding_favicon_url}
+                onChange={(e) => setBrandingData({ ...brandingData, branding_favicon_url: e.target.value })}
+                placeholder="e.g. https://company.com/favicon.ico"
+                style={{ padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px', width: '100%' }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Custom Login Page Background Image URL</label>
+              <input
+                type="url"
+                value={brandingData.branding_login_background_url}
+                onChange={(e) => setBrandingData({ ...brandingData, branding_login_background_url: e.target.value })}
+                placeholder="e.g. https://images.unsplash.com/photo-xyz"
+                style={{ padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px', width: '100%' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+              <button type="submit" className="btn-submit-admin" style={{ flex: '1', padding: '12px', fontWeight: '700', borderRadius: '8px' }}>
+                💾 Save Global Branding Configurations
+              </button>
+              <button 
+                type="button" 
+                onClick={handleResetBranding}
+                style={{ padding: '12px 18px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+              >
+                Reset Defaults
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
