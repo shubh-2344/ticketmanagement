@@ -386,6 +386,7 @@ function App() {
               >
                 {currentUser.role.toUpperCase()}
               </span>
+            </div>
             <button className="btn-logout" onClick={handleLogout}>
               🚪 Logout
             </button>

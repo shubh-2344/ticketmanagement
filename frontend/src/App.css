@@ -323,13 +323,13 @@ body {
 /* Main Content Surface */
 .main-content {
   flex: 1;
-  background: var(--bg-card);
-  backdrop-filter: var(--backdrop);
-  -webkit-backdrop-filter: var(--backdrop);
+  background: var(--bg-main-content, var(--bg-card));
+  backdrop-filter: var(--backdrop-main-content, var(--backdrop));
+  -webkit-backdrop-filter: var(--backdrop-main-content, var(--backdrop));
   border-radius: var(--radius-card);
   padding: 32px;
-  border: var(--border-card);
-  box-shadow: var(--shadow);
+  border: var(--border-main-content, var(--border-card));
+  box-shadow: var(--shadow-main-content, var(--shadow));
   min-height: 550px;
   transition: all 0.3s ease;
 }
@@ -703,8 +703,8 @@ body {
 
 /* 2. Enterprise Light */
 .theme-enterprise-light {
-  --bg-body: #f1f5f9;
-  --bg-app: #f1f5f9;
+  --bg-body: #f8fafc;
+  --bg-app: #f8fafc;
   --bg-header: #ffffff;
   --bg-sidebar: #ffffff;
   --bg-card: #ffffff;
@@ -718,6 +718,10 @@ body {
   --shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
   --radius-card: 14px;
   --backdrop: none;
+  --bg-main-content: transparent;
+  --border-main-content: none;
+  --shadow-main-content: none;
+  --backdrop-main-content: none;
 }
 .theme-enterprise-light .header-brand h1 {
   color: #0f172a !important;
@@ -852,6 +856,10 @@ body {
   --shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
   --radius-card: 12px;
   --backdrop: none;
+  --bg-main-content: transparent;
+  --border-main-content: none;
+  --shadow-main-content: none;
+  --backdrop-main-content: none;
 }
 .theme-material-enterprise .header-brand h1 {
   color: #ffffff !important;
