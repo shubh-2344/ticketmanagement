@@ -1,16 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import './Auth.css';
-
-const generateStars = (count) => {
-  const shadows = [];
-  for (let i = 0; i < count; i++) {
-    const x = Math.floor(Math.random() * 2000);
-    const y = Math.floor(Math.random() * 2000);
-    shadows.push(`${x}px ${y}px #FFF`);
-  }
-  return shadows.join(', ');
-};
 
 function Auth({ API_URL, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,32 +12,6 @@ function Auth({ API_URL, onAuthSuccess }) {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const starStyles = useMemo(() => {
-    const s1 = generateStars(700);
-    const s2 = generateStars(200);
-    const s3 = generateStars(100);
-    return `
-      #stars {
-        box-shadow: ${s1};
-      }
-      #stars::after {
-        box-shadow: ${s1};
-      }
-      #stars2 {
-        box-shadow: ${s2};
-      }
-      #stars2::after {
-        box-shadow: ${s2};
-      }
-      #stars3 {
-        box-shadow: ${s3};
-      }
-      #stars3::after {
-        box-shadow: ${s3};
-      }
-    `;
-  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -81,15 +45,195 @@ function Auth({ API_URL, onAuthSuccess }) {
 
   return (
     <div className="auth-container">
-      <style dangerouslySetInnerHTML={{ __html: starStyles }} />
-      <div id="stars"></div>
-      <div id="stars2"></div>
-      <div id="stars3"></div>
+      <svg className="network-background" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <filter id="glow-purple" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* --- Background Circuit Board Traces (dimmed lines) --- */}
+        <path d="M 50,100 L 300,100 L 380,180 L 380,300 L 420,340 L 520,340 L 520,480" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="2" fill="none" />
+        <path d="M 50,550 L 150,550 L 220,620 L 350,620 L 400,670 L 400,770" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="2" fill="none" />
+        <path d="M 1870,100 L 1700,100 L 1600,200 L 1600,300 L 1500,400 L 1400,400 L 1400,480" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="2" fill="none" />
+        <path d="M 1870,550 L 1750,550 L 1680,620 L 1500,620 L 1450,670 L 1450,770" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="2" fill="none" />
+        <path d="M 50,900 L 250,900 L 320,830 L 500,830 L 580,750 L 700,750" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="2" fill="none" />
+        <path d="M 1870,900 L 1650,900 L 1580,830 L 1400,830 L 1320,750 L 1220,750" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="2" fill="none" />
+        
+        {/* --- Connecting Device Traces with Blinking Signal flows --- */}
+        {/* Top-Left Server to Desktop Monitor */}
+        <path d="M 215,240 L 215,480" stroke="rgba(56, 189, 248, 0.15)" strokeWidth="2" fill="none" />
+        <path className="pulse-path" d="M 215,240 L 215,480" stroke="#00f0ff" strokeWidth="2.5" fill="none" filter="url(#glow-cyan)" />
+
+        {/* Desktop Monitor to Bottom-Left CPU */}
+        <path d="M 215,550 L 215,770" stroke="rgba(56, 189, 248, 0.15)" strokeWidth="2" fill="none" />
+        <path className="pulse-path" d="M 215,550 L 215,770" stroke="#818cf8" strokeWidth="2.5" fill="none" filter="url(#glow-purple)" />
+
+        {/* Cloud database to Mid-Right Database */}
+        <path d="M 1650,150 L 1650,480" stroke="rgba(56, 189, 248, 0.15)" strokeWidth="2" fill="none" />
+        <path className="pulse-path" d="M 1650,150 L 1650,480" stroke="#00f0ff" strokeWidth="2.5" fill="none" filter="url(#glow-cyan)" />
+
+        {/* Mid-Right Database to Laptop */}
+        <path d="M 1650,550 L 1650,770" stroke="rgba(56, 189, 248, 0.15)" strokeWidth="2" fill="none" />
+        <path className="pulse-path" d="M 1650,550 L 1650,770" stroke="#818cf8" strokeWidth="2.5" fill="none" filter="url(#glow-purple)" />
+
+        {/* Central Bypass (underneath Login Card) */}
+        <path d="M 215,530 L 700,530 L 800,630 L 1120,630 L 1220,530 L 1650,530" stroke="rgba(56, 189, 248, 0.08)" strokeWidth="2" fill="none" />
+        <path className="pulse-path" d="M 215,530 L 700,530 L 800,630 L 1120,630 L 1220,530 L 1650,530" stroke="#38bdf8" strokeWidth="2" fill="none" filter="url(#glow-cyan)" />
+
+        {/* --- Circuit Board Nodes (circles) --- */}
+        <circle cx="300" cy="100" r="3" fill="#38bdf8" />
+        <circle cx="380" cy="180" r="3" fill="#38bdf8" />
+        <circle cx="220" cy="620" r="3" fill="#38bdf8" />
+        <circle cx="1700" cy="100" r="3" fill="#38bdf8" />
+        <circle cx="1600" cy="200" r="3" fill="#38bdf8" />
+        <circle cx="1680" cy="620" r="3" fill="#38bdf8" />
+        <circle cx="320" cy="830" r="3" fill="#38bdf8" />
+        <circle cx="1580" cy="830" r="3" fill="#38bdf8" />
+
+        {/* --- Devices Layout --- */}
+        {/* 1. Top-Left Server Racks */}
+        <g transform="translate(180, 140)">
+          <rect x="0" y="0" width="70" height="90" rx="10" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <rect x="10" y="12" width="50" height="18" rx="4" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+          <circle cx="20" cy="21" r="2" fill="#10b981" className="led-blink" />
+          <circle cx="28" cy="21" r="2" fill="#10b981" />
+          <rect x="10" y="36" width="50" height="18" rx="4" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+          <circle cx="20" cy="45" r="2" fill="#10b981" />
+          <circle cx="28" cy="45" r="2" fill="#ef4444" className="led-blink-delayed" />
+          <rect x="10" y="60" width="50" height="18" rx="4" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+          <circle cx="20" cy="69" r="2" fill="#10b981" />
+          <circle cx="28" cy="69" r="2" fill="#10b981" />
+        </g>
+
+        {/* 2. Top-Right Cloud Database */}
+        <g transform="translate(1620, 110)">
+          <path d="M 15,25 C 8,25 2,19 2,12 C 2,5 8,0 15,0 C 18,0 20,1 23,3 C 27,-2 37,-2 41,3 C 44,2 47,2 50,5 C 56,5 60,10 60,16 C 60,23 55,28 47,28 L 15,28 Z" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <path d="M 22,20 L 22,10 M 22,10 L 19,13 M 22,10 L 25,13" fill="none" stroke="#00f0ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 32,10 L 32,20 M 32,20 L 29,17 M 32,20 L 35,17" fill="none" stroke="#00f0ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
+
+        {/* 3. Mid-Right Database Cylinder */}
+        <g transform="translate(1620, 480)">
+          <ellipse cx="30" cy="20" rx="25" ry="8" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <path d="M 5,20 L 5,35 A 25,8 0 0 0 55,35 L 55,20" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <path d="M 5,35 L 5,50 A 25,8 0 0 0 55,50 L 55,35" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <path d="M 5,50 L 5,65 A 25,8 0 0 0 55,65 L 55,50" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="15" y1="28" x2="25" y2="28" stroke="#00f0ff" strokeWidth="1.5" />
+          <line x1="15" y1="43" x2="25" y2="43" stroke="#00f0ff" strokeWidth="1.5" />
+          <line x1="15" y1="58" x2="25" y2="58" stroke="#00f0ff" strokeWidth="1.5" />
+        </g>
+
+        {/* 4. Bottom-Right Laptop */}
+        <g transform="translate(1600, 770)">
+          <rect x="10" y="5" width="60" height="42" rx="4" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <path d="M 2,47 L 78,47 L 72,55 L 8,55 Z" fill="none" stroke="#38bdf8" strokeWidth="2" strokeLinejoin="round" />
+          <line x1="18" y1="51" x2="62" y2="51" stroke="#00f0ff" strokeWidth="1.5" />
+        </g>
+
+        {/* 5. Bottom-Left CPU Chip */}
+        <g transform="translate(180, 770)">
+          <rect x="12" y="12" width="46" height="46" rx="6" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <rect x="22" y="22" width="26" height="26" rx="3" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+          <line x1="20" y1="4" x2="20" y2="12" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="30" y1="4" x2="30" y2="12" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="40" y1="4" x2="40" y2="12" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="50" y1="4" x2="50" y2="12" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="20" y1="58" x2="20" y2="66" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="30" y1="58" x2="30" y2="66" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="40" y1="58" x2="40" y2="66" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="50" y1="58" x2="50" y2="66" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="4" y1="20" x2="12" y2="20" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="4" y1="30" x2="12" y2="30" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="4" y1="40" x2="12" y2="40" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="4" y1="50" x2="12" y2="50" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="58" y1="20" x2="66" y2="20" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="58" y1="30" x2="66" y2="30" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="58" y1="40" x2="66" y2="40" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="58" y1="50" x2="66" y2="50" stroke="#38bdf8" strokeWidth="2" />
+          <rect x="26" y="26" width="18" height="18" fill="rgba(0, 240, 255, 0.15)" />
+        </g>
+
+        {/* 6. Mid-Left Desktop Monitor */}
+        <g transform="translate(180, 480)">
+          <rect x="5" y="5" width="60" height="42" rx="4" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <path d="M 30,47 L 40,47 L 43,58 L 27,58 Z" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <line x1="20" y1="58" x2="50" y2="58" stroke="#38bdf8" strokeWidth="2" />
+          <circle cx="35" cy="26" r="8" fill="none" stroke="#00f0ff" strokeWidth="1.5" />
+        </g>
+
+        {/* 7. Rotating Gear Left */}
+        <g transform="translate(120, 340)" className="gear-spin">
+          <circle cx="20" cy="20" r="12" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <circle cx="20" cy="20" r="4" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+          <path d="M 20,2 L 20,8 M 20,32 L 20,38 M 2,20 L 8,20 M 32,20 L 38,20 M 7,7 L 12,12 M 28,28 L 33,33 M 33,7 L 28,12 M 7,33 L 12,28" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
+        </g>
+
+        {/* 8. Rotating Gear Right */}
+        <g transform="translate(1330, 830)" className="gear-spin-reverse">
+          <circle cx="20" cy="20" r="12" fill="none" stroke="#38bdf8" strokeWidth="2" />
+          <circle cx="20" cy="20" r="4" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+          <path d="M 20,2 L 20,8 M 20,32 L 20,38 M 2,20 L 8,20 M 32,20 L 38,20 M 7,7 L 12,12 M 28,28 L 33,33 M 33,7 L 28,12 M 7,33 L 12,28" stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" />
+        </g>
+
+        {/* 9. Wi-Fi Indicator */}
+        <g transform="translate(160, 650)">
+          <circle cx="10" cy="23" r="2.5" fill="#38bdf8" />
+          <path d="M 5,18 A 8,8 0 0 1 15,18" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+          <path d="M 1,14 A 13,13 0 0 1 19,14" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+          <path d="M -3,10 A 18,18 0 0 1 23,10" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+        </g>
+
+        {/* --- Moving Live Signals (Data Packets) --- */}
+        <circle r="4" fill="#00f0ff" filter="url(#glow-cyan)">
+          <animateMotion dur="5s" repeatCount="indefinite" path="M 215,240 L 215,480" />
+        </circle>
+        <circle r="4" fill="#818cf8" filter="url(#glow-purple)">
+          <animateMotion dur="4s" repeatCount="indefinite" path="M 215,550 L 215,770" />
+        </circle>
+        <circle r="4" fill="#00f0ff" filter="url(#glow-cyan)">
+          <animateMotion dur="5s" repeatCount="indefinite" path="M 1650,150 L 1650,480" />
+        </circle>
+        <circle r="4" fill="#818cf8" filter="url(#glow-purple)">
+          <animateMotion dur="4s" repeatCount="indefinite" path="M 1650,550 L 1650,770" />
+        </circle>
+        <circle r="5" fill="#00f0ff" filter="url(#glow-cyan)">
+          <animateMotion dur="8s" repeatCount="indefinite" path="M 215,530 L 700,530 L 800,630 L 1120,630 L 1220,530 L 1650,530" />
+        </circle>
+      </svg>
       <div className="auth-card">
         <div className="auth-header">
-          <img src="/logo.png" alt="Portal Logo" className="auth-logo-img" />
-          <h2>Ticket Management</h2>
-          <p>{isLogin ? 'Sign in to access your dashboard' : 'Register a new account'}</p>
+          <div className="auth-logo-svg">
+            <svg width="80" height="40" viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Ticket */}
+              <g transform="translate(10, 5) rotate(-15)">
+                <rect x="0" y="0" width="30" height="18" rx="2" stroke="#38bdf8" strokeWidth="2" fill="none" />
+                <path d="M 0,9 A 3,3 0 0 1 3,9" fill="none" stroke="#38bdf8" strokeWidth="2" />
+                <path d="M 30,9 A 3,3 0 0 1 27,9" fill="none" stroke="#38bdf8" strokeWidth="2" />
+                <line x1="8" y1="9" x2="22" y2="9" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="2,2" />
+              </g>
+              {/* Box */}
+              <g transform="translate(45, 8)">
+                <path d="M 12,0 L 24,6 L 12,12 L 0,6 Z" stroke="#818cf8" strokeWidth="2" fill="none" />
+                <path d="M 0,6 L 0,18 L 12,24 L 12,12 Z" stroke="#818cf8" strokeWidth="2" fill="none" />
+                <path d="M 24,6 L 24,18 L 12,24 L 12,12 Z" stroke="#818cf8" strokeWidth="2" fill="none" />
+              </g>
+            </svg>
+          </div>
+          <h2>Ticket & Inventory</h2>
+          <p className="auth-subtitle">Management System</p>
+          <p className="auth-tagline">Track. Manage. Optimize.</p>
         </div>
 
         <div className="auth-tabs">
@@ -113,39 +257,48 @@ function Auth({ API_URL, onAuthSuccess }) {
           {!isLogin && (
             <div className="form-group">
               <label>Full Name</label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="John Doe"
-                required
-              />
+              <div className="input-with-icon">
+                <span className="input-icon">👤</span>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
             </div>
           )}
 
           <div className="form-group">
             <label>Email Address</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="user@company.com"
-              required
-            />
+            <div className="input-with-icon">
+              <span className="input-icon">✉️</span>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="user@company.com"
+                required
+              />
+            </div>
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-            />
+            <div className="input-with-icon">
+              <span className="input-icon">🔒</span>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                required
+              />
+            </div>
           </div>
 
           {!isLogin && (
