@@ -906,3 +906,29 @@ body {
   box-shadow: 0 0 12px var(--accent);
   z-index: 5;
 }
+
+/* Live Network Signal Background Animations */
+.pulse-path {
+  stroke-dasharray: 40 200;
+  animation: dashScroll 12s linear infinite;
+}
+
+@keyframes dashScroll {
+  to {
+    stroke-dashoffset: -480;
+  }
+}
+
+.led-blink {
+  animation: ledBlink 1.5s step-end infinite;
+}
+
+.led-blink-delayed {
+  animation: ledBlink 1.5s step-end infinite;
+  animation-delay: 0.75s;
+}
+
+@keyframes ledBlink {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
