@@ -363,18 +363,6 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
         </div>
 
         <div>
-          <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Department</label>
-          <select value={filters.department} onChange={(e) => handleFilterChange('department', e.target.value)} style={{ width: '100%', padding: '7px 10px', background: 'var(--bg-body)', border: 'var(--border-card)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '12px', outline: 'none' }}>
-            <option value="all">All Departments</option>
-            <option value="Engineering">Engineering</option>
-            <option value="IT Operations">IT Operations</option>
-            <option value="Product">Product</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Customer Support">Customer Support</option>
-          </select>
-        </div>
-
-        <div>
           <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Priority</label>
           <select value={filters.priority} onChange={(e) => handleFilterChange('priority', e.target.value)} style={{ width: '100%', padding: '7px 10px', background: 'var(--bg-body)', border: 'var(--border-card)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '12px', outline: 'none' }}>
             <option value="all">All Priorities</option>

@@ -422,14 +422,27 @@ function App() {
             </button>
           )}
 
-          {/* Tickets List Link */}
-          <button
-            className={`nav-button ${view === (currentUser.role === 'employee' ? 'dashboard' : 'tickets-list') ? 'active' : ''}`}
-            onClick={() => setView(currentUser.role === 'employee' ? 'dashboard' : 'tickets-list')}
-          >
-            <span className="nav-icon"><InventoryIcon size={18} /></span>
-            <span>{currentUser.role === 'employee' ? 'My Tickets' : 'All Tickets'}</span>
-          </button>
+          {/* All Tickets Link (ADMIN ONLY) */}
+          {currentUser.role === 'admin' && (
+            <button
+              className={`nav-button ${view === 'tickets-list' ? 'active' : ''}`}
+              onClick={() => setView('tickets-list')}
+            >
+              <span className="nav-icon"><InventoryIcon size={18} /></span>
+              <span>All Tickets</span>
+            </button>
+          )}
+
+          {/* My Tickets Link (EMPLOYEE ONLY) */}
+          {currentUser.role === 'employee' && (
+            <button
+              className={`nav-button ${view === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setView('dashboard')}
+            >
+              <span className="nav-icon"><InventoryIcon size={18} /></span>
+              <span>My Tickets</span>
+            </button>
+          )}
 
           <button
             className={`nav-button ${view === 'devices' ? 'active' : ''}`}

@@ -191,12 +191,19 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     };
   }, [scopedTickets, totalDevices, now]);
 
+  const [slaFilter, setSlaFilter] = useState('all'); // 'all', 'expired', 'expiring_soon'
+
   // Actionable Tickets Filter for SLA Risk Monitor: Show ONLY 'At Risk' or 'Breached' tickets
   const actionableTickets = useMemo(() => {
     return scopedTickets
       .map(t => ({ ticket: t, sla: getTicketSLAInfo(t, now) }))
-      .filter(({ ticket, sla }) => !sla.isClosed && (sla.slaStatus === 'At Risk' || sla.slaStatus === 'Breached'));
-  }, [scopedTickets, now]);
+      .filter(({ ticket, sla }) => {
+        if (sla.isClosed) return false;
+        if (slaFilter === 'expired') return sla.slaStatus === 'Breached';
+        if (slaFilter === 'expiring_soon') return sla.slaStatus === 'At Risk';
+        return sla.slaStatus === 'At Risk' || sla.slaStatus === 'Breached';
+      });
+  }, [scopedTickets, now, slaFilter]);
 
   // Escalation Handler cycling: Engineer -> Team Lead -> Manager -> Admin
   const handleEscalateTicket = async (ticket, currentLevel) => {
@@ -375,7 +382,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
 
       {/* SLA Risk Monitor Section (Actionable Tickets Only) */}
       <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <AlertIcon size={18} style={{ color: '#ef4444' }} /> SLA Risk Monitor
@@ -384,9 +391,54 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
               {actionableTickets.length} Actionable
             </span>
           </div>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <ClockIcon size={14} /> Live Real-Time Updates
-          </span>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              onClick={() => setSlaFilter('all')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: slaFilter === 'all' ? 'var(--accent)' : 'var(--bg-body)',
+                border: 'var(--border-card)',
+                color: slaFilter === 'all' ? '#ffffff' : 'var(--text-main)'
+              }}
+            >
+              All SLA Risks
+            </button>
+            <button
+              onClick={() => setSlaFilter('expired')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: slaFilter === 'expired' ? '#ef4444' : 'var(--bg-body)',
+                border: 'var(--border-card)',
+                color: slaFilter === 'expired' ? '#ffffff' : 'var(--text-main)'
+              }}
+            >
+              Expired (Breached) ({metrics.slaBreached})
+            </button>
+            <button
+              onClick={() => setSlaFilter('expiring_soon')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: slaFilter === 'expiring_soon' ? '#f59e0b' : 'var(--bg-body)',
+                border: 'var(--border-card)',
+                color: slaFilter === 'expiring_soon' ? '#ffffff' : 'var(--text-main)'
+              }}
+            >
+              About to Expire (&lt; 12 hrs) ({metrics.slaAtRisk})
+            </button>
+          </div>
         </div>
         
         {actionableTickets.length === 0 ? (
