@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Auth.css';
 import { LogoIcon } from './components/Icons';
@@ -8,17 +8,48 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: '',
-    role: 'employee'
+    password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // OTP Verification States
+  // Enterprise Segmented OTP Verification States
   const [showOtpScreen, setShowOtpScreen] = useState(false);
   const [otpEmail, setOtpEmail] = useState('');
-  const [otpCode, setOtpCode] = useState('');
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [otpSuccessMessage, setOtpSuccessMessage] = useState('');
+  const [isVerifiedSuccess, setIsVerifiedSuccess] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(300); // 5-minute countdown (300 seconds)
+
+  const inputRefs = useRef([]);
+
+  // Live 5-minute Countdown Timer Effect
+  useEffect(() => {
+    let interval = null;
+    if (showOtpScreen && timerSeconds > 0) {
+      interval = setInterval(() => {
+        setTimerSeconds((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [showOtpScreen, timerSeconds]);
+
+  // Auto-focus first digit box when OTP verification view mounts
+  useEffect(() => {
+    if (showOtpScreen && inputRefs.current[0]) {
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 120);
+    }
+  }, [showOtpScreen]);
+
+  const formatTimer = (totalSec) => {
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -37,14 +68,16 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
     const endpoint = isLogin ? `${API_URL}/auth/login` : `${API_URL}/auth/signup`;
     const payload = isLogin
       ? { email: formData.email, password: formData.password }
-      : formData;
+      : { name: formData.name, email: formData.email, password: formData.password };
 
     try {
       const response = await axios.post(endpoint, payload);
       if (response.data.requireOtp) {
         setShowOtpScreen(true);
         setOtpEmail(response.data.email || formData.email);
-        setOtpSuccessMessage(response.data.message || 'OTP code sent to your email.');
+        setOtpDigits(['', '', '', '', '', '']);
+        setTimerSeconds(300);
+        setOtpSuccessMessage(response.data.message || "We've sent a 6-digit verification code to your email address. Please enter the code below to verify your account.");
       } else {
         const { token, user } = response.data;
         onAuthSuccess(token, user);
@@ -54,7 +87,9 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
       if (err.response?.data?.requireOtp) {
         setShowOtpScreen(true);
         setOtpEmail(err.response.data.email || formData.email);
-        setError(err.response.data.error || 'Your email address is unverified. Enter the OTP code sent to your email.');
+        setOtpDigits(['', '', '', '', '', '']);
+        setTimerSeconds(300);
+        setError(err.response.data.error || 'Your account requires email verification. Enter the code sent to your email.');
       } else {
         setError(err.response?.data?.error || 'Authentication failed. Please check your credentials.');
       }
@@ -63,8 +98,69 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
     }
   };
 
+  // Segmented digit change handler
+  const handleDigitChange = (index, value) => {
+    const numericValue = value.replace(/[^0-9]/g, '');
+    if (!numericValue) {
+      const newDigits = [...otpDigits];
+      newDigits[index] = '';
+      setOtpDigits(newDigits);
+      return;
+    }
+
+    const digit = numericValue[numericValue.length - 1];
+    const newDigits = [...otpDigits];
+    newDigits[index] = digit;
+    setOtpDigits(newDigits);
+    setError('');
+
+    // Auto-focus next box
+    if (index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  // Keyboard navigation handler (Backspace & Arrow keys)
+  const handleDigitKeyDown = (index, e) => {
+    if (e.key === 'Backspace') {
+      if (!otpDigits[index] && index > 0) {
+        const newDigits = [...otpDigits];
+        newDigits[index - 1] = '';
+        setOtpDigits(newDigits);
+        inputRefs.current[index - 1]?.focus();
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  // Paste handler for 6-digit OTP codes
+  const handleDigitPaste = (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+    if (!pastedText) return;
+
+    const newDigits = ['', '', '', '', '', ''];
+    for (let i = 0; i < pastedText.length; i++) {
+      newDigits[i] = pastedText[i];
+    }
+    setOtpDigits(newDigits);
+    setError('');
+
+    const nextIndex = Math.min(pastedText.length, 5);
+    inputRefs.current[nextIndex]?.focus();
+  };
+
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
+    const fullOtp = otpDigits.join('');
+    if (fullOtp.length !== 6) {
+      setError('Please enter all 6 digits of the OTP code.');
+      return;
+    }
+
     setError('');
     setOtpSuccessMessage('');
     setLoading(true);
@@ -72,16 +168,22 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
     try {
       const response = await axios.post(`${API_URL}/auth/verify-otp`, {
         email: otpEmail,
-        otp: otpCode
+        otp: fullOtp
       });
       const { token, user, message } = response.data;
-      if (token && user) {
-        onAuthSuccess(token, user);
-      } else {
-        setOtpSuccessMessage(message || 'Email verified successfully!');
-        setShowOtpScreen(false);
-        setIsLogin(true);
-      }
+      
+      setIsVerifiedSuccess(true);
+      setOtpSuccessMessage(message || 'Account activated successfully!');
+
+      setTimeout(() => {
+        if (token && user) {
+          onAuthSuccess(token, user);
+        } else {
+          setShowOtpScreen(false);
+          setIsLogin(true);
+          setIsVerifiedSuccess(false);
+        }
+      }, 1500);
     } catch (err) {
       console.error('Verify OTP error:', err);
       setError(err.response?.data?.error || 'OTP verification failed. Please check the 6-digit code.');
@@ -91,6 +193,8 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
   };
 
   const handleResendOtp = async () => {
+    if (timerSeconds > 0) return;
+
     setError('');
     setOtpSuccessMessage('');
     setLoading(true);
@@ -99,10 +203,15 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
       const response = await axios.post(`${API_URL}/auth/resend-otp`, {
         email: otpEmail
       });
-      setOtpSuccessMessage(response.data.message || 'A new 6-digit OTP code has been sent to your email.');
+      setTimerSeconds(300); // Reset 5-minute timer
+      setOtpDigits(['', '', '', '', '', '']);
+      setOtpSuccessMessage(response.data.message || 'A fresh 6-digit verification code has been sent to your email.');
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
     } catch (err) {
       console.error('Resend OTP error:', err);
-      setError(err.response?.data?.error || 'Failed to resend OTP code.');
+      setError(err.response?.data?.error || 'Failed to resend verification code.');
     } finally {
       setLoading(false);
     }
@@ -111,6 +220,8 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
   const containerStyle = globalSettings?.branding_login_background_url 
     ? { backgroundImage: `url(${globalSettings.branding_login_background_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : {};
+
+  const isOtpComplete = otpDigits.join('').length === 6;
 
   return (
     <div className={`auth-container ${globalSettings?.global_theme || 'theme-enterprise-dark'}`} style={containerStyle}>
@@ -295,59 +406,80 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
 
         {showOtpScreen ? (
           <div className="otp-verification-section">
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <div style={{ fontSize: '36px', marginBottom: '6px' }}>🔑</div>
-              <h3 style={{ color: 'var(--accent, #38bdf8)', margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>Email OTP Verification</h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
-                Please enter the 6-digit OTP code sent to<br/><strong style={{ color: 'var(--text-main)' }}>{otpEmail}</strong>
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <div style={{ fontSize: '38px', marginBottom: '6px' }}>
+                {isVerifiedSuccess ? '🎉' : '🔐'}
+              </div>
+              <h3 style={{ color: 'var(--accent, #38bdf8)', margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>
+                Email OTP Verification
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.5' }}>
+                We've sent a 6-digit verification code to your email address:<br/>
+                <strong style={{ color: 'var(--text-main)', fontSize: '13px' }}>{otpEmail}</strong>
               </p>
             </div>
 
             {otpSuccessMessage && (
-              <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '10px 14px', borderRadius: '8px', fontSize: '12px', marginBottom: '16px', fontWeight: '600', lineHeight: '1.4' }}>
-                ✅ {otpSuccessMessage}
+              <div className="otp-success-banner">
+                <span>✅</span>
+                <span>{otpSuccessMessage}</span>
               </div>
             )}
 
-            {error && <div className="auth-error-banner" style={{ marginBottom: '16px' }}>⚠️ {error}</div>}
+            {error && <div className="auth-error-banner">⚠️ {error}</div>}
 
             <form onSubmit={handleVerifyOtp} className="auth-form">
-              <div className="form-group">
-                <label style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>6-Digit OTP Code</label>
-                <div className="input-with-icon">
-                  <span className="input-icon">🔢</span>
-                  <input
-                    type="text"
-                    maxLength="6"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="123456"
-                    style={{ letterSpacing: '6px', fontSize: '20px', fontWeight: '800', textAlign: 'center' }}
-                    required
-                    autoFocus
-                  />
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Enter 6-Digit Code
+                  </label>
+                  <div className={`otp-timer-badge ${timerSeconds === 0 ? 'expired' : ''}`}>
+                    <span>⏱️</span>
+                    <span>{timerSeconds > 0 ? formatTimer(timerSeconds) : 'Expired'}</span>
+                  </div>
+                </div>
+
+                {/* 6 Individual Segmented Input Boxes */}
+                <div className="otp-digits-container" onPaste={handleDigitPaste}>
+                  {otpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => (inputRefs.current[idx] = el)}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength="1"
+                      value={digit}
+                      onChange={(e) => handleDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                      className={`otp-digit-box ${digit ? 'filled' : ''} ${isVerifiedSuccess ? 'success' : ''}`}
+                      disabled={loading || isVerifiedSuccess}
+                      autoComplete="off"
+                    />
+                  ))}
                 </div>
               </div>
 
-              <button type="submit" className="auth-btn-primary" disabled={loading || otpCode.length !== 6}>
-                {loading ? 'Verifying...' : 'Verify OTP & Activate'}
+              <button type="submit" className="auth-btn-primary" disabled={loading || !isOtpComplete || isVerifiedSuccess}>
+                {loading ? 'Verifying Code...' : (isVerifiedSuccess ? 'Verified! Redirecting...' : 'Verify OTP & Activate')}
               </button>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', fontSize: '12.5px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '18px' }}>
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  disabled={loading}
-                  style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontWeight: '700', padding: 0 }}
+                  disabled={loading || timerSeconds > 0 || isVerifiedSuccess}
+                  className="auth-btn-secondary-link"
                 >
-                  📩 Resend OTP Code
+                  📩 {timerSeconds > 0 ? `Resend (${formatTimer(timerSeconds)})` : 'Resend OTP Code'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setShowOtpScreen(false); setError(''); setOtpSuccessMessage(''); }}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
+                  onClick={() => { setShowOtpScreen(false); setError(''); setOtpSuccessMessage(''); setIsVerifiedSuccess(false); }}
+                  disabled={loading || isVerifiedSuccess}
+                  className="auth-btn-secondary-link"
                 >
-                  ← Back to Login
+                  ← Back to Signup
                 </button>
               </div>
             </form>
