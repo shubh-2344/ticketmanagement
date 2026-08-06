@@ -148,7 +148,6 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
             </button>
           )}
         </div>
-      </div>
 
       {/* 1. MANAGER REVIEW QUEUE TAB */}
       {activeTab === 'manager_queue' && (

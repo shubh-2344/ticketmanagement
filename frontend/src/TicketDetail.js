@@ -8,7 +8,7 @@ import {
   SparklesIcon 
 } from './components/Icons';
 
-function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBack, onAdminUpdate, onAdminDelete, API_URL }) {
+function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBack, onAdminUpdate, onAdminDelete, onRefresh, API_URL }) {
   const [comment, setComment] = useState('');
   const [showApprovalForm, setShowApprovalForm] = useState(false);
   const [showAdminEditModal, setShowAdminEditModal] = useState(false);
