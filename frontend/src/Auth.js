@@ -168,7 +168,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
         otp: fullOtp
       });
       const { token, user, message } = response.data;
-      
+
       setIsVerifiedSuccess(true);
       setOtpSuccessMessage(message || 'Account activated successfully!');
 
@@ -214,7 +214,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
     }
   };
 
-  const containerStyle = globalSettings?.branding_login_background_url 
+  const containerStyle = globalSettings?.branding_login_background_url
     ? { backgroundImage: `url(${globalSettings.branding_login_background_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : {};
 
@@ -247,7 +247,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
         <path d="M 1870,550 L 1750,550 L 1680,620 L 1500,620 L 1450,670 L 1450,770" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="2" fill="none" />
         <path d="M 50,900 L 250,900 L 320,830 L 500,830 L 580,750 L 700,750" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="2" fill="none" />
         <path d="M 1870,900 L 1650,900 L 1580,830 L 1400,830 L 1320,750 L 1220,750" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="2" fill="none" />
-        
+
         {/* --- Connecting Device Traces with Blinking Signal flows --- */}
         {/* Top-Left Server to Desktop Monitor */}
         <path d="M 215,240 L 215,480" stroke="rgba(56, 189, 248, 0.15)" strokeWidth="2" fill="none" />
@@ -411,7 +411,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
                 Email OTP Verification
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.5' }}>
-                We've sent a 6-digit verification code to your email address:<br/>
+                We've sent a 6-digit verification code to your email address:<br />
                 <strong style={{ color: 'var(--text-main)', fontSize: '13px' }}>{otpEmail}</strong>
               </p>
             </div>
