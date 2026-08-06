@@ -13,7 +13,6 @@ import AvailableDevices from './AvailableDevices';
 import Toast from './Toast';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import AssetLifecycleDashboard from './AssetLifecycleDashboard';
-import AIDashboard from './AIDashboard';
 import ExecutiveDashboard from './ExecutiveDashboard';
 import OpenIncidents from './OpenIncidents';
 import ClosedIncidents from './ClosedIncidents';
@@ -515,15 +514,6 @@ function App() {
               </button>
 
               <button
-                className={`nav-button admin-btn ${view === 'ai-dashboard' ? 'active' : ''}`}
-                onClick={() => setView('ai-dashboard')}
-              >
-                <span className="nav-icon"><SparklesIcon size={18} style={{ color: '#c084fc' }} /></span>
-                <span>AI Diagnostics</span>
-                <span className="admin-tag">ADMIN</span>
-              </button>
-
-              <button
                 className={`nav-button admin-btn ${view === 'inventory' ? 'active' : ''}`}
                 onClick={() => setView('inventory')}
               >
@@ -745,21 +735,6 @@ function App() {
                     <div className="denied-icon">🔒</div>
                     <h2>Access Restricted</h2>
                     <p>Only administrators can access the Asset Lifecycle Tracking Dashboard.</p>
-                    <button className="btn-return-home" onClick={() => setView('dashboard')}>
-                      Return to Dashboard
-                    </button>
-                  </div>
-                )
-              )}
-
-              {view === 'ai-dashboard' && (
-                currentUser.role === 'admin' ? (
-                  <AIDashboard API_URL={API_URL} onSelectTicket={handleViewTicketById} />
-                ) : (
-                  <div className="access-denied-card">
-                    <div className="denied-icon">🔒</div>
-                    <h2>Access Restricted</h2>
-                    <p>Only system administrators can access the AI Copilot Diagnostics Dashboard.</p>
                     <button className="btn-return-home" onClick={() => setView('dashboard')}>
                       Return to Dashboard
                     </button>

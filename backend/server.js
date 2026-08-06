@@ -1695,6 +1695,7 @@ app.get('/api/admin/device-tracking', authenticateToken, requireRole(['admin']),
             SELECT 
                 t.id as ticket_id,
                 t.title as ticket_title,
+                t.type as ticket_type,
                 t.requester_name,
                 t.requester_email,
                 t.assigned_device_name,
@@ -1707,8 +1708,9 @@ app.get('/api/admin/device-tracking', authenticateToken, requireRole(['admin']),
             FROM tickets t
             LEFT JOIN inventory i ON t.inventory_id = i.id
             WHERE t.assigned_device_name IS NOT NULL
-              AND t.status IN ('approved', 'return_pending_verification')
-            ORDER BY t.expected_return_date ASC
+              AND t.assigned_device_name != ''
+              AND t.status IN ('approved', 'return_pending_verification', 'closed')
+            ORDER BY COALESCE(t.assigned_at, t.updated_at, t.created_at) DESC
         `);
         res.json(result.rows);
     } catch (err) {

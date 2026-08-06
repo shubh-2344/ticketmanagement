@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import formatTicketId from './utils/formatTicketId';
 
 import { DevicesIcon, AlertIcon, CheckIcon, FileTextIcon, InventoryIcon, SearchIcon } from './components/Icons';
 
@@ -104,49 +105,64 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
 
   if (loading) {
     return (
-      <div className="loading-ai" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#818cf8' }}>
-        <div className="spinner" style={{ width: '40px', height: '40px', border: '3px solid rgba(129, 140, 248, 0.2)', borderTopColor: '#818cf8', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        <p style={{ marginTop: '16px', fontSize: '14px' }}>Loading Asset Diagnostics...</p>
+      <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+        <div className="spinner" style={{ margin: '0 auto 16px auto', width: '40px', height: '40px', border: '3px solid rgba(129, 140, 248, 0.2)', borderTopColor: '#818cf8', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <p style={{ margin: 0, fontSize: '14px' }}>Loading Asset Diagnostics...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '20px', borderRadius: '12px', margin: '20px 0' }}>
-        <h3>Connection Error</h3>
-        <p>{error}</p>
+      <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '40px', textAlign: 'center', color: '#ef4444' }}>
+        <AlertIcon size={32} style={{ marginBottom: '12px' }} />
+        <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>{error}</p>
+        <button onClick={() => fetchData()} style={{ marginTop: '16px', padding: '8px 16px', borderRadius: '6px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer' }}>
+          Retry Loading
+        </button>
       </div>
     );
   }
 
   return (
-    <div style={{ color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div>
-        <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <DevicesIcon size={24} style={{ color: 'var(--accent)' }} /> Enterprise Asset Lifecycle
-        </h2>
-        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>Monitor hardware utilization splits, device assignments, and return lifecycle pipelines.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', color: 'var(--text-main)' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h2 style={{ fontSize: '22px', fontWeight: '800', margin: '0 0 4px 0', letterSpacing: '-0.4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <DevicesIcon size={24} style={{ color: 'var(--accent)' }} /> Asset Lifecycle & Return Tracking
+          </h2>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>
+            Real-time hardware allocation, SLA return monitoring, and inventory health metrics.
+          </p>
+        </div>
+
+        <button
+          onClick={() => fetchData()}
+          style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+        >
+          🔄 Refresh Fleet Tracking
+        </button>
       </div>
 
-      {/* Metrics Cards Grid */}
+      {/* KPI Row */}
       {metrics && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '18px' }}>
           <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Total Fleet Quantity</div>
-            <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px' }}>{metrics.totalInventory} Units</div>
-            <div style={{ fontSize: '11px', color: '#10b981', marginTop: '8px' }}>Available: {metrics.statusCounts.Available}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Total In Stock</div>
+            <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: '#4ade80' }}>{metrics.statusCounts?.Available || 0} Units</div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>Ready for deployment</span>
           </div>
 
           <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Active Allocations</div>
-            <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: '#a855f7' }}>{metrics.statusCounts.Assigned} Units</div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>Reserved: {metrics.statusCounts.Reserved} | Maint: {metrics.statusCounts.Maintenance}</div>
+            <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: '#c084fc' }}>{metrics.statusCounts?.Assigned || 0} Units</div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>Currently assigned to employees</span>
           </div>
 
           <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Overdue Returns</div>
-            <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: metrics.overdueReturns > 0 ? '#ef4444' : 'var(--text-main)' }}>
+            <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: metrics.overdueReturns > 0 ? '#ef4444' : '#10b981' }}>
               {metrics.overdueReturns} Units
             </div>
             <span style={{ fontSize: '11px', color: metrics.overdueReturns > 0 ? '#ef4444' : '#10b981', marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -202,13 +218,14 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '12px 8px' }}>Ticket ID</th>
                   <th style={{ padding: '12px 8px' }}>Device</th>
                   <th style={{ padding: '12px 8px' }}>Assigned User</th>
                   <th style={{ padding: '12px 8px' }}>Assignment Date</th>
                   <th style={{ padding: '12px 8px' }}>Expected Return</th>
                   <th style={{ padding: '12px 8px' }}>Time Left</th>
                   <th style={{ padding: '12px 8px' }}>Status</th>
-                  <th style={{ padding: '12px 8px', textRight: 'right' }}>Actions</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,6 +233,9 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                   const remaining = getRemainingTime(item.expected_return_date, item.ticket_status);
                   return (
                     <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '16px 8px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {formatTicketId(item.ticket_id, item.ticket_type || 'device-request')}
+                      </td>
                       <td style={{ padding: '16px 8px', fontWeight: '600' }}>{item.assigned_device_name}</td>
                       <td style={{ padding: '16px 8px' }}>
                         <div>{item.requester_name}</div>
