@@ -14,15 +14,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
   const [hoveredLinePoint, setHoveredLinePoint] = useState(null);
   const [hoveredPriority, setHoveredPriority] = useState(null);
 
-  // 30-Second Auto-Refresh Widget Timer
-  useEffect(() => {
-    if (onRefresh) {
-      const interval = setInterval(() => {
-        onRefresh(true);
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [onRefresh]);
+
 
   // Filters State
   const [filters, setFilters] = useState({

@@ -35,15 +35,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     }
   }, [API_URL]);
 
-  // 30-Second Auto-Refresh Widget Timer
-  useEffect(() => {
-    if (onRefresh) {
-      const interval = setInterval(() => {
-        onRefresh(true);
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [onRefresh]);
+
 
   // Real-time live countdown ticker updating every 1 second without page refresh
   useEffect(() => {

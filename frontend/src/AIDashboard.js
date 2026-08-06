@@ -9,10 +9,6 @@ function AIDashboard({ API_URL, onSelectTicket }) {
 
   useEffect(() => {
     fetchDiagnostics(false);
-    const interval = setInterval(() => {
-      fetchDiagnostics(true);
-    }, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   const fetchDiagnostics = async (silent = false) => {

@@ -122,15 +122,8 @@ function App() {
   useEffect(() => {
     if (currentUser && token) {
       fetchTickets(false);
-      const autoRefreshInterval = setInterval(() => {
-        // Do not auto-refresh if user is actively filling out a form or editing in Create or Detail views
-        if (view !== 'create' && view !== 'detail') {
-          fetchTickets(true);
-        }
-      }, 30000);
-      return () => clearInterval(autoRefreshInterval);
     }
-  }, [currentUser, token, view]);
+  }, [currentUser, token]);
 
   const fetchCurrentUser = async () => {
     try {
