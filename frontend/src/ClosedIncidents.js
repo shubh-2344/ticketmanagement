@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import CountUp from './components/CountUp';
 import ViewToggle from './components/ViewToggle';
+import formatTicketId from './utils/formatTicketId';
 import { 
   CheckIcon, 
   ClockIcon, 
