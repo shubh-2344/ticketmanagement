@@ -1377,8 +1377,8 @@ app.put('/api/tickets/:id/manager-review', authenticateToken, requireRole(['mana
         if (action === 'approve') {
             (async () => {
                 try {
-                    const adminRes = await pool.query("SELECT email, name FROM users WHERE role = 'admin'");
-                    const adminEmails = adminRes.rows.map(r => r.email);
+                    const adminRes = await pool.query("SELECT email, name FROM users WHERE role = 'admin' AND LOWER(email) != 'admin@company.com'");
+                    const adminEmails = adminRes.rows.map(r => r.email).filter(e => e && e.toLowerCase() !== 'admin@company.com');
                     if (adminEmails.length > 0) {
                         await emailService.sendTicketApprovedEmail({
                             to: adminEmails,

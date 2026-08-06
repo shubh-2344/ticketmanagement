@@ -122,34 +122,63 @@ function ticketCreatedTemplate({ managerName, ticket }) {
  * 3. Ticket Approved Notification (Sent to Admin)
  */
 function ticketApprovedTemplate({ adminName, ticket }) {
+    const formattedId = ticket.id;
+    const approvalComment = (ticket.approval_comment && ticket.approval_comment.trim())
+        ? ticket.approval_comment.trim()
+        : 'No comments provided.';
+    const approvalDateStr = ticket.approval_date 
+        ? new Date(ticket.approval_date).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : new Date().toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
     return `
-    <div style="${baseStyle}">
-      <div style="${cardStyle}">
-        <div style="${headerStyle}">
-          <h2 style="color: #10b981; margin: 0;">✅ Ticket Approved by Manager</h2>
-          <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Pending Administrator Assignment</p>
+    <div style="font-family: Arial, Helvetica, sans-serif; background-color: #f4f6f9; color: #1e293b; margin: 0; padding: 30px 15px;">
+      <div style="max-width: 650px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        
+        <!-- Header -->
+        <div style="background-color: #0f172a; padding: 24px 32px; border-bottom: 3px solid #2563eb;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.2px;">Manager Approval Notification</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">IT Service Management System</p>
         </div>
-        <p style="font-size: 15px; color: #e2e8f0;">Hello <strong>${adminName || 'Administrator'}</strong>,</p>
-        <p style="font-size: 14px; color: #cbd5e1;">The following ticket was approved by manager <strong>${ticket.approver_name || ticket.manager_name}</strong> and is ready for device fulfillment/assignment:</p>
 
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #0f172a; border-radius: 8px; overflow: hidden; font-size: 13px;">
-          <tr>
-            <td style="padding: 10px 14px; color: #94a3b8; width: 30%;">Title:</td>
-            <td style="padding: 10px 14px; color: #f8fafc; font-weight: 600;">${ticket.title}</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px 14px; color: #94a3b8;">Requester:</td>
-            <td style="padding: 10px 14px; color: #f8fafc;">${ticket.requester_name} (${ticket.requester_email})</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px 14px; color: #94a3b8;">Manager Note:</td>
-            <td style="padding: 10px 14px; color: #cbd5e1;">${ticket.approval_comment || 'Approved without additional notes'}</td>
-          </tr>
-        </table>
+        <!-- Content Body -->
+        <div style="padding: 32px;">
+          <p style="font-size: 15px; color: #334155; margin-top: 0;">Dear ${adminName || 'Administrator'},</p>
+          <p style="font-size: 14px; color: #475569; line-height: 1.5;">
+            The following ticket has been approved by the manager and is pending administrator action/fulfillment.
+          </p>
 
-        <div style="${footerStyle}">
-          DevSecOps Ticket System Notification Service
+          <!-- Ticket Summary Table -->
+          <table style="width: 100%; border-collapse: collapse; margin: 24px 0; border: 1px solid #e2e8f0; font-size: 13px;">
+            <tbody>
+              <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 10px 14px; font-weight: 700; color: #475569; width: 32%;">Ticket ID:</td>
+                <td style="padding: 10px 14px; color: #0f172a; font-family: monospace; font-weight: 700;">${formattedId}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 10px 14px; font-weight: 700; color: #475569;">Title:</td>
+                <td style="padding: 10px 14px; color: #0f172a; font-weight: 600;">${ticket.title}</td>
+              </tr>
+              <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 10px 14px; font-weight: 700; color: #475569;">Requester:</td>
+                <td style="padding: 10px 14px; color: #0f172a;">${ticket.requester_name} &lt;${ticket.requester_email || 'N/A'}&gt;</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 14px; font-weight: 700; color: #475569;">Manager:</td>
+                <td style="padding: 10px 14px; color: #0f172a;">${ticket.approver_name || ticket.manager_name || 'Assigned Manager'}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p style="font-size: 13px; color: #64748b; line-height: 1.5;">
+            Please access the IT Management Portal to complete hardware allocation or resolution tasks associated with this ticket.
+          </p>
         </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px 32px; font-size: 12px; color: #64748b; text-align: center;">
+          This is an automated notification from the Enterprise Ticket Management System.
+        </div>
+
       </div>
     </div>
   `;

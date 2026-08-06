@@ -13,16 +13,27 @@ async function sendMailHelper({ to, subject, html }) {
         return { success: false, error: 'Recipient address missing' };
     }
 
+    let recipients = Array.isArray(to) ? to : [to];
+    // Filter out dummy admin@company.com address
+    recipients = recipients
+        .map(e => (typeof e === 'string' ? e.trim() : ''))
+        .filter(e => e && e.toLowerCase() !== 'admin@company.com');
+
+    if (recipients.length === 0) {
+        console.warn(`[EMAIL NOTICE] No valid non-dummy recipients remaining for "${subject}". Delivery skipped.`);
+        return { success: false, error: 'No valid recipient email address' };
+    }
+
     // Check if SMTP is configured
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-        console.warn(`[EMAIL NOTICE] SMTP credentials not set in .env. Skipping actual mail delivery for "${subject}" to <${to}>.`);
+        console.warn(`[EMAIL NOTICE] SMTP credentials not set in .env. Skipping actual mail delivery for "${subject}" to <${recipients.join(', ')}>.`);
         return { success: false, error: 'SMTP credentials not configured in .env' };
     }
 
     try {
         const mailOptions = {
             from: `"${defaultSender.name}" <${defaultSender.email}>`,
-            to: Array.isArray(to) ? to.join(', ') : to,
+            to: recipients.join(', '),
             subject: subject,
             html: html
         };
@@ -58,7 +69,7 @@ async function sendTicketCreatedEmail({ to, managerName, ticket }) {
  * 3. Send Ticket Approved Notification to Admin
  */
 async function sendTicketApprovedEmail({ to, adminName, ticket }) {
-    const subject = `✅ Ticket Approved by Manager: ${ticket.title}`;
+    const subject = `Ticket Approved by Manager: ${ticket.title}`;
     const html = templates.ticketApprovedTemplate({ adminName, ticket });
     return await sendMailHelper({ to, subject, html });
 }

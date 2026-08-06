@@ -171,10 +171,10 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                     <div>
                       <span className="stage-badge manager">STAGE 1: Manager Review</span>
                       <h3 onClick={() => onViewTicket(ticket)} className="clickable-title">
-                        {ticket.title}
+                        <span className="ticket-id-tag">{formatTicketId(ticket.id, ticket.type)}</span> {ticket.title}
                       </h3>
                     </div>
-                    <span className="priority-badge">{ticket.priority.toUpperCase()}</span>
+                    <span className={`priority-badge ${ticket.priority}`}>{ticket.priority.toUpperCase()}</span>
                   </div>
 
                   <p className="ticket-desc">{ticket.description}</p>
@@ -182,10 +182,12 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                   <div className="card-meta-grid">
                     <div><span className="label">Requester:</span> <strong>{ticket.requester_name}</strong></div>
                     <div><span className="label">Category:</span> <span>{ticket.category}</span></div>
+                    <div><span className="label">Submitted:</span> <span>{formatDate(ticket.created_at)}</span></div>
                   </div>
 
                   <div className="review-action-box">
                     <textarea
+                      className="review-textarea"
                       rows="2"
                       placeholder="Enter review notes or reason..."
                       value={reviewComment[ticket.id] || ''}
@@ -193,12 +195,14 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                     />
                     <div className="action-buttons-flex">
                       <button
+                        type="button"
                         className="btn-approve-sm"
                         onClick={() => handleManagerReview(ticket.id, 'approve')}
                       >
                         <CheckIcon size={14} /> Approve Request
                       </button>
                       <button
+                        type="button"
                         className="btn-deny-sm"
                         onClick={() => handleManagerReview(ticket.id, 'reject')}
                       >
