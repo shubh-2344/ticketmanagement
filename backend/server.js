@@ -413,21 +413,6 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        // Prevent login until email is verified
-        if (!user.is_verified) {
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
-            await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
-            
-            emailService.sendOtpEmail({ to: user.email, name: user.name, otp });
-
-            return res.status(403).json({
-                error: 'Your email address is not verified. A new 6-digit OTP code has been sent to your email.',
-                requireOtp: true,
-                email: user.email
-            });
-        }
-
         const token = jwt.sign(
             { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department },
             JWT_SECRET,
