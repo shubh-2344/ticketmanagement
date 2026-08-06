@@ -444,8 +444,6 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           {renderSLADashboard()}
 
           <section className="section">
-
-          <section className="section">
             <h2>Description</h2>
             <p className="description">{ticket.description}</p>
           </section>
