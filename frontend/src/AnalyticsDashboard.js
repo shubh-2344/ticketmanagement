@@ -178,6 +178,8 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       { key: 'low', label: 'Low', count: priorityCounts.low, color: '#38bdf8' }
     ];
 
+    const priorityTotal = priorityData.reduce((sum, item) => sum + item.count, 0);
+
     // 3. Status Distribution calculated from actual scoped database tickets
     const countOpen = scopedTickets.filter(t => {
       const st = (t.status || '').toLowerCase();
