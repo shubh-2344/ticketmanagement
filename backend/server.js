@@ -134,6 +134,9 @@ async function initializeDB() {
         `);
 
         // Migrations
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT 'Engineering';`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT 'Engineering';`);
+
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS manager_id VARCHAR(50);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS manager_name VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS inventory_id UUID;`);
@@ -158,20 +161,20 @@ async function initializeDB() {
         const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
 
         const seedUsers = [
-            ['user1', 'John Doe', 'john@company.com', defaultPasswordHash, 'employee'],
-            ['user2', 'Jane Smith', 'jane@company.com', defaultPasswordHash, 'manager'],
-            ['user3', 'Bob Wilson', 'bob@company.com', defaultPasswordHash, 'employee'],
-            ['mgr1', 'Manager One', 'manager@company.com', defaultPasswordHash, 'manager'],
-            ['admin1', 'System Admin', 'admin@company.com', defaultPasswordHash, 'admin']
+            ['user1', 'John Doe', 'john@company.com', defaultPasswordHash, 'employee', 'Engineering'],
+            ['user2', 'Jane Smith', 'jane@company.com', defaultPasswordHash, 'manager', 'Product'],
+            ['user3', 'Bob Wilson', 'bob@company.com', defaultPasswordHash, 'employee', 'Marketing'],
+            ['mgr1', 'Manager One', 'manager@company.com', defaultPasswordHash, 'manager', 'Engineering'],
+            ['admin1', 'System Admin', 'admin@company.com', defaultPasswordHash, 'admin', 'IT Operations']
         ];
 
-        for (const [id, name, email, passHash, role] of seedUsers) {
+        for (const [id, name, email, passHash, role, dept] of seedUsers) {
             await pool.query(`
-                INSERT INTO users (id, name, email, password_hash, role)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO users (id, name, email, password_hash, role, department)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 ON CONFLICT (email) DO UPDATE 
-                SET password_hash = $4, name = $2, role = $5
-            `, [id, name, email, passHash, role]);
+                SET password_hash = $4, name = $2, role = $5, department = $6
+            `, [id, name, email, passHash, role, dept]);
         }
 
         // Seed Sample Inventory Items if empty
@@ -669,7 +672,7 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
             query += ' WHERE requester_id = $1 ORDER BY created_at DESC';
             params.push(req.user.id);
         } else if (req.user.role === 'manager') {
-            query += ' WHERE (manager_id = $1 OR approver_id = $1 OR requester_id = $1) ORDER BY created_at DESC';
+            query += ` WHERE (manager_id = $1 OR approver_id = $1 OR requester_id = $1 OR department IN (SELECT department FROM users WHERE id = $1 AND department IS NOT NULL AND department != '')) ORDER BY created_at DESC`;
             params.push(req.user.id);
         } else {
             query += ' ORDER BY created_at DESC';
@@ -682,6 +685,227 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
         res.status(500).json({ error: err.message || 'Internal server error' });
     }
 });
+
+// LIVE DASHBOARD ANALYTICS ENDPOINT
+app.get('/api/analytics/dashboard', authenticateToken, async (req, res) => {
+    try {
+        const { granularity = 'Day', dateRange = 'all', department = 'all', priority = 'all', status = 'all' } = req.query;
+
+        // Fetch tickets based on user role and scope
+        let query = 'SELECT * FROM tickets';
+        let params = [];
+
+        if (req.user.role === 'employee') {
+            query += ' WHERE requester_id = $1';
+            params.push(req.user.id);
+        } else if (req.user.role === 'manager') {
+            query += ` WHERE (manager_id = $1 OR approver_id = $1 OR requester_id = $1 OR department IN (SELECT department FROM users WHERE id = $1 AND department IS NOT NULL AND department != ''))`;
+            params.push(req.user.id);
+        } else {
+            query += ' WHERE 1=1';
+        }
+
+        const result = await pool.query(query + ' ORDER BY created_at DESC', params);
+        let tickets = result.rows;
+
+        // Apply additional request query filters if provided
+        const now = Date.now();
+        tickets = tickets.filter(t => {
+            if (dateRange !== 'all') {
+                const ticketTime = new Date(t.created_at).getTime();
+                if (dateRange === '7days' && now - ticketTime > 7 * 24 * 60 * 60 * 1000) return false;
+                if (dateRange === '30days' && now - ticketTime > 30 * 24 * 60 * 60 * 1000) return false;
+            }
+            if (department !== 'all' && (t.department || 'Engineering').toLowerCase() !== department.toLowerCase()) return false;
+            if (priority !== 'all' && (t.priority || '').toLowerCase() !== priority.toLowerCase()) return false;
+            if (status !== 'all') {
+                const st = (t.status || '').toLowerCase();
+                if (status === 'open' && (st === 'closed' || st === 'resolved')) return false;
+                if (status === 'closed' && st !== 'closed' && st !== 'resolved') return false;
+                if (status === 'in_progress' && st !== 'approved' && st !== 'pending_admin_assignment') return false;
+            }
+            return true;
+        });
+
+        // Compute live metrics
+        const total = tickets.length;
+        const open = tickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
+        const closed = tickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
+        const inProgress = tickets.filter(t => t.status === 'approved' || t.status === 'pending_admin_assignment').length;
+        const pending = tickets.filter(t => t.status === 'pending_manager_approval' || t.status === 'pending').length;
+
+        // SLA calculation
+        let slaBreached = 0;
+        let slaAtRisk = 0;
+        let slaMetCount = 0;
+        let totalResolutionHours = 0;
+        let resolvedCountWithHours = 0;
+
+        tickets.forEach(t => {
+            const isClosed = t.status === 'closed' || t.status === 'resolved';
+            const created = new Date(t.created_at).getTime();
+            const target = t.target_resolution_date
+                ? new Date(t.target_resolution_date).getTime()
+                : created + (t.priority === 'high' || t.priority === 'urgent' ? 24 : t.priority === 'low' ? 72 : 48) * 3600000;
+
+            if (!isClosed) {
+                const diff = target - now;
+                if (diff <= 0) slaBreached++;
+                else if (diff <= 12 * 3600000) slaAtRisk++;
+            } else {
+                const returned = t.returned_at ? new Date(t.returned_at).getTime() : new Date(t.updated_at || t.created_at).getTime();
+                if (returned <= target) slaMetCount++;
+                const hours = (returned - created) / (1000 * 3600);
+                if (hours >= 0) {
+                    totalResolutionHours += hours;
+                    resolvedCountWithHours++;
+                }
+            }
+        });
+
+        const slaCompliance = closed > 0 ? Math.round((slaMetCount / closed) * 100) : 100;
+        const avgResolutionHours = resolvedCountWithHours > 0 ? Math.round((totalResolutionHours / resolvedCountWithHours) * 10) / 10 : 0;
+
+        // Fleet utilization from database inventory table
+        const invRes = await pool.query('SELECT COUNT(*) FROM inventory');
+        const totalDevices = parseInt(invRes.rows[0].count, 10) || 0;
+        const assignedDevices = tickets.filter(t => t.assigned_device_name && t.status !== 'closed').length;
+        const utilization = totalDevices > 0 ? Math.min(100, Math.round((assignedDevices / totalDevices) * 100)) : 0;
+
+        // Priority breakdown
+        const priorityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
+        tickets.forEach(t => {
+            const p = (t.priority || 'medium').toLowerCase();
+            if (p === 'urgent' || p === 'critical') priorityCounts.critical++;
+            else if (p === 'high') priorityCounts.high++;
+            else if (p === 'low') priorityCounts.low++;
+            else priorityCounts.medium++;
+        });
+
+        const priorityData = [
+            { key: 'critical', label: 'Critical', count: priorityCounts.critical, color: '#ef4444' },
+            { key: 'high', label: 'High', count: priorityCounts.high, color: '#f97316' },
+            { key: 'medium', label: 'Medium', count: priorityCounts.medium, color: '#f59e0b' },
+            { key: 'low', label: 'Low', count: priorityCounts.low, color: '#38bdf8' }
+        ];
+
+        // Category breakdown
+        const byCategory = {
+            'Hardware': 0, 'Software': 0, 'Network': 0, 'Security': 0,
+            'Access Request': 0, 'Incident': 0, 'Asset Request': 0, 'Others': 0
+        };
+        tickets.forEach(t => {
+            const cat = (t.category || '').toLowerCase();
+            const type = (t.type || '').toLowerCase();
+            if (type === 'device-request') byCategory['Asset Request']++;
+            else if (cat.includes('hard') || cat.includes('laptop') || cat.includes('desktop') || cat.includes('monitor')) byCategory['Hardware']++;
+            else if (cat.includes('soft') || cat.includes('app') || cat.includes('bug')) byCategory['Software']++;
+            else if (cat.includes('net') || cat.includes('wifi') || cat.includes('vpn')) byCategory['Network']++;
+            else if (cat.includes('sec') || cat.includes('auth')) byCategory['Security']++;
+            else if (cat.includes('access') || cat.includes('perm')) byCategory['Access Request']++;
+            else if (type === 'issue') byCategory['Incident']++;
+            else byCategory['Others']++;
+        });
+
+        // Dynamic Time-Series Ticket Volume Trend (Capped at Current Date)
+        const currentDateObj = new Date(); // Current server time
+        let lineTrendData = [];
+
+        if (granularity === 'Day') {
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(currentDateObj);
+                d.setDate(currentDateObj.getDate() - i);
+                const label = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+                const dateStr = d.toISOString().split('T')[0];
+
+                const dayTickets = tickets.filter(t => t.created_at && new Date(t.created_at).toISOString().split('T')[0] === dateStr);
+                const dayTotal = dayTickets.length;
+                const dayOpen = dayTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
+                const dayResolved = dayTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
+
+                lineTrendData.push({
+                    label,
+                    dateStr,
+                    total: dayTotal,
+                    open: dayOpen,
+                    resolved: dayResolved
+                });
+            }
+        } else if (granularity === 'Week') {
+            for (let i = 4; i >= 0; i--) {
+                const weekEnd = new Date(currentDateObj);
+                weekEnd.setDate(currentDateObj.getDate() - (i * 7));
+                const weekStart = new Date(weekEnd);
+                weekStart.setDate(weekEnd.getDate() - 6);
+
+                const label = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                
+                const weekTickets = tickets.filter(t => {
+                    const tTime = new Date(t.created_at).getTime();
+                    return tTime >= weekStart.getTime() && tTime <= weekEnd.getTime();
+                });
+
+                lineTrendData.push({
+                    label,
+                    dateStr: label,
+                    total: weekTickets.length,
+                    open: weekTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length,
+                    resolved: weekTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length
+                });
+            }
+        } else { // Month View
+            for (let i = 5; i >= 0; i--) {
+                const m = new Date(currentDateObj.getFullYear(), currentDateObj.getMonth() - i, 1);
+                const label = m.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+                const monthTickets = tickets.filter(t => {
+                    const d = new Date(t.created_at);
+                    return d.getFullYear() === m.getFullYear() && d.getMonth() === m.getMonth();
+                });
+
+                lineTrendData.push({
+                    label,
+                    dateStr: label,
+                    total: monthTickets.length,
+                    open: monthTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length,
+                    resolved: monthTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length
+                });
+            }
+        }
+
+        // Live Feed (Top 5)
+        const feed = tickets.slice(0, 5).map(t => ({
+            id: t.id,
+            time: new Date(t.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
+            title: t.title,
+            user: t.requester_name,
+            desc: `${t.requester_name} raised a ${t.priority.toUpperCase()} ticket for ${t.category || 'general'}`
+        }));
+
+        res.json({
+            total,
+            open,
+            closed,
+            inProgress,
+            pending,
+            slaBreached,
+            slaAtRisk,
+            slaCompliance,
+            avgResolutionHours,
+            totalDevices,
+            assignedDevices,
+            utilization,
+            priorityData,
+            byCategory,
+            lineTrendData,
+            feed
+        });
+    } catch (err) {
+        console.error('Dashboard analytics error:', err);
+        res.status(500).json({ error: err.message || 'Failed to compute dashboard analytics' });
+    }
+});
+
 
 // GET single ticket
 app.get('/api/tickets/:id', authenticateToken, async (req, res) => {

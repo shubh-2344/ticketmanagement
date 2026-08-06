@@ -122,6 +122,10 @@ function App() {
   useEffect(() => {
     if (currentUser && token) {
       fetchTickets();
+      const autoRefreshInterval = setInterval(() => {
+        fetchTickets();
+      }, 30000);
+      return () => clearInterval(autoRefreshInterval);
     }
   }, [currentUser, token]);
 
@@ -661,7 +665,14 @@ function App() {
               )}
 
               {view === 'analytics' && (
-                <AnalyticsDashboard tickets={tickets} currentUser={currentUser} />
+                <AnalyticsDashboard 
+                  tickets={tickets} 
+                  currentUser={currentUser} 
+                  API_URL={API_URL}
+                  onRefresh={fetchTickets}
+                  onSelectTicket={handleViewTicketById}
+                  onViewAllTickets={() => setView('tickets-list')}
+                />
               )}
 
               {view === 'asset-lifecycle' && (

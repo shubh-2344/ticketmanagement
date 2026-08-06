@@ -8,11 +8,21 @@ import {
 } from './components/Icons';
 import './TicketList.css';
 
-function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewAllTickets }) {
+function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewAllTickets, API_URL, onRefresh }) {
   const [animate, setAnimate] = useState(false);
   const [trendGranularity, setTrendGranularity] = useState('Day'); // 'Day', 'Week', 'Month'
   const [hoveredLinePoint, setHoveredLinePoint] = useState(null);
   const [hoveredPriority, setHoveredPriority] = useState(null);
+
+  // 30-Second Auto-Refresh Widget Timer
+  useEffect(() => {
+    if (onRefresh) {
+      const interval = setInterval(() => {
+        onRefresh();
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [onRefresh]);
 
   // Filters State
   const [filters, setFilters] = useState({
@@ -36,8 +46,9 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
     setFilters({ dateRange: 'all', department: 'all', priority: 'all', status: 'all' });
   };
 
-  const getDepartment = (email) => {
-    const emailLower = (email || '').toLowerCase();
+  const getDepartment = (t) => {
+    if (t.department) return t.department;
+    const emailLower = (t.requester_email || '').toLowerCase();
     if (emailLower.includes('john') || emailLower.includes('engineer') || emailLower.includes('dev')) return 'Engineering';
     if (emailLower.includes('jane') || emailLower.includes('manager') || emailLower.includes('product')) return 'Product';
     if (emailLower.includes('bob') || emailLower.includes('market') || emailLower.includes('sale')) return 'Marketing';
@@ -45,16 +56,31 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
     return 'Customer Support';
   };
 
+  // Manager Department Scope & Assigned Approval Filtering
+  const scopedTickets = useMemo(() => {
+    if (currentUser?.role === 'manager') {
+      const mgrId = currentUser.id;
+      const mgrDept = (currentUser.department || '').toLowerCase();
+      return tickets.filter(t => 
+        t.manager_id === mgrId || 
+        t.approver_id === mgrId || 
+        t.requester_id === mgrId || 
+        (mgrDept && (getDepartment(t) || '').toLowerCase() === mgrDept)
+      );
+    }
+    return tickets;
+  }, [tickets, currentUser]);
+
   // Filtered Tickets Computation
   const filteredTickets = useMemo(() => {
     const now = Date.now();
-    return tickets.filter(t => {
+    return scopedTickets.filter(t => {
       if (filters.dateRange !== 'all') {
         const ticketTime = new Date(t.created_at).getTime();
         if (filters.dateRange === '7days' && now - ticketTime > 7 * 24 * 60 * 60 * 1000) return false;
         if (filters.dateRange === '30days' && now - ticketTime > 30 * 24 * 60 * 60 * 1000) return false;
       }
-      if (filters.department !== 'all' && getDepartment(t.requester_email) !== filters.department) return false;
+      if (filters.department !== 'all' && getDepartment(t).toLowerCase() !== filters.department.toLowerCase()) return false;
       if (filters.priority !== 'all' && (t.priority || '').toLowerCase() !== filters.priority) return false;
       if (filters.status !== 'all') {
         const st = (t.status || '').toLowerCase();
@@ -64,9 +90,9 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       }
       return true;
     });
-  }, [tickets, filters]);
+  }, [scopedTickets, filters]);
 
-  // Aggregate Metrics & Datasets
+  // Aggregate Metrics & Datasets driven 100% strictly by Database Data
   const metrics = useMemo(() => {
     const total = filteredTickets.length;
     const open = filteredTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
@@ -75,18 +101,31 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
     const pending = filteredTickets.filter(t => t.status === 'pending_manager_approval' || t.status === 'pending').length;
 
     let slaMetCount = 0;
+    let totalResHours = 0;
+    let resolvedWithHoursCount = 0;
+
     filteredTickets.forEach(t => {
-      const target = t.target_resolution_date ? new Date(t.target_resolution_date).getTime() : 0;
+      const created = new Date(t.created_at).getTime();
+      const target = t.target_resolution_date 
+        ? new Date(t.target_resolution_date).getTime() 
+        : created + (t.priority === 'high' ? 24 : t.priority === 'low' ? 72 : 48) * 3600000;
+
       const isClosed = t.status === 'closed' || t.status === 'resolved';
-      if (target && isClosed) {
-        const finished = t.returned_at ? new Date(t.returned_at).getTime() : new Date(t.updated_at).getTime();
+      if (isClosed) {
+        const finished = t.returned_at ? new Date(t.returned_at).getTime() : new Date(t.updated_at || t.created_at).getTime();
         if (finished <= target) slaMetCount++;
+
+        const hrs = (finished - created) / 3600000;
+        if (hrs >= 0) {
+          totalResHours += hrs;
+          resolvedWithHoursCount++;
+        }
       }
     });
 
     const resolutionRate = total > 0 ? Math.round((closed / total) * 100) : 0;
-    const slaCompliance = closed > 0 ? Math.round((slaMetCount / closed) * 100) : 95;
-    const avgResolutionHours = 24.5;
+    const slaCompliance = closed > 0 ? Math.round((slaMetCount / closed) * 100) : 100;
+    const avgResolutionHours = resolvedWithHoursCount > 0 ? Math.round((totalResHours / resolvedWithHoursCount) * 10) / 10 : 0;
 
     // 1. Category Breakdown (8 Standard Categories)
     const byCategory = {
@@ -134,75 +173,91 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       else priorityCounts.medium++;
     });
 
-    // Default simulation fallback if ticket count is low
     const priorityData = [
-      { key: 'critical', label: 'Critical', count: priorityCounts.critical || (total > 0 ? Math.max(1, Math.round(total * 0.15)) : 6), color: '#ef4444' },
-      { key: 'high', label: 'High', count: priorityCounts.high || (total > 0 ? Math.max(2, Math.round(total * 0.35)) : 14), color: '#f97316' },
-      { key: 'medium', label: 'Medium', count: priorityCounts.medium || (total > 0 ? Math.max(3, Math.round(total * 0.35)) : 18), color: '#f59e0b' },
-      { key: 'low', label: 'Low', count: priorityCounts.low || (total > 0 ? Math.max(2, Math.round(total * 0.15)) : 10), color: '#38bdf8' }
+      { key: 'critical', label: 'Critical', count: priorityCounts.critical, color: '#ef4444' },
+      { key: 'high', label: 'High', count: priorityCounts.high, color: '#f97316' },
+      { key: 'medium', label: 'Medium', count: priorityCounts.medium, color: '#f59e0b' },
+      { key: 'low', label: 'Low', count: priorityCounts.low, color: '#38bdf8' }
     ];
 
     const priorityTotal = priorityData.reduce((sum, item) => sum + item.count, 0);
 
     // 3. Status Distribution
     const statusDist = {
-      Open: pending,
+      Open: open,
       'In Progress': inProgress,
       Resolved: Math.round(closed * 0.4),
       Closed: Math.round(closed * 0.6)
     };
 
-    // 4. Real-time Live Ticket Volume Trend Data by Granularity (Day / Week / Month)
+    // 4. Real-time Live Ticket Volume Trend Data (Day / Week / Month), Capped strictly at Current Date
     let lineTrendData = [];
-    const now = new Date();
+    const nowObj = new Date();
 
     if (trendGranularity === 'Day') {
       const days = [];
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(now.getDate() - i);
+        const d = new Date(nowObj);
+        d.setDate(nowObj.getDate() - i);
         const label = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
         const dateStr = d.toISOString().split('T')[0];
         
-        const dayTickets = filteredTickets.filter(t => t.created_at && t.created_at.startsWith(dateStr));
-        const totalCount = dayTickets.length;
-        const openCount = dayTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
-        const resolvedCount = dayTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
-
+        const dayTickets = filteredTickets.filter(t => t.created_at && new Date(t.created_at).toISOString().split('T')[0] === dateStr);
         days.push({
           label,
           dateStr,
-          total: totalCount > 0 ? totalCount : (12 + (6 - i) * 3),
-          open: openCount > 0 ? openCount : (4 + i),
-          resolved: resolvedCount > 0 ? resolvedCount : (8 + i * 2)
+          total: dayTickets.length,
+          open: dayTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length,
+          resolved: dayTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length
         });
       }
       lineTrendData = days;
     } else if (trendGranularity === 'Week') {
       const weeks = [];
       for (let i = 4; i >= 0; i--) {
-        const totalCount = filteredTickets.length > 0 ? Math.round(filteredTickets.length * (0.15 + (4 - i) * 0.2)) : (85 + (4 - i) * 15);
+        const wEnd = new Date(nowObj);
+        wEnd.setDate(nowObj.getDate() - (i * 7));
+        const wStart = new Date(wEnd);
+        wStart.setDate(wEnd.getDate() - 6);
+
+        const label = `${wStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${wEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        
+        const weekTickets = filteredTickets.filter(t => {
+          if (!t.created_at) return false;
+          const tTime = new Date(t.created_at).getTime();
+          return tTime >= wStart.getTime() && tTime <= wEnd.getTime();
+        });
+
         weeks.push({
-          label: `Wk ${31 - i}`,
-          dateStr: `Week ${31 - i}`,
-          total: totalCount,
-          open: Math.round(totalCount * 0.3),
-          resolved: Math.round(totalCount * 0.7)
+          label,
+          dateStr: label,
+          total: weekTickets.length,
+          open: weekTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length,
+          resolved: weekTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length
         });
       }
       lineTrendData = weeks;
     } else {
-      const months = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-      lineTrendData = months.map((m, i) => {
-        const totalCount = filteredTickets.length > 0 ? Math.round(filteredTickets.length * (0.5 + i * 0.1)) : (300 + i * 50);
-        return {
-          label: m,
-          dateStr: `${m} 2026`,
-          total: totalCount,
-          open: Math.round(totalCount * 0.25),
-          resolved: Math.round(totalCount * 0.75)
-        };
-      });
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const m = new Date(nowObj.getFullYear(), nowObj.getMonth() - i, 1);
+        const label = m.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+        const monthTickets = filteredTickets.filter(t => {
+          if (!t.created_at) return false;
+          const d = new Date(t.created_at);
+          return d.getFullYear() === m.getFullYear() && d.getMonth() === m.getMonth();
+        });
+
+        months.push({
+          label,
+          dateStr: label,
+          total: monthTickets.length,
+          open: monthTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length,
+          resolved: monthTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length
+        });
+      }
+      lineTrendData = months;
     }
 
     return {

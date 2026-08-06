@@ -294,20 +294,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
             </div>
           </div>
 
-          {!isLogin && (
-            <div className="form-group">
-              <label>Account Role</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="auth-select"
-              >
-                <option value="employee">User / Employee</option>
-                <option value="manager">Manager</option>
-              </select>
-            </div>
-          )}
+
 
           <button type="submit" className="auth-btn-primary" disabled={loading}>
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}

@@ -14,10 +14,36 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
   const [animate, setAnimate] = useState(false);
   const [now, setNow] = useState(Date.now());
 
+  const [totalDevices, setTotalDevices] = useState(0);
+
   useEffect(() => {
     const timer = setTimeout(() => setAnimate(true), 50);
     return () => clearTimeout(timer);
   }, []);
+
+  // Fetch live inventory total count from database
+  useEffect(() => {
+    if (API_URL) {
+      axios.get(`${API_URL}/inventory`)
+        .then(res => {
+          if (Array.isArray(res.data)) {
+            const count = res.data.reduce((sum, item) => sum + (parseInt(item.quantity, 10) || 1), 0);
+            setTotalDevices(count || res.data.length);
+          }
+        })
+        .catch(err => console.error('Error fetching inventory in ExecutiveDashboard:', err));
+    }
+  }, [API_URL]);
+
+  // 30-Second Auto-Refresh Widget Timer
+  useEffect(() => {
+    if (onRefresh) {
+      const interval = setInterval(() => {
+        onRefresh();
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [onRefresh]);
 
   // Real-time live countdown ticker updating every 1 second without page refresh
   useEffect(() => {
@@ -26,6 +52,21 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Manager Department Scope & Assigned Approval Filtering
+  const scopedTickets = useMemo(() => {
+    if (currentUser?.role === 'manager') {
+      const mgrId = currentUser.id;
+      const mgrDept = (currentUser.department || '').toLowerCase();
+      return tickets.filter(t => 
+        t.manager_id === mgrId || 
+        t.approver_id === mgrId || 
+        t.requester_id === mgrId || 
+        (mgrDept && (t.department || '').toLowerCase() === mgrDept)
+      );
+    }
+    return tickets;
+  }, [tickets, currentUser]);
 
   // Helper function to calculate SLA details dynamically
   const getTicketSLAInfo = (t, currentTime) => {
@@ -89,16 +130,16 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     };
   };
 
-  // KPI Metrics Calculation
+  // KPI Metrics Calculation driven strictly by database records
   const metrics = useMemo(() => {
-    const total = tickets.length;
-    const open = tickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
-    const closed = tickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
+    const total = scopedTickets.length;
+    const open = scopedTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
+    const closed = scopedTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
     
     let slaBreached = 0;
     let slaAtRisk = 0;
 
-    tickets.forEach(t => {
+    scopedTickets.forEach(t => {
       if (t.status !== 'closed' && t.status !== 'resolved') {
         const info = getTicketSLAInfo(t, now);
         if (info.slaStatus === 'Breached') slaBreached++;
@@ -107,16 +148,16 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     });
 
     const slaCompliance = closed > 0 
-      ? Math.round((tickets.filter(t => {
+      ? Math.round((scopedTickets.filter(t => {
           if (t.status !== 'closed' && t.status !== 'resolved') return false;
           const target = t.target_resolution_date ? new Date(t.target_resolution_date).getTime() : 0;
           const returned = t.returned_at ? new Date(t.returned_at).getTime() : Date.now();
           return !target || returned <= target;
         }).length / closed) * 100)
-      : 94;
+      : 100;
 
     const categories = { Laptop: 0, Monitor: 0, Software: 0, Access: 0, Other: 0 };
-    tickets.forEach(t => {
+    scopedTickets.forEach(t => {
       const cat = t.category || 'Other';
       if (cat.includes('Laptop')) categories.Laptop++;
       else if (cat.includes('Monitor')) categories.Monitor++;
@@ -125,11 +166,10 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       else categories.Other++;
     });
 
-    const totalDevices = 120;
-    const assignedDevices = tickets.filter(t => t.assigned_device_name && t.status !== 'closed').length;
-    const utilization = Math.min(100, Math.round((assignedDevices / totalDevices) * 100));
+    const assignedDevices = scopedTickets.filter(t => t.assigned_device_name && t.status !== 'closed').length;
+    const utilization = totalDevices > 0 ? Math.min(100, Math.round((assignedDevices / totalDevices) * 100)) : 0;
 
-    const feed = tickets
+    const feed = scopedTickets
       .slice(0, 5)
       .map(t => {
         const dateStr = new Date(t.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -153,14 +193,14 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       utilization,
       feed
     };
-  }, [tickets, now]);
+  }, [scopedTickets, totalDevices, now]);
 
   // Actionable Tickets Filter for SLA Risk Monitor: Show ONLY 'At Risk' or 'Breached' tickets
   const actionableTickets = useMemo(() => {
-    return tickets
+    return scopedTickets
       .map(t => ({ ticket: t, sla: getTicketSLAInfo(t, now) }))
       .filter(({ ticket, sla }) => !sla.isClosed && (sla.slaStatus === 'At Risk' || sla.slaStatus === 'Breached'));
-  }, [tickets, now]);
+  }, [scopedTickets, now]);
 
   // Escalation Handler cycling: Engineer -> Team Lead -> Manager -> Admin
   const handleEscalateTicket = async (ticket, currentLevel) => {

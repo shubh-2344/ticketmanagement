@@ -11,6 +11,10 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
