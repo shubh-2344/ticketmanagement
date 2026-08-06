@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ViewToggle from './components/ViewToggle';
+import formatTicketId from './utils/formatTicketId';
 import { ApprovalsIcon, AlertIcon, InventoryIcon, CheckIcon, XIcon, ArrowRightIcon } from './components/Icons';
 import './ApprovalQueue.css';
 
@@ -54,6 +55,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
     try {
       await axios.put(`${API_URL}/tickets/${ticketId}/manager-review`, {
         action,
+        approval_comment: comment,
         manager_comment: comment
       });
       alert(`Ticket successfully ${action === 'approve' ? 'approved' : 'denied'}!`);

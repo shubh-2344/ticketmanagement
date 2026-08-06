@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import CountUp from './components/CountUp';
+import formatTicketId from './utils/formatTicketId';
 import { 
   SparklesIcon, 
   ClockIcon, 

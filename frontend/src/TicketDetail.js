@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './TicketDetail.css';
+import formatTicketId from './utils/formatTicketId';
 import { 
   EditIcon, 
   TrashIcon, 
@@ -395,7 +396,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       <div className="detail-header">
         <div>
           <h1>{ticket.title}</h1>
-          <p className="ticket-id">Ticket ID: {ticket.id}</p>
+          <p className="ticket-id">Ticket ID: {formatTicketId(ticket.id, ticket.type)}</p>
         </div>
         <span
           className="status-badge"
@@ -442,37 +443,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           {/* SLA Resolution Progress Dashboard */}
           {renderSLADashboard()}
 
-          <section className="section ai-copilot-panel-card" style={{
-            background: 'rgba(99, 102, 241, 0.05)',
-            border: '1px dashed rgba(99, 102, 241, 0.3)',
-            borderRadius: '12px',
-            padding: '16px',
-            position: 'relative',
-            overflow: 'hidden',
-            marginBottom: '20px'
-          }}>
-            <div className="ai-glow-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <span className="ai-copilot-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#818cf8', display: 'inline-block', boxShadow: '0 0 8px #818cf8' }}></span>
-              <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#a5b4fc', fontWeight: '600' }}>🤖 AI Copilot Diagnostics</h3>
-            </div>
-            <div className="ai-copilot-body" style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>
-              <p style={{ margin: '0 0 12px 0', lineHeight: '1.4' }}><strong>Auto Summary:</strong> {aiDiagnostics.aiSummary}</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem' }}>
-                  <span style={{ color: '#94a3b8', marginRight: '6px' }}>Category Fit:</span>
-                  <strong style={{ color: '#38bdf8' }}>{aiDiagnostics.category}</strong>
-                </div>
-                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem' }}>
-                  <span style={{ color: '#94a3b8', marginRight: '6px' }}>Breach Threat:</span>
-                  <strong style={{ color: aiDiagnostics.slaRisk === 'CRITICAL RISK' ? '#ef4444' : '#10b981' }}>{aiDiagnostics.slaRisk}</strong>
-                </div>
-                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem' }}>
-                  <span style={{ color: '#94a3b8', marginRight: '6px' }}>Suggested Expert:</span>
-                  <strong style={{ color: '#c084fc' }}>{aiDiagnostics.recommendedEngineer}</strong>
-                </div>
-              </div>
-            </div>
-          </section>
+          <section className="section">
 
           <section className="section">
             <h2>Description</h2>

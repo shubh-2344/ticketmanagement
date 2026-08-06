@@ -1,6 +1,7 @@
 import React from 'react';
 import './TicketList.css';
 import ViewToggle from './components/ViewToggle';
+import formatTicketId from './utils/formatTicketId';
 import { 
   DevicesIcon, 
   HardwareIcon, 
@@ -72,6 +73,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
           <table className="tickets-table-view">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Title & Type</th>
                 <th>Requester</th>
                 <th>Assigned Manager</th>
@@ -86,6 +88,9 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                 const statusInfo = getStatusBadge(t.status, t.type);
                 return (
                   <tr key={t.id} onClick={() => onViewTicket(t)} className="clickable-row">
+                    <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {formatTicketId(t.id, t.type)}
+                    </td>
                     <td>
                       <div className="table-title-cell">
                         <strong>{t.title}</strong>
@@ -123,7 +128,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                     {getCategoryIcon(ticket.category)}
                   </span>
                   <div className="compact-title-group">
-                    <h4>{ticket.title}</h4>
+                    <h4>{formatTicketId(ticket.id, ticket.type)}: {ticket.title}</h4>
                     <small>By {ticket.requester_name}{ticket.type !== 'issue' && ` • Manager: ${ticket.manager_name || 'Manager'}`}</small>
                   </div>
                 </div>
@@ -150,7 +155,12 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                 onClick={() => onViewTicket(ticket)}
               >
                 <div className="ticket-header">
-                  <h3>{ticket.title}</h3>
+                  <div>
+                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>
+                      {formatTicketId(ticket.id, ticket.type)}
+                    </span>
+                    <h3>{ticket.title}</h3>
+                  </div>
                   <div className="ticket-badges">
                     <span
                       className="badge"

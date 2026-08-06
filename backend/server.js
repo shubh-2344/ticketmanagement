@@ -1062,7 +1062,16 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
             );
         }
 
-        const id = uuidv4();
+        const prefix = type === 'issue' ? 'INC' : (type === 'device-request' ? 'REQ' : 'TKT');
+        const countRes = await pool.query(
+            `SELECT COUNT(*) FROM tickets WHERE type = $1 OR id LIKE $2`,
+            [type, `${prefix}-%`]
+        );
+        const nextNum = (parseInt(countRes.rows[0]?.count || '0', 10) || 0) + 1;
+        const candidateId = `${prefix}-${String(nextNum).padStart(6, '0')}`;
+        
+        const existingCheck = await pool.query(`SELECT id FROM tickets WHERE id = $1`, [candidateId]);
+        const id = existingCheck.rows.length === 0 ? candidateId : `${prefix}-${String(nextNum + Math.floor(Math.random() * 1000)).padStart(6, '0')}`;
         
         // If it is an issue, bypass manager review and send directly to Admin.
         const initialStatus = type === 'issue' ? 'pending_admin_assignment' : 'pending_manager_approval';
@@ -1335,7 +1344,8 @@ app.delete('/api/tickets/:id', authenticateToken, requireRole(['admin']), async 
 // STAGE 2: MANAGER APPROVAL / DENIAL
 app.put('/api/tickets/:id/manager-review', authenticateToken, requireRole(['manager', 'admin']), async (req, res) => {
     const { id } = req.params;
-    const { action, approval_comment } = req.body;
+    const { action, approval_comment, manager_comment } = req.body;
+    const comment = approval_comment || manager_comment || '';
 
     if (!action || !['approve', 'reject'].includes(action)) {
         return res.status(400).json({ error: 'Action must be "approve" or "reject"' });
@@ -1354,7 +1364,7 @@ app.put('/api/tickets/:id/manager-review', authenticateToken, requireRole(['mana
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = $5
             RETURNING *
-        `, [nextStatus, req.user.id, req.user.name, approval_comment || '', id]);
+        `, [nextStatus, req.user.id, req.user.name, comment, id]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });
@@ -1412,9 +1422,13 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
             `, [safeInventoryId]);
         }
 
+        const ticketCheck = await pool.query('SELECT type FROM tickets WHERE id = $1', [id]);
+        const isIssue = ticketCheck.rows.length > 0 && ticketCheck.rows[0].type === 'issue';
+        const targetStatus = isIssue ? 'closed' : 'approved';
+
         const result = await pool.query(`
             UPDATE tickets
-            SET status = 'closed',
+            SET status = $5,
                 inventory_id = COALESCE($1, inventory_id),
                 assigned_device_name = $2,
                 assignment_description = $3,
@@ -1422,7 +1436,7 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = $4
             RETURNING *
-        `, [safeInventoryId, assigned_device_name.trim(), assignment_description || '', id]);
+        `, [safeInventoryId, assigned_device_name.trim(), assignment_description || '', id, targetStatus]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });

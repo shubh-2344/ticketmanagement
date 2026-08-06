@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import axios from 'axios';
 import CountUp from './components/CountUp';
 import ViewToggle from './components/ViewToggle';
+import formatTicketId from './utils/formatTicketId';
 import './TicketList.css';
 
 function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API_URL, viewMode = 'grid', onViewModeChange }) {
@@ -30,7 +31,8 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
         const matchesTitle = (t.title || '').toLowerCase().includes(query);
         const matchesDesc = (t.description || '').toLowerCase().includes(query);
         const matchesReq = (t.requester_name || '').toLowerCase().includes(query);
-        if (!matchesTitle && !matchesDesc && !matchesReq) return false;
+        const matchesId = formatTicketId(t.id, t.type).toLowerCase().includes(query);
+        if (!matchesTitle && !matchesDesc && !matchesReq && !matchesId) return false;
       }
 
       if (priorityFilter !== 'all') {
@@ -98,24 +100,29 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
   };
 
   const getPriorityColor = (p) => {
-    const formatted = formatPriority(p);
-    if (formatted === 'Critical') return '#ef4444';
-    if (formatted === 'High') return '#f97316';
-    if (formatted === 'Low') return '#38bdf8';
+    const val = (p || 'medium').toLowerCase();
+    if (val === 'urgent' || val === 'critical') return '#ef4444';
+    if (val === 'high') return '#f97316';
+    if (val === 'low') return '#38bdf8';
     return '#f59e0b';
   };
 
   const formatStatus = (s) => {
-    const val = (s || 'open').toLowerCase();
-    if (val === 'approved' || val === 'in_progress' || val === 'pending_admin_assignment') return 'In Progress';
-    if (val === 'closed' || val === 'resolved') return 'Resolved';
-    return 'Open';
+    const statusLower = (s || '').toLowerCase();
+    if (statusLower === 'pending_manager_approval') return 'Manager Review';
+    if (statusLower === 'pending_admin_assignment') return 'Pending Resolution';
+    if (statusLower === 'approved') return 'In Progress';
+    if (statusLower === 'closed') return 'Closed';
+    if (statusLower === 'resolved') return 'Resolved';
+    return statusLower.toUpperCase();
   };
 
   const getStatusColor = (s) => {
-    const formatted = formatStatus(s);
-    if (formatted === 'In Progress') return '#f59e0b';
-    if (formatted === 'Resolved') return '#10b981';
+    const statusLower = (s || '').toLowerCase();
+    if (statusLower === 'pending_manager_approval') return '#fbbf24';
+    if (statusLower === 'pending_admin_assignment') return '#c084fc';
+    if (statusLower === 'approved') return '#38bdf8';
+    if (statusLower === 'closed' || statusLower === 'resolved') return '#4ade80';
     return '#38bdf8';
   };
 
@@ -127,15 +134,15 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
 
   const handleConfirmResolution = async (e) => {
     e.preventDefault();
-    if (!resolutionSummary.trim()) {
+    if (!resolvingTicket || !resolutionSummary.trim()) {
       alert('Please provide a resolution summary.');
       return;
     }
 
     const confirmed = await window.showConfirm({
-      title: 'Confirm Ticket Resolution',
-      message: `Are you sure you want to resolve ticket "${resolvingTicket.title}"?`,
-      confirmText: 'Resolve Ticket',
+      title: 'Confirm Incident Resolution',
+      message: `Are you sure you want to mark incident "${resolvingTicket.title}" as resolved?`,
+      confirmText: 'Resolve Incident',
       cancelText: 'Cancel',
       confirmType: 'success'
     });
@@ -144,8 +151,8 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
     setIsSubmitting(true);
     try {
       await axios.put(`${API_URL}/tickets/${resolvingTicket.id}/admin-assign`, {
-        assigned_device_name: resolutionSummary,
-        assignment_description: resolutionNotes
+        assigned_device_name: resolutionSummary.trim(),
+        assignment_description: resolutionNotes.trim()
       });
       alert('Incident resolved successfully');
       setResolvingTicket(null);
@@ -178,10 +185,14 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
           )}
 
           <button
-            onClick={onRefresh}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onRefresh) onRefresh();
+            }}
             style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
           >
-            Refresh Incidents
+            🔄 Refresh Incidents
           </button>
         </div>
       </div>
@@ -307,7 +318,7 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
-                        #{t.id}
+                        {formatTicketId(t.id, t.type)}
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '600' }}>
                         <span onClick={() => onViewTicket(t)} style={{ cursor: 'pointer', color: 'var(--text-main)' }}>
