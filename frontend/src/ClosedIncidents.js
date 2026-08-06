@@ -297,7 +297,7 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
-                        #{t.id}
+                        {formatTicketId(t.id, t.type)}
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '600' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -394,7 +394,7 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
                     <div><span style={{ color: 'var(--text-muted)' }}>Requester:</span> <strong style={{ color: 'var(--text-main)' }}>{t.requester_name}</strong></div>
                     <div><span style={{ color: 'var(--text-muted)' }}>Category:</span> <span style={{ color: 'var(--text-main)' }}>{t.category}</span></div>
                     <div><span style={{ color: 'var(--text-muted)' }}>Created:</span> <span style={{ color: 'var(--text-main)' }}>{formatDate(t.created_at)}</span></div>
-                    <div><span style={{ color: 'var(--text-muted)' }}>ID:</span> <span style={{ color: 'var(--text-main)', fontFamily: 'monospace' }}>#{t.id}</span></div>
+                    <div><span style={{ color: 'var(--text-muted)' }}>ID:</span> <span style={{ color: 'var(--text-main)', fontFamily: 'monospace' }}>{formatTicketId(t.id, t.type)}</span></div>
                   </div>
 
                   <button

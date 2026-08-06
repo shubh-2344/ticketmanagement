@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import formatTicketId from './utils/formatTicketId';
 import { KeyIcon, PlusIcon, UsersIcon, SettingsIcon, DownloadIcon, EditIcon, TrashIcon, RefreshIcon, XIcon, FileTextIcon, BarChartIcon, DevicesIcon } from './components/Icons';
 import './AdminProfile.css';
 
@@ -246,7 +247,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
         if (dataType === 'Tickets & Incidents') {
           fileContent = "ID,Title,Type,Status,Priority,Category,Requester,Created_At\n" +
             (payload.tickets || []).map(t => 
-              `"${t.id}","${(t.title || '').replace(/"/g, '""')}","${t.type || 'issue'}","${t.status}","${t.priority}","${t.category}","${t.requester_name}","${t.created_at}"`
+              `"${formatTicketId(t.id, t.type)}","${(t.title || '').replace(/"/g, '""')}","${t.type || 'issue'}","${t.status}","${t.priority}","${t.category}","${t.requester_name}","${t.created_at}"`
             ).join("\n");
         } else if (dataType === 'Hardware Inventory') {
           fileContent = "ID,Name,Category,Quantity,Available,Status,Description\n" +

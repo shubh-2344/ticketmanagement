@@ -71,15 +71,30 @@ function otpTemplate({ name, otp }) {
   `;
 }
 
+function formatTicketIdHelper(id, type) {
+  if (!id && id !== 0) return 'TKT-000000';
+  const strId = String(id).trim();
+  if (/^(INC|REQ|TKT)-\d+$/i.test(strId)) return strId.toUpperCase();
+  const prefix = (type === 'issue') ? 'INC' : (type === 'device-request' ? 'REQ' : 'TKT');
+  if (/^\d+$/.test(strId)) return `${prefix}-${strId.padStart(6, '0')}`;
+  let num = 0;
+  for (let i = 0; i < strId.length; i++) {
+    num = (num * 31 + strId.charCodeAt(i)) % 999999;
+  }
+  const cleanNum = (Math.abs(num) % 999999) + 1;
+  return `${prefix}-${String(cleanNum).padStart(6, '0')}`;
+}
+
 /**
  * 2. Ticket Created Notification (Sent to Manager)
  */
 function ticketCreatedTemplate({ managerName, ticket }) {
+    const formattedId = formatTicketIdHelper(ticket.id, ticket.type);
     return `
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
-          <h2 style="color: #38bdf8; margin: 0;">🎫 New Ticket Awaiting Approval</h2>
+          <h2 style="color: #38bdf8; margin: 0;">New Ticket Awaiting Approval</h2>
           <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Action Required by Manager</p>
         </div>
         <p style="font-size: 15px; color: #e2e8f0;">Hello <strong>${managerName || 'Manager'}</strong>,</p>
@@ -87,7 +102,11 @@ function ticketCreatedTemplate({ managerName, ticket }) {
 
         <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #0f172a; border-radius: 8px; overflow: hidden; font-size: 13px;">
           <tr>
-            <td style="padding: 10px 14px; color: #94a3b8; width: 30%;">Title:</td>
+            <td style="padding: 10px 14px; color: #94a3b8; width: 30%;">Ticket ID:</td>
+            <td style="padding: 10px 14px; color: #38bdf8; font-weight: 700; font-family: monospace;">${formattedId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 14px; color: #94a3b8;">Title:</td>
             <td style="padding: 10px 14px; color: #f8fafc; font-weight: 600;">${ticket.title}</td>
           </tr>
           <tr>
@@ -122,7 +141,7 @@ function ticketCreatedTemplate({ managerName, ticket }) {
  * 3. Ticket Approved Notification (Sent to Admin)
  */
 function ticketApprovedTemplate({ adminName, ticket }) {
-    const formattedId = ticket.id;
+    const formattedId = formatTicketIdHelper(ticket.id, ticket.type);
     const approvalComment = (ticket.approval_comment && ticket.approval_comment.trim())
         ? ticket.approval_comment.trim()
         : 'No comments provided.';

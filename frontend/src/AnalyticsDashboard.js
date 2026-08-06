@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import CountUp from './components/CountUp';
+import formatTicketId from './utils/formatTicketId';
 import { 
   ClockIcon, 
   DashboardIcon,
@@ -901,7 +902,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
 
                   return (
                     <tr key={t.id} style={{ borderBottom: 'var(--border-card)' }}>
-                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>#{t.id}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{formatTicketId(t.id, t.type)}</td>
                       <td style={{ padding: '10px 12px', fontWeight: '600' }}>{t.title}</td>
                       <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{t.requester_name}</td>
                       <td style={{ padding: '10px 12px' }}>

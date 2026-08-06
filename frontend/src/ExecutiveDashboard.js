@@ -451,6 +451,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '12px' }}>
+                  <th style={{ padding: '12px 10px' }}>Ticket ID</th>
                   <th style={{ padding: '12px 10px' }}>Ticket Title</th>
                   <th style={{ padding: '12px 10px' }}>Assigned Engineer</th>
                   <th style={{ padding: '12px 10px' }}>Priority</th>
@@ -468,6 +469,10 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
 
                   return (
                     <tr key={ticket.id} style={{ borderBottom: 'var(--border-card)', transition: 'background 0.2s ease' }}>
+                      {/* Ticket ID */}
+                      <td style={{ padding: '12px 10px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {formatTicketId(ticket.id, ticket.type)}
+                      </td>
                       {/* 1. Ticket Title */}
                       <td 
                         style={{ padding: '12px 10px', fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }}

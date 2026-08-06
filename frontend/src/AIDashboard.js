@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import formatTicketId from './utils/formatTicketId';
 
 import { BotIcon, AlertIcon, TagIcon, ChevronRightIcon } from './components/Icons';
 
@@ -166,7 +167,7 @@ function AIDashboard({ API_URL, onSelectTicket }) {
                 <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 4px 0', cursor: 'pointer' }} onClick={() => onSelectTicket(item.ticket_id)}>
                   {item.title}
                 </h3>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Requester: {item.requester_name} | ID: {item.ticket_id}</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Requester: {item.requester_name} | ID: {formatTicketId(item.ticket_id, item.type)}</span>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <span style={{

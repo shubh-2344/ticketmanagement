@@ -35,6 +35,7 @@ function App() {
   const [view, setView] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [authLoading, setAuthLoading] = useState(!!localStorage.getItem('token'));
   const [tickets, setTickets] = useState([]);
   const [globalSettings, setGlobalSettings] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -120,6 +121,7 @@ function App() {
     } else {
       delete axios.defaults.headers.common['Authorization'];
       setCurrentUser(null);
+      setAuthLoading(false);
     }
   }, [token]);
 
@@ -134,12 +136,19 @@ function App() {
   }, [currentUser, token]);
 
   const fetchCurrentUser = async () => {
+    setAuthLoading(true);
     try {
       const response = await axios.get(`${API_URL}/auth/me`);
       setCurrentUser(response.data);
     } catch (error) {
       console.error('Error verifying user token:', error);
-      handleLogout();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+      setToken('');
+      setCurrentUser(null);
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -209,6 +218,7 @@ function App() {
     localStorage.removeItem('user');
     setToken('');
     setCurrentUser(null);
+    setAuthLoading(false);
     setTickets([]);
     setSelectedTicket(null);
     setSelectedDeviceForRequest(null);
@@ -325,7 +335,41 @@ function App() {
     }
   };
 
-  // Render Auth screen if not authenticated
+  // 1. Show Splash Screen while validating session/token on page refresh
+  if (authLoading) {
+    return (
+      <div className="auth-splash-screen" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        width: '100vw',
+        background: '#0f172a',
+        color: '#f8fafc',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        zIndex: 99999
+      }}>
+        <div className="spinner" style={{
+          width: '44px',
+          height: '44px',
+          border: '3px solid rgba(56, 189, 248, 0.2)',
+          borderTopColor: '#38bdf8',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+          marginBottom: '20px'
+        }}></div>
+        <h2 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0', letterSpacing: '-0.3px', color: '#f8fafc' }}>
+          Ticket Management System
+        </h2>
+        <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>
+          Verifying secure session...
+        </p>
+      </div>
+    );
+  }
+
+  // 2. Render Auth screen if not authenticated
   if (!token || !currentUser) {
     return <Auth API_URL={API_URL} onAuthSuccess={handleAuthSuccess} globalSettings={globalSettings} />;
   }
