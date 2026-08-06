@@ -94,16 +94,18 @@ function App() {
 
   // Dynamic API URL resolution targeting backend API endpoint
   const getApiUrl = () => {
-    if (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.length > 0) {
-      return process.env.REACT_APP_API_URL;
-    }
-    const protocol = window.location.protocol;
     const hostname = window.location.hostname || 'localhost';
 
-    // If accessing via domain or non-localhost (e.g. servicedesk.securelayer7.com), use relative path /api
+    // If accessing via domain or non-localhost (e.g. servicedesk.securelayer7.com via Caddy), use relative path /api
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
       return '/api';
     }
+
+    if (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.length > 0) {
+      return process.env.REACT_APP_API_URL;
+    }
+
+    const protocol = window.location.protocol;
     return `${protocol}//${hostname}:5000/api`;
   };
 
