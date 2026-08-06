@@ -76,9 +76,15 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       if (filters.priority !== 'all' && (t.priority || '').toLowerCase() !== filters.priority) return false;
       if (filters.status !== 'all') {
         const st = (t.status || '').toLowerCase();
-        if (filters.status === 'open' && (st === 'closed' || st === 'resolved')) return false;
-        if (filters.status === 'closed' && st !== 'closed' && st !== 'resolved') return false;
-        if (filters.status === 'in_progress' && st !== 'approved' && st !== 'pending_admin_assignment') return false;
+        if (filters.status === 'open') {
+          if (st !== 'open' && st !== 'pending_manager_approval' && st !== 'pending') return false;
+        } else if (filters.status === 'in_progress') {
+          if (st !== 'in_progress' && st !== 'pending_admin_assignment' && !(st === 'approved' && t.type !== 'issue')) return false;
+        } else if (filters.status === 'resolved') {
+          if (st !== 'resolved' && !(st === 'approved' && t.type === 'issue')) return false;
+        } else if (filters.status === 'closed') {
+          if (st !== 'closed') return false;
+        }
       }
       return true;
     });
@@ -172,14 +178,32 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       { key: 'low', label: 'Low', count: priorityCounts.low, color: '#38bdf8' }
     ];
 
-    const priorityTotal = priorityData.reduce((sum, item) => sum + item.count, 0);
+    // 3. Status Distribution calculated from actual scoped database tickets
+    const countOpen = scopedTickets.filter(t => {
+      const st = (t.status || '').toLowerCase();
+      return st === 'open' || st === 'pending_manager_approval' || st === 'pending';
+    }).length;
 
-    // 3. Status Distribution
+    const countInProgress = scopedTickets.filter(t => {
+      const st = (t.status || '').toLowerCase();
+      return st === 'in_progress' || st === 'pending_admin_assignment' || (st === 'approved' && t.type !== 'issue');
+    }).length;
+
+    const countResolved = scopedTickets.filter(t => {
+      const st = (t.status || '').toLowerCase();
+      return st === 'resolved' || (st === 'approved' && t.type === 'issue');
+    }).length;
+
+    const countClosed = scopedTickets.filter(t => {
+      const st = (t.status || '').toLowerCase();
+      return st === 'closed';
+    }).length;
+
     const statusDist = {
-      Open: open,
-      'In Progress': inProgress,
-      Resolved: Math.round(closed * 0.4),
-      Closed: Math.round(closed * 0.6)
+      Open: countOpen,
+      'In Progress': countInProgress,
+      Resolved: countResolved,
+      Closed: countClosed
     };
 
     // 4. Real-time Live Ticket Volume Trend Data (Day / Week / Month), Capped strictly at Current Date
@@ -782,26 +806,132 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
 
       {/* CHART ROW 3: TICKET STATUS DISTRIBUTION */}
       <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
-        <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', color: 'var(--text-main)' }}>📋 Ticket Status Breakdown</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: 'var(--text-main)' }}>📋 Ticket Status Breakdown</h3>
+          {filters.status !== 'all' && (
+            <button
+              onClick={() => handleFilterChange('status', 'all')}
+              style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+            >
+              Clear Filter ({filters.status})
+            </button>
+          )}
+        </div>
+        
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-          {Object.entries(metrics.statusDist).map(([status, count]) => {
-            const totalVal = Math.max(metrics.total, 1);
+          {Object.entries(metrics.statusDist).map(([statusName, count]) => {
+            const statusKeyMap = { Open: 'open', 'In Progress': 'in_progress', Resolved: 'resolved', Closed: 'closed' };
+            const statusKey = statusKeyMap[statusName] || statusName.toLowerCase();
+            const isSelected = filters.status === statusKey;
+
+            const totalVal = Math.max(scopedTickets.length, 1);
             const pct = Math.min(100, Math.round((count / totalVal) * 100));
             const pastelColors = { Open: '#fbbf24', 'In Progress': '#38bdf8', Resolved: '#2dd4bf', Closed: '#c084fc' };
-            const color = pastelColors[status] || '#38bdf8';
+            const color = pastelColors[statusName] || '#38bdf8';
             return (
-              <div key={status} onClick={handleDrillDown} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '6px', background: 'rgba(0,0,0,0.15)', padding: '14px', borderRadius: '10px', border: 'var(--border-card)' }}>
+              <div 
+                key={statusName} 
+                onClick={() => handleFilterChange('status', isSelected ? 'all' : statusKey)} 
+                style={{ 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '6px', 
+                  background: isSelected ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.15)', 
+                  padding: '14px', 
+                  borderRadius: '10px', 
+                  border: isSelected ? `2px solid ${color}` : 'var(--border-card)',
+                  boxShadow: isSelected ? `0 0 12px ${color}44` : 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                  <span style={{ fontWeight: '600' }}>{status}</span>
+                  <span style={{ fontWeight: isSelected ? '700' : '600', color: isSelected ? '#ffffff' : 'var(--text-main)' }}>{statusName}</span>
                   <strong style={{ color }}>{count} ({pct}%)</strong>
                 </div>
                 <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', overflow: 'hidden', marginTop: '4px' }}>
                   <div style={{ width: animate ? `${pct}%` : '0%', height: '100%', background: color, opacity: 0.85, borderRadius: '6px', transition: 'width 1s ease' }}></div>
                 </div>
+                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '2px', textAlign: 'right' }}>
+                  {isSelected ? '✓ Filter Active (Click to clear)' : 'Click to filter tickets'}
+                </div>
               </div>
             );
           })}
         </div>
+      </div>
+
+      {/* FILTERED TICKETS TABLE FOR STATUS BREAKDOWN / SCOPE */}
+      <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: 'var(--text-main)' }}>
+            🎫 {filters.status !== 'all' ? `${filters.status.replace('_', ' ').toUpperCase()} Tickets` : 'All Assigned Tickets'} ({filteredTickets.length})
+          </h3>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            {currentUser?.role === 'manager' ? 'Displaying tickets assigned to your manager scope' : 'Displaying system tickets'}
+          </span>
+        </div>
+
+        {filteredTickets.length === 0 ? (
+          <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+            No tickets found for the selected status filter.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left', color: 'var(--text-main)' }}>
+              <thead>
+                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>
+                  <th style={{ padding: '10px 12px' }}>ID</th>
+                  <th style={{ padding: '10px 12px' }}>Title</th>
+                  <th style={{ padding: '10px 12px' }}>Requester</th>
+                  <th style={{ padding: '10px 12px' }}>Priority</th>
+                  <th style={{ padding: '10px 12px' }}>Status</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTickets.slice(0, 15).map(t => {
+                  const st = (t.status || '').toLowerCase();
+                  let badgeColor = '#fbbf24';
+                  if (st === 'closed') badgeColor = '#c084fc';
+                  else if (st === 'resolved' || (st === 'approved' && t.type === 'issue')) badgeColor = '#2dd4bf';
+                  else if (st === 'in_progress' || st === 'approved' || st === 'pending_admin_assignment') badgeColor = '#38bdf8';
+
+                  return (
+                    <tr key={t.id} style={{ borderBottom: 'var(--border-card)' }}>
+                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>#{t.id}</td>
+                      <td style={{ padding: '10px 12px', fontWeight: '600' }}>{t.title}</td>
+                      <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{t.requester_name}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <span style={{ textTransform: 'uppercase', fontSize: '10.5px', fontWeight: '700', color: t.priority === 'urgent' || t.priority === 'critical' ? '#ef4444' : t.priority === 'high' ? '#f97316' : '#38bdf8' }}>
+                          {t.priority}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <span style={{ background: `${badgeColor}18`, color: badgeColor, border: `1px solid ${badgeColor}40`, fontSize: '10.5px', fontWeight: '700', padding: '2px 7px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                          {t.status.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                        <button
+                          onClick={() => onSelectTicket ? onSelectTicket(t.id) : null}
+                          style={{ padding: '4px 10px', borderRadius: '5px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {filteredTickets.length > 15 && (
+              <div style={{ marginTop: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                Showing first 15 of {filteredTickets.length} tickets.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
     </div>

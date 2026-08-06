@@ -16,6 +16,7 @@ import AssetLifecycleDashboard from './AssetLifecycleDashboard';
 import AIDashboard from './AIDashboard';
 import ExecutiveDashboard from './ExecutiveDashboard';
 import OpenIncidents from './OpenIncidents';
+import ClosedIncidents from './ClosedIncidents';
 import NetworkBackground from './components/NetworkBackground';
 import { 
   DashboardIcon, 
@@ -27,6 +28,7 @@ import {
   SettingsIcon, 
   LogoutIcon, 
   SparklesIcon,
+  CheckIcon,
   LogoIcon
 } from './components/Icons';
 
@@ -487,14 +489,6 @@ function App() {
                 <span className="nav-icon"><InventoryIcon size={18} /></span>
                 <span>Open Incidents</span>
               </button>
-
-              <button
-                className={`nav-button ${view === 'analytics' ? 'active' : ''}`}
-                onClick={() => setView('analytics')}
-              >
-                <span className="nav-icon"><SparklesIcon size={18} /></span>
-                <span>Analytics Insights</span>
-              </button>
             </>
           )}
 
@@ -502,6 +496,24 @@ function App() {
           {currentUser.role === 'admin' && (
             <div className="admin-nav-group">
               <div className="nav-section-title">ADMINISTRATOR</div>
+              <button
+                className={`nav-button admin-btn ${view === 'closed-incidents' ? 'active' : ''}`}
+                onClick={() => setView('closed-incidents')}
+              >
+                <span className="nav-icon"><CheckIcon size={18} /></span>
+                <span>Closed Incidents</span>
+                <span className="admin-tag">ADMIN</span>
+              </button>
+
+              <button
+                className={`nav-button admin-btn ${view === 'analytics' ? 'active' : ''}`}
+                onClick={() => setView('analytics')}
+              >
+                <span className="nav-icon"><SparklesIcon size={18} style={{ color: '#38bdf8' }} /></span>
+                <span>Analytics Insights</span>
+                <span className="admin-tag">ADMIN</span>
+              </button>
+
               <button
                 className={`nav-button admin-btn ${view === 'ai-dashboard' ? 'active' : ''}`}
                 onClick={() => setView('ai-dashboard')}
@@ -681,14 +693,48 @@ function App() {
               )}
 
               {view === 'analytics' && (
-                <AnalyticsDashboard 
-                  tickets={tickets} 
-                  currentUser={currentUser} 
-                  API_URL={API_URL}
-                  onRefresh={fetchTickets}
-                  onSelectTicket={handleViewTicketById}
-                  onViewAllTickets={() => setView('tickets-list')}
-                />
+                currentUser.role === 'admin' ? (
+                  <AnalyticsDashboard 
+                    tickets={tickets} 
+                    currentUser={currentUser} 
+                    API_URL={API_URL}
+                    onRefresh={fetchTickets}
+                    onSelectTicket={handleViewTicketById}
+                    onViewAllTickets={() => setView('tickets-list')}
+                  />
+                ) : (
+                  <div className="access-denied-card">
+                    <div className="denied-icon">🔒</div>
+                    <h2>Access Restricted</h2>
+                    <p>Only administrators can access Analytics Insights.</p>
+                    <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                      Return to Dashboard
+                    </button>
+                  </div>
+                )
+              )}
+
+              {view === 'closed-incidents' && (
+                currentUser.role === 'admin' ? (
+                  <ClosedIncidents
+                    tickets={tickets}
+                    currentUser={currentUser}
+                    onViewTicket={handleViewTicket}
+                    onRefresh={fetchTickets}
+                    API_URL={API_URL}
+                    viewMode={globalViewMode}
+                    onViewModeChange={handleGlobalViewModeChange}
+                  />
+                ) : (
+                  <div className="access-denied-card">
+                    <div className="denied-icon">🔒</div>
+                    <h2>Access Restricted</h2>
+                    <p>Only administrators can access the Closed Incidents archive.</p>
+                    <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                      Return to Dashboard
+                    </button>
+                  </div>
+                )
               )}
 
               {view === 'asset-lifecycle' && (
