@@ -8,24 +8,24 @@ function AIDashboard({ API_URL, onSelectTicket }) {
   const [filterMode, setFilterMode] = useState('all');
 
   useEffect(() => {
-    fetchDiagnostics();
+    fetchDiagnostics(false);
     const interval = setInterval(() => {
-      fetchDiagnostics();
+      fetchDiagnostics(true);
     }, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchDiagnostics = async () => {
-    setLoading(true);
+  const fetchDiagnostics = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await axios.get(`${API_URL}/ai/analyze-tickets`);
       setAnalysisData(response.data);
       setError('');
     } catch (err) {
       console.error('Error fetching AI analytics:', err);
-      setError('AI Diagnostics endpoint failed to respond. Ensure the backend server is running.');
+      if (!silent) setError('AI Diagnostics endpoint failed to respond. Ensure the backend server is running.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

@@ -39,7 +39,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
   useEffect(() => {
     if (onRefresh) {
       const interval = setInterval(() => {
-        onRefresh();
+        onRefresh(true);
       }, 30000);
       return () => clearInterval(interval);
     }

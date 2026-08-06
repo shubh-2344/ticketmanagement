@@ -121,13 +121,16 @@ function App() {
 
   useEffect(() => {
     if (currentUser && token) {
-      fetchTickets();
+      fetchTickets(false);
       const autoRefreshInterval = setInterval(() => {
-        fetchTickets();
+        // Do not auto-refresh if user is actively filling out a form or editing in Create or Detail views
+        if (view !== 'create' && view !== 'detail') {
+          fetchTickets(true);
+        }
       }, 30000);
       return () => clearInterval(autoRefreshInterval);
     }
-  }, [currentUser, token]);
+  }, [currentUser, token, view]);
 
   const fetchCurrentUser = async () => {
     try {
@@ -171,15 +174,15 @@ function App() {
     }
   }, [globalSettings]);
 
-  const fetchTickets = async () => {
-    setLoading(true);
+  const fetchTickets = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await axios.get(`${API_URL}/tickets`);
       setTickets(response.data);
     } catch (error) {
       console.error('Error fetching tickets:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

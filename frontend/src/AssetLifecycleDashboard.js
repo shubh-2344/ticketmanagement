@@ -10,9 +10,9 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    fetchData(false);
     const interval = setInterval(() => {
-      fetchData();
+      fetchData(true);
     }, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -26,8 +26,8 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
     }
   }, [loading]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [metricsRes, trackingRes] = await Promise.all([
         axios.get(`${API_URL}/admin/asset-lifecycle`),
@@ -38,9 +38,9 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
       setError('');
     } catch (err) {
       console.error('Error fetching asset lifecycle data:', err);
-      setError('Failed to load asset lifecycle metrics. Ensure you are logged in as Administrator.');
+      if (!silent) setError('Failed to load asset lifecycle metrics. Ensure you are logged in as Administrator.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

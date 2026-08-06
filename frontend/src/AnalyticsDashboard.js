@@ -18,7 +18,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
   useEffect(() => {
     if (onRefresh) {
       const interval = setInterval(() => {
-        onRefresh();
+        onRefresh(true);
       }, 30000);
       return () => clearInterval(interval);
     }
