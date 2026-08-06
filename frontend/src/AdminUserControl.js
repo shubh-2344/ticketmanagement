@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { DashboardIcon, FileTextIcon, InventoryIcon, SettingsIcon, UsersIcon, UserIcon, BriefcaseIcon, ShieldIcon } from './components/Icons';
 import './AdminUserControl.css';
 
 function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
@@ -74,7 +75,7 @@ function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
               onChange={() => setSelectedViewMode('grid')}
             />
             <div className="option-content">
-              <span className="option-icon">📊</span>
+              <span className="option-icon"><DashboardIcon size={16} /></span>
               <strong>Grid View Layout</strong>
               <small>Interactive modern cards layout</small>
             </div>
@@ -89,7 +90,7 @@ function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
               onChange={() => setSelectedViewMode('table')}
             />
             <div className="option-content">
-              <span className="option-icon">📑</span>
+              <span className="option-icon"><FileTextIcon size={16} /></span>
               <strong>Table View Layout</strong>
               <small>Dense data table grid layout</small>
             </div>
@@ -104,7 +105,7 @@ function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
               onChange={() => setSelectedViewMode('compact')}
             />
             <div className="option-content">
-              <span className="option-icon">📋</span>
+              <span className="option-icon"><InventoryIcon size={16} /></span>
               <strong>Compact List Layout</strong>
               <small>Clean streamlined rows</small>
             </div>
@@ -112,13 +113,13 @@ function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
         </div>
 
         <button className="btn-save-global-view" onClick={handleSaveGlobalView}>
-          ⚙️ Apply Ticket View Layout System-Wide
+          <SettingsIcon size={16} /> Apply Ticket View Layout System-Wide
         </button>
       </div>
 
       {/* User Role Management Panel */}
       <div className="admin-card user-table-card">
-        <h3>👥 Registered User Roles (Promote to Manager or User)</h3>
+        <h3>Registered User Roles (Promote to Manager or User)</h3>
         
         {loading ? (
           <p>Loading users...</p>
@@ -155,7 +156,7 @@ function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
                           onClick={() => handleRoleChange(u.id, 'employee')}
                           disabled={updatingUserId === u.id}
                         >
-                          👤 User (Employee)
+                          <UserIcon size={14} /> User (Employee)
                         </button>
 
                         <button
@@ -163,7 +164,7 @@ function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
                           onClick={() => handleRoleChange(u.id, 'manager')}
                           disabled={updatingUserId === u.id}
                         >
-                          👔 Manager
+                          <BriefcaseIcon size={14} /> Manager
                         </button>
 
                         <button
@@ -172,7 +173,7 @@ function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
                           disabled={updatingUserId === u.id}
                           style={{ background: u.role === 'admin' ? 'linear-gradient(135deg, #0284c7, #7c3aed)' : 'transparent', color: u.role === 'admin' ? '#ffffff' : 'inherit' }}
                         >
-                          🛡️ System Admin Specialist
+                          <ShieldIcon size={14} /> System Admin Specialist
                         </button>
                       </div>
                     </td>

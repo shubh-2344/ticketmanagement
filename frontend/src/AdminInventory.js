@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { InventoryIcon, PlusIcon, DevicesIcon, AlertIcon, SearchIcon, EditIcon, TrashIcon, XIcon } from './components/Icons';
 import './AdminInventory.css';
 
 function AdminInventory({ API_URL }) {
@@ -131,18 +132,18 @@ function AdminInventory({ API_URL }) {
     <div className="admin-inventory">
       <div className="inventory-header">
         <div>
-          <h2>📦 Admin Inventory Management</h2>
+          <h2>Admin Inventory Management</h2>
           <p>Add, monitor, and manage company IT hardware & equipment</p>
         </div>
         <button className="btn-add-item" onClick={handleOpenAdd}>
-          ➕ Add New Item
+          <PlusIcon size={16} /> Add New Item
         </button>
       </div>
 
       {/* Metric Cards */}
       <div className="inventory-metrics">
         <div className="metric-card">
-          <div className="metric-icon">💻</div>
+          <div className="metric-icon"><DevicesIcon size={20} /></div>
           <div className="metric-info">
             <span className="metric-value">{inventory.length}</span>
             <span className="metric-label">Total Unique Models</span>
@@ -150,7 +151,7 @@ function AdminInventory({ API_URL }) {
         </div>
 
         <div className="metric-card">
-          <div className="metric-icon">🔢</div>
+          <div className="metric-icon"><InventoryIcon size={20} /></div>
           <div className="metric-info">
             <span className="metric-value">{totalQuantity}</span>
             <span className="metric-label">Total In Stock Units</span>
@@ -158,7 +159,7 @@ function AdminInventory({ API_URL }) {
         </div>
 
         <div className="metric-card warning">
-          <div className="metric-icon">⚠️</div>
+          <div className="metric-icon"><AlertIcon size={20} /></div>
           <div className="metric-info">
             <span className="metric-value">{outOfStockCount}</span>
             <span className="metric-label">Out of Stock Items</span>
@@ -170,7 +171,7 @@ function AdminInventory({ API_URL }) {
       <div className="inventory-controls">
         <input
           type="text"
-          placeholder="🔍 Search inventory by name or category..."
+          placeholder="Search inventory by name or category..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
@@ -222,10 +223,10 @@ function AdminInventory({ API_URL }) {
                   <td>
                     <div className="action-btns">
                       <button className="btn-edit" onClick={() => handleOpenEdit(item)}>
-                        ✏️ Edit
+                        <EditIcon size={14} /> Edit
                       </button>
                       <button className="btn-delete" onClick={() => handleDelete(item.id, item.name)}>
-                        🗑️ Delete
+                        <TrashIcon size={14} /> Delete
                       </button>
                     </div>
                   </td>
@@ -241,9 +242,9 @@ function AdminInventory({ API_URL }) {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3>{editingItem ? '✏️ Edit Inventory Item' : '➕ Add Inventory Item'}</h3>
+              <h3>{editingItem ? 'Edit Inventory Item' : 'Add Inventory Item'}</h3>
               <button className="modal-close" onClick={() => setShowAddModal(false)}>
-                ✖
+                <XIcon size={16} />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="modal-form">

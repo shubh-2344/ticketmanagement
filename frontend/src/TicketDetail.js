@@ -5,7 +5,10 @@ import {
   EditIcon, 
   TrashIcon, 
   ClockIcon, 
-  SparklesIcon 
+  SparklesIcon,
+  CheckIcon,
+  XIcon,
+  SettingsIcon
 } from './components/Icons';
 
 function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBack, onAdminUpdate, onAdminDelete, onRefresh, API_URL }) {
@@ -671,13 +674,13 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                     className="btn btn-approve"
                     onClick={() => setShowApprovalForm(true)}
                   >
-                    ✓ Approve & Pass to Admin
+                    <CheckIcon size={14} /> Approve & Pass to Admin
                   </button>
                   <button
                     className="btn btn-reject"
                     onClick={() => setShowApprovalForm(true)}
                   >
-                    ✗ Deny Request
+                    <XIcon size={14} /> Deny Request
                   </button>
                 </div>
               ) : (
@@ -693,13 +696,13 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                       className="btn btn-approve"
                       onClick={handleApprove}
                     >
-                      ✓ Approve (Send to Admin)
+                      <CheckIcon size={14} /> Approve (Send to Admin)
                     </button>
                     <button
                       className="btn btn-reject"
                       onClick={handleReject}
                     >
-                      ✗ Deny Request
+                      <XIcon size={14} /> Deny Request
                     </button>
                     <button
                       className="btn btn-cancel"
@@ -722,7 +725,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 className="btn btn-close"
                 onClick={() => onClose(ticket.id)}
               >
-                ✓ Close Ticket
+                <CheckIcon size={14} /> Close Ticket
               </button>
             </div>
           )}
@@ -737,38 +740,38 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 style={{ background: 'linear-gradient(135deg, #a855f7, #7c3aed)', width: '100%' }}
                 onClick={handleReturnDevice}
               >
-                📦 Mark Device as Returned
+                Mark Device as Returned
               </button>
             </div>
           )}
 
           {ticket.type === 'device-request' && ticket.status === 'return_pending_verification' && isAdmin && (
             <div className="action-panel admin-panel-card">
-              <h3>📦 Verify Device Return</h3>
+              <h3>Verify Device Return</h3>
               <p className="admin-help-text">Please confirm that the user has returned the device to IT inventory.</p>
               <button
                 className="btn btn-approve"
                 style={{ width: '100%' }}
                 onClick={handleVerifyReturn}
               >
-                ✓ Confirm Physical Return
+                <CheckIcon size={14} /> Confirm Physical Return
               </button>
             </div>
           )}
 
           {isAdmin && (
             <div className="action-panel admin-panel-card">
-              <h3>⚙️ Admin Management</h3>
+              <h3>Admin Management</h3>
               <p className="admin-help-text">You have full administrative privileges to edit or delete any ticket for all users.</p>
               <button className="btn btn-admin-modal-trigger" onClick={() => setShowAdminEditModal(true)}>
-                ✏️ Modify All Ticket Fields
+                <EditIcon size={14} /> Modify Ticket Fields
               </button>
             </div>
           )}
 
           {isAdmin && ticket.status !== 'closed' && ticket.status !== 'approved' && ticket.status !== 'rejected' && (
             <div className="action-panel admin-panel-card sla-extension-panel">
-              <h3>⏳ Extend Ticket SLA</h3>
+              <h3>Extend Ticket SLA</h3>
               <p className="admin-help-text">You can increase the resolution SLA or extend the resolution date for this ticket.</p>
               
               <form onSubmit={handleExtendSLA} className="sla-extend-form">
@@ -813,9 +816,9 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         <div className="modal-overlay">
           <div className="modal-content admin-edit-modal">
             <div className="modal-header">
-              <h3>✏️ Admin Modify Ticket Fields</h3>
+              <h3>Admin Modify Ticket Fields</h3>
               <button className="modal-close" onClick={() => setShowAdminEditModal(false)}>
-                ✖
+                <XIcon size={16} />
               </button>
             </div>
 
@@ -846,8 +849,8 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 <div className="form-group">
                   <label>Type *</label>
                   <select name="type" value={editFormData.type} onChange={handleAdminEditChange}>
-                    <option value="device-request">🖥️ Device Request</option>
-                    <option value="issue">🐛 Report Issue</option>
+                    <option value="device-request">Device Request</option>
+                    <option value="issue">Report Issue</option>
                   </select>
                 </div>
 
@@ -876,11 +879,11 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 <div className="form-group">
                   <label>Ticket Status *</label>
                   <select name="status" value={editFormData.status} onChange={handleAdminEditChange}>
-                    <option value="pending_manager_approval">🟡 Pending Manager Review</option>
-                    <option value="pending_admin_assignment">🟣 Pending Admin Assignment</option>
-                    <option value="approved">🟢 Device Assigned & Fulfilled</option>
-                    <option value="rejected">🔴 Denied by Manager</option>
-                    <option value="closed">⚪ Closed</option>
+                    <option value="pending_manager_approval">Pending Manager Review</option>
+                    <option value="pending_admin_assignment">Pending Admin Assignment</option>
+                    <option value="approved">Device Assigned & Fulfilled</option>
+                    <option value="rejected">Denied by Manager</option>
+                    <option value="closed">Closed</option>
                   </select>
                 </div>
               </div>

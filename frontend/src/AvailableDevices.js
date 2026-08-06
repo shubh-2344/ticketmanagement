@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { DevicesIcon, SearchIcon, CheckIcon, XIcon, PlusIcon } from './components/Icons';
 import './AvailableDevices.css';
 
 function AvailableDevices({ API_URL, onRequestDevice }) {
@@ -34,30 +35,11 @@ function AvailableDevices({ API_URL, onRequestDevice }) {
     return matchesSearch && matchesCategory;
   });
 
-  const getDeviceIcon = (category) => {
-    switch (category?.toLowerCase()) {
-      case 'laptop':
-        return '💻';
-      case 'desktop':
-        return '🖥️';
-      case 'monitor':
-        return '🖥️';
-      case 'keyboard & mouse':
-        return '⌨️';
-      case 'headphones':
-        return '🎧';
-      case 'phone':
-        return '📱';
-      default:
-        return '📦';
-    }
-  };
-
   return (
     <div className="available-devices-container">
       <div className="devices-header">
         <div>
-          <h2>💻 Company Device Catalog</h2>
+          <h2>Company Device Catalog</h2>
           <p>Browse available hardware equipment and request devices directly</p>
         </div>
       </div>
@@ -66,7 +48,7 @@ function AvailableDevices({ API_URL, onRequestDevice }) {
       <div className="devices-controls">
         <input
           type="text"
-          placeholder="🔍 Search devices by name or specification..."
+          placeholder="Search devices by name or specification..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
@@ -103,7 +85,7 @@ function AvailableDevices({ API_URL, onRequestDevice }) {
             return (
               <div key={device.id} className="device-card">
                 <div className="device-card-header">
-                  <span className="device-icon">{getDeviceIcon(device.category)}</span>
+                  <span className="device-icon"><DevicesIcon size={24} style={{ color: 'var(--accent)' }} /></span>
                   <span className="category-tag">{device.category}</span>
                 </div>
 
@@ -113,7 +95,7 @@ function AvailableDevices({ API_URL, onRequestDevice }) {
                 <div className="device-stock-info">
                   <span className="stock-label">Stock Status:</span>
                   <span className={`stock-badge ${isAvailable ? 'available' : 'out-of-stock'}`}>
-                    {isAvailable ? `✓ In Stock (${device.quantity} units)` : '✗ Out of Stock'}
+                    {isAvailable ? `In Stock (${device.quantity} units)` : 'Out of Stock'}
                   </span>
                 </div>
 
@@ -123,7 +105,7 @@ function AvailableDevices({ API_URL, onRequestDevice }) {
                     disabled={!isAvailable}
                     onClick={() => isAvailable && onRequestDevice(device)}
                   >
-                    {isAvailable ? '➕ Request Device' : 'Unavailable'}
+                    {isAvailable ? <><PlusIcon size={14} /> Request Device</> : 'Unavailable'}
                   </button>
                 </div>
               </div>

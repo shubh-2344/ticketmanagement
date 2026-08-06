@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { DevicesIcon, AlertIcon, UserIcon, CheckIcon } from './components/Icons';
 import './CreateTicket.css';
 
 function CreateTicket({ onSubmit, API_URL, initialDevice }) {
@@ -192,7 +193,7 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
             >
               {managerList.map((mgr) => (
                 <option key={mgr.id} value={mgr.id}>
-                  👤 {mgr.name} ({mgr.role.toUpperCase()} - {mgr.email})
+                  {mgr.name} ({mgr.role.toUpperCase()} - {mgr.email})
                 </option>
               ))}
             </select>
@@ -211,7 +212,7 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
                 checked={formData.type === 'device-request'}
                 onChange={handleChange}
               />
-              <span>🖥️ Device Request</span>
+              <span><DevicesIcon size={16} /> Device Request</span>
             </label>
             <label className="radio-label">
               <input
@@ -221,7 +222,7 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
                 checked={formData.type === 'issue'}
                 onChange={handleChange}
               />
-              <span>🔧 Report Issue</span>
+              <span><AlertIcon size={16} /> Report Issue</span>
             </label>
           </div>
         </div>
@@ -336,9 +337,9 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
               value={formData.priority}
               onChange={handleChange}
             >
-              <option value="low">🟦 Low</option>
-              <option value="medium">🟨 Medium</option>
-              <option value="high">🟥 High</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
             </select>
           </div>
         </div>
@@ -353,7 +354,7 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       <div className="info-box">
         {formData.type === 'issue' ? (
           <>
-            <h4>⚡ Direct Admin Support Workflow</h4>
+            <h4>Direct Admin Support Workflow</h4>
             <ul>
               <li><strong>Stage 1:</strong> Submit issue directly to the system Administrator.</li>
               <li><strong>Stage 2:</strong> Admin resolves, sets SLA tracking, and closes the ticket.</li>
@@ -361,7 +362,7 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
           </>
         ) : (
           <>
-            <h4>🔄 Multi-Stage Device Request Workflow</h4>
+            <h4>Multi-Stage Device Request Workflow</h4>
             <ul>
               <li><strong>Stage 1:</strong> Submit request to your assigned Manager.</li>
               <li><strong>Stage 2:</strong> Manager reviews request (Approve or Deny).</li>

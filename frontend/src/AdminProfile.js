@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { KeyIcon, PlusIcon, UsersIcon, SettingsIcon, DownloadIcon, EditIcon, TrashIcon, RefreshIcon, XIcon, FileTextIcon, BarChartIcon, DevicesIcon } from './components/Icons';
 import './AdminProfile.css';
 
 function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
@@ -296,38 +297,38 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
           className={`prof-tab ${activeTab === 'password' ? 'active' : ''}`}
           onClick={() => setActiveTab('password')}
         >
-          🔑 Change Password
+          <KeyIcon size={16} /> Change Password
         </button>
         <button
           className={`prof-tab ${activeTab === 'create-user' ? 'active' : ''}`}
           onClick={() => setActiveTab('create-user')}
         >
-          ➕ Create User / Admin
+          <PlusIcon size={16} /> Create User / Admin
         </button>
         <button
           className={`prof-tab ${activeTab === 'manage-users' ? 'active' : ''}`}
           onClick={() => setActiveTab('manage-users')}
         >
-          👥 User Management & Passwords
+          <UsersIcon size={16} /> User Management & Passwords
         </button>
         <button
           className={`prof-tab ${activeTab === 'branding' ? 'active' : ''}`}
           onClick={() => setActiveTab('branding')}
         >
-          🎨 Branding & Themes
+          <SettingsIcon size={16} /> Branding & Themes
         </button>
         <button
           className={`prof-tab ${activeTab === 'backup' ? 'active' : ''}`}
           onClick={() => setActiveTab('backup')}
         >
-          📊 Backup & Data Export
+          <DownloadIcon size={16} /> Backup & Data Export
         </button>
       </div>
 
       {/* TAB 1: CHANGE PASSWORD */}
       {activeTab === 'password' && (
         <div className="prof-card">
-          <h3>🔑 Change Your Admin Password</h3>
+          <h3>Change Your Admin Password</h3>
           <p className="card-subtext">Update your login security credentials.</p>
 
           {passwordMsg.text && (
@@ -511,7 +512,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                             onClick={() => setEditingUser({ ...u })}
                             title="Edit User Details (Name, Email, Role)"
                           >
-                            ✏️ Edit
+                            <EditIcon size={14} /> Edit
                           </button>
 
                           {/* Reset Password Inline Form */}
@@ -528,13 +529,13 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                                 onClick={() => generateRandomPassword(u.id)}
                                 title="Generate Secure Password"
                               >
-                                🎲
+                                <RefreshIcon size={14} />
                               </button>
                               <button className="btn-save-pwd" onClick={() => handleAdminResetPassword(u.id)}>
                                 Save
                               </button>
                               <button className="btn-cancel-pwd" onClick={() => setResetPwdUserId(null)}>
-                                ✖
+                                <XIcon size={14} />
                               </button>
                             </div>
                           ) : (
@@ -542,7 +543,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                               className="btn-action-reset"
                               onClick={() => { setResetPwdUserId(u.id); setResetPwdValue(''); }}
                             >
-                              🔑 Reset Pwd
+                              <KeyIcon size={14} /> Reset Pwd
                             </button>
                           )}
 
@@ -552,7 +553,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                               className="btn-action-del"
                               onClick={() => handleDeleteUser(u.id, u.name)}
                             >
-                              🗑️ Delete
+                              <TrashIcon size={14} /> Delete
                             </button>
                           )}
                         </div>
@@ -737,7 +738,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
       {activeTab === 'backup' && (
         <div className="prof-card" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div>
-            <h3 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 4px 0', letterSpacing: '-0.3px' }}>📥 Easy Data Export & Reports Portal</h3>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 4px 0', letterSpacing: '-0.3px' }}>Data Export & Reports Portal</h3>
             <p className="card-subtext" style={{ margin: 0 }}>
               Export system tickets, hardware asset inventory, and user directory logs directly to Excel and PDF formats.
             </p>
@@ -749,7 +750,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
             <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '22px' }}>🎟️</span>
+                  <FileTextIcon size={20} style={{ color: '#38bdf8' }} />
                   <h4 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#ffffff' }}>Tickets & Incident Resolution Report</h4>
                 </div>
                 <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
@@ -762,19 +763,19 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                   onClick={() => handleExportFormattedData('Tickets & Incidents', 'excel')}
                   style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📊 Export to Excel (.XLSX)
+                  <BarChartIcon size={14} /> Export to Excel (.XLSX)
                 </button>
                 <button
                   onClick={() => handleExportFormattedData('Tickets & Incidents', 'csv')}
                   style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📑 Export to CSV (.CSV)
+                  <FileTextIcon size={14} /> Export to CSV (.CSV)
                 </button>
                 <button
                   onClick={() => handleExportFormattedData('Tickets & Incidents', 'pdf')}
                   style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📄 Export to PDF (.PDF)
+                  <DownloadIcon size={14} /> Export to PDF (.PDF)
                 </button>
               </div>
             </div>
@@ -783,7 +784,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
             <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '22px' }}>💻</span>
+                  <DevicesIcon size={20} style={{ color: '#c084fc' }} />
                   <h4 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#ffffff' }}>Hardware Asset & Inventory Report</h4>
                 </div>
                 <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
@@ -796,19 +797,19 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                   onClick={() => handleExportFormattedData('Hardware Inventory', 'excel')}
                   style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📊 Export to Excel (.XLSX)
+                  <BarChartIcon size={14} /> Export to Excel (.XLSX)
                 </button>
                 <button
                   onClick={() => handleExportFormattedData('Hardware Inventory', 'csv')}
                   style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📑 Export to CSV (.CSV)
+                  <FileTextIcon size={14} /> Export to CSV (.CSV)
                 </button>
                 <button
                   onClick={() => handleExportFormattedData('Hardware Inventory', 'pdf')}
                   style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📄 Export to PDF (.PDF)
+                  <DownloadIcon size={14} /> Export to PDF (.PDF)
                 </button>
               </div>
             </div>
@@ -817,7 +818,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
             <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '22px' }}>👥</span>
+                  <UsersIcon size={20} style={{ color: '#4ade80' }} />
                   <h4 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#ffffff' }}>User Accounts & Roles Directory</h4>
                 </div>
                 <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
@@ -830,19 +831,19 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                   onClick={() => handleExportFormattedData('User Directory', 'excel')}
                   style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📊 Export to Excel (.XLSX)
+                  <BarChartIcon size={14} /> Export to Excel (.XLSX)
                 </button>
                 <button
                   onClick={() => handleExportFormattedData('User Directory', 'csv')}
                   style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📑 Export to CSV (.CSV)
+                  <FileTextIcon size={14} /> Export to CSV (.CSV)
                 </button>
                 <button
                   onClick={() => handleExportFormattedData('User Directory', 'pdf')}
                   style={{ padding: '10px 16px', borderRadius: '8px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', color: '#ffffff', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  📄 Export to PDF (.PDF)
+                  <DownloadIcon size={14} /> Export to PDF (.PDF)
                 </button>
               </div>
             </div>

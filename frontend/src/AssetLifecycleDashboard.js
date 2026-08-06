@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+import { DevicesIcon, AlertIcon, CheckIcon, FileTextIcon, InventoryIcon, SearchIcon } from './components/Icons';
+
 function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
   const [metrics, setMetrics] = useState(null);
   const [trackingList, setTrackingList] = useState([]);
@@ -112,7 +114,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
   if (error) {
     return (
       <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '20px', borderRadius: '12px', margin: '20px 0' }}>
-        <h3>⚠️ Connection Error</h3>
+        <h3>Connection Error</h3>
         <p>{error}</p>
       </div>
     );
@@ -121,7 +123,9 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
   return (
     <div style={{ color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div>
-        <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 4px 0' }}>🖥️ Enterprise Asset Lifecycle</h2>
+        <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <DevicesIcon size={24} style={{ color: 'var(--accent)' }} /> Enterprise Asset Lifecycle
+        </h2>
         <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>Monitor hardware utilization splits, device assignments, and return lifecycle pipelines.</p>
       </div>
 
@@ -131,7 +135,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
           <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Total Fleet Quantity</div>
             <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px' }}>{metrics.totalInventory} Units</div>
-            <div style={{ fontSize: '11px', color: '#10b981', marginTop: '8px' }}>🟢 Available: {metrics.statusCounts.Available}</div>
+            <div style={{ fontSize: '11px', color: '#10b981', marginTop: '8px' }}>Available: {metrics.statusCounts.Available}</div>
           </div>
 
           <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
@@ -145,8 +149,8 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: metrics.overdueReturns > 0 ? '#ef4444' : 'var(--text-main)' }}>
               {metrics.overdueReturns} Units
             </div>
-            <span style={{ fontSize: '11px', color: metrics.overdueReturns > 0 ? '#ef4444' : '#10b981', marginTop: '8px', display: 'inline-block' }}>
-              {metrics.overdueReturns > 0 ? '🚨 Action required' : '✓ Fleet healthy'}
+            <span style={{ fontSize: '11px', color: metrics.overdueReturns > 0 ? '#ef4444' : '#10b981', marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              {metrics.overdueReturns > 0 ? <><AlertIcon size={12} /> Action required</> : <><CheckIcon size={12} /> Fleet healthy</>}
             </span>
           </div>
 
@@ -163,7 +167,9 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
       {/* Tracking Table Section */}
       <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>📋 Device Allocation & Return Tracking</h3>
+          <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileTextIcon size={18} /> Device Allocation & Return Tracking
+          </h3>
           
           <div style={{ display: 'flex', gap: '10px' }}>
             <button 
@@ -176,20 +182,19 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
               onClick={() => setFilterStatus('overdue')} 
               style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'overdue' ? '#ef4444' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'overdue' ? '#ffffff' : 'var(--text-main)' }}
             >
-              ⚠️ Overdue Only
+              Overdue Only
             </button>
             <button 
               onClick={() => setFilterStatus('pending_return')} 
               style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'pending_return' ? '#a855f7' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'pending_return' ? '#ffffff' : 'var(--text-main)' }}
             >
-              📥 Return Requests
+              Return Requests
             </button>
           </div>
         </div>
 
         {filteredList.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📂</div>
             <p>No active device allocations match this filter.</p>
           </div>
         ) : (
@@ -238,16 +243,16 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                           <button 
                             onClick={() => onSelectTicket(item.ticket_id)}
-                            style={{ padding: '4px 10px', borderRadius: '4px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer' }}
+                            style={{ padding: '4px 10px', borderRadius: '4px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                           >
-                            🔍 View Detail
+                            <SearchIcon size={12} /> View Detail
                           </button>
                           {item.ticket_status === 'return_pending_verification' && (
                             <button 
                               onClick={() => handleVerifyReturn(item.ticket_id)}
-                              style={{ padding: '4px 10px', borderRadius: '4px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontWeight: '600', cursor: 'pointer' }}
+                              style={{ padding: '4px 10px', borderRadius: '4px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                             >
-                              ✓ Verify Return
+                              <CheckIcon size={12} /> Verify Return
                             </button>
                           )}
                         </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+import { BotIcon, AlertIcon, TagIcon, ChevronRightIcon } from './components/Icons';
+
 function AIDashboard({ API_URL, onSelectTicket }) {
   const [analysisData, setAnalysisData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ function AIDashboard({ API_URL, onSelectTicket }) {
   if (error) {
     return (
       <div style={{ color: '#f43f5e', background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.2)', padding: '20px', borderRadius: '12px', margin: '20px 0' }}>
-        <h3>🤖 AI Model Connection Failed</h3>
+        <h3>AI Model Connection Failed</h3>
         <p>{error}</p>
       </div>
     );
@@ -90,7 +92,9 @@ function AIDashboard({ API_URL, onSelectTicket }) {
     <div style={{ color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 4px 0' }}>🤖 AI Copilot Intelligent Insights</h2>
+          <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BotIcon size={24} style={{ color: 'var(--accent)' }} /> AI Copilot Intelligent Insights
+          </h2>
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>Automatic prioritization, category assignment, duplication filters, and agent workload optimizer.</p>
         </div>
       </div>
@@ -172,9 +176,12 @@ function AIDashboard({ API_URL, onSelectTicket }) {
                   fontWeight: '700',
                   backgroundColor: `rgba(56, 189, 248, 0.15)`,
                   color: '#38bdf8',
-                  border: '1px solid rgba(56, 189, 248, 0.3)'
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
                 }}>
-                  🏷️ {item.aiCategory}
+                  <TagIcon size={12} /> {item.aiCategory}
                 </span>
 
                 <span style={{
@@ -197,7 +204,9 @@ function AIDashboard({ API_URL, onSelectTicket }) {
 
             {item.isPotentialDuplicate && (
               <div style={{ background: 'rgba(192, 132, 252, 0.08)', padding: '12px 16px', borderRadius: '8px', fontSize: '12px', border: '1px solid rgba(192, 132, 252, 0.25)', color: '#d8b4fe', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>⚠️ <strong>AI Duplicate Alert:</strong> Matches ticket content closely with duplicate ticket ID. Dismiss if verified.</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AlertIcon size={14} style={{ color: '#c084fc' }} /> <strong>AI Duplicate Alert:</strong> Matches ticket content closely with duplicate ticket ID. Dismiss if verified.
+                </span>
                 <button 
                   onClick={() => handleDismissDuplicate(item.ticket_id)}
                   style={{ padding: '4px 10px', background: '#c084fc', border: 'none', borderRadius: '4px', color: '#000000', fontWeight: '700', cursor: 'pointer', fontSize: '11px' }}
@@ -213,9 +222,9 @@ function AIDashboard({ API_URL, onSelectTicket }) {
               </span>
               <button 
                 onClick={() => onSelectTicket(item.ticket_id)}
-                style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', cursor: 'pointer', fontSize: '12px' }}
+                style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
               >
-                Inspect Ticket Detail →
+                Inspect Ticket Detail <ChevronRightIcon size={14} />
               </button>
             </div>
           </div>

@@ -347,7 +347,7 @@ function App() {
         <div className="confirm-modal-overlay" onClick={confirmConfig.onCancel}>
           <div className="confirm-modal-box" onClick={(e) => e.stopPropagation()}>
             <div className={`confirm-icon-badge ${confirmConfig.confirmType}`}>
-              {confirmConfig.confirmType === 'danger' ? '🗑️' : confirmConfig.confirmType === 'warning' ? '⚠️' : (confirmConfig.confirmType === 'success' || confirmConfig.confirmType === 'info' ? '✅' : '❓')}
+              {confirmConfig.confirmType === 'danger' ? '!' : '!'}
             </div>
             <h3 className="confirm-modal-title">{confirmConfig.title}</h3>
             <p className="confirm-modal-message">{confirmConfig.message}</p>
@@ -399,8 +399,8 @@ function App() {
                 {currentUser.role.toUpperCase()}
               </span>
             </div>
-            <button className="btn-logout" onClick={handleLogout}>
-              🚪 Logout
+            <button className="btn-logout" onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <LogoutIcon size={16} /> Logout
             </button>
           </div>
         </div>

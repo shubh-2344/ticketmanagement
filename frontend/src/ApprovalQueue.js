@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ViewToggle from './components/ViewToggle';
+import { ApprovalsIcon, AlertIcon, InventoryIcon, CheckIcon, XIcon, ArrowRightIcon } from './components/Icons';
 import './ApprovalQueue.css';
 
 function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL, viewMode = 'grid', onViewModeChange }) {
@@ -126,13 +127,12 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
         )}
       </div>
 
-        {/* 3-TAB APPROVALS NAVIGATION */}
         <div className="queue-tabs">
           <button
             className={`queue-tab ${activeTab === 'manager_queue' ? 'active' : ''}`}
             onClick={() => setActiveTab('manager_queue')}
           >
-            📋 Manager Review Queue ({managerQueue.length})
+            <ApprovalsIcon size={16} /> Manager Review Queue ({managerQueue.length})
           </button>
 
           {currentUser.role === 'admin' && (
@@ -140,7 +140,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
               className={`queue-tab admin-tab ${activeTab === 'issue_queue' ? 'active' : ''}`}
               onClick={() => setActiveTab('issue_queue')}
             >
-              Open Incidents ({issueQueue.length})
+              <AlertIcon size={16} /> Open Incidents ({issueQueue.length})
             </button>
           )}
 
@@ -149,7 +149,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
               className={`queue-tab admin-tab ${activeTab === 'admin_queue' ? 'active' : ''}`}
               onClick={() => setActiveTab('admin_queue')}
             >
-              📦 Admin Device Queue ({adminQueue.length})
+              <InventoryIcon size={16} /> Admin Device Queue ({adminQueue.length})
             </button>
           )}
         </div>
@@ -159,7 +159,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
         <div>
           {managerQueue.length === 0 ? (
             <div className="empty-state">
-              <p>🎉 No pending manager approval requests.</p>
+              <p>No pending manager approval requests.</p>
             </div>
           ) : (
             <div className="queue-list">
@@ -179,31 +179,28 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
 
                   <div className="card-meta-grid">
                     <div><span className="label">Requester:</span> <strong>{ticket.requester_name}</strong></div>
-                    <div><span className="label">Assigned Manager:</span> <strong>{ticket.manager_name || 'Manager'}</strong></div>
                     <div><span className="label">Category:</span> <span>{ticket.category}</span></div>
-                    <div><span className="label">Date:</span> <span>{formatDate(ticket.created_at)}</span></div>
                   </div>
 
-                  <div className="action-box">
-                    <input
-                      type="text"
-                      placeholder="Add manager review comment / reason..."
+                  <div className="review-action-box">
+                    <textarea
+                      rows="2"
+                      placeholder="Enter review notes or reason..."
                       value={reviewComment[ticket.id] || ''}
                       onChange={(e) => setReviewComment({ ...reviewComment, [ticket.id]: e.target.value })}
-                      className="comment-input"
                     />
-                    <div className="btn-group">
+                    <div className="action-buttons-flex">
                       <button
-                        className="btn-approve-mgr"
+                        className="btn-approve-sm"
                         onClick={() => handleManagerReview(ticket.id, 'approve')}
                       >
-                        ✓ Approve & Pass to Admin
+                        <CheckIcon size={14} /> Approve Request
                       </button>
                       <button
-                        className="btn-deny-mgr"
+                        className="btn-deny-sm"
                         onClick={() => handleManagerReview(ticket.id, 'reject')}
                       >
-                        ✗ Deny Request
+                        <XIcon size={14} /> Deny Request
                       </button>
                     </div>
                   </div>
@@ -214,12 +211,12 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
         </div>
       )}
 
-      {/* 2. OPEN INCIDENTS QUEUE TAB */}
+      {/* 2. ADMIN INCIDENT RESOLUTION QUEUE TAB */}
       {activeTab === 'issue_queue' && currentUser.role === 'admin' && (
         <div>
           {issueQueue.length === 0 ? (
             <div className="empty-state">
-              <p>🎉 Zero open reported incidents needing resolution.</p>
+              <p>No open incidents requiring admin assignment.</p>
             </div>
           ) : (
             <div className="queue-list">
@@ -230,37 +227,30 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                   <div key={ticket.id} className="queue-card admin-border">
                     <div className="card-top">
                       <div>
-                        <span className="stage-badge admin" style={{ background: 'linear-gradient(135deg, #0284c7, #7c3aed)' }}>
-                          🛡️ OPEN INCIDENT
-                        </span>
+                        <span className="stage-badge admin">STAGE 1: Admin Resolution</span>
                         <h3 onClick={() => onViewTicket(ticket)} className="clickable-title">
                           {ticket.title}
                         </h3>
                       </div>
-                      <span className="priority-badge" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                        PENDING RESOLUTION
-                      </span>
+                      <span className="priority-badge high">{ticket.priority.toUpperCase()}</span>
                     </div>
 
                     <p className="ticket-desc">{ticket.description}</p>
 
-                    <div className="card-meta-grid" style={{ marginTop: '12px' }}>
+                    <div className="card-meta-grid">
                       <div><span className="label">Requester:</span> <strong>{ticket.requester_name}</strong></div>
                       <div><span className="label">Category:</span> <span>{ticket.category}</span></div>
-                      <div><span className="label">Priority:</span> <strong>{ticket.priority.toUpperCase()}</strong></div>
-                      <div><span className="label">Date:</span> <span>{formatDate(ticket.created_at)}</span></div>
                     </div>
 
-                    {/* Direct Incident Resolution Form (No Manager Proof Box / No Hardware Selection) */}
-                    <div className="admin-assign-box" style={{ marginTop: '16px' }}>
-                      <h4>🚀 Resolve Incident & Complete Ticket</h4>
+                    <div className="admin-assign-box">
+                      <h4>Incident Resolution & Troubleshooting</h4>
 
                       <div className="assign-form-row">
-                        <div className="form-field" style={{ width: '100%' }}>
-                          <label>Resolution Action / Summary *:</label>
+                        <div className="form-field" style={{ flex: '1' }}>
+                          <label>Resolution Summary / Action Taken *:</label>
                           <input
                             type="text"
-                            placeholder="e.g. Screen replaced / access granted / software patch applied"
+                            placeholder="e.g. Database access granted / network config updated"
                             value={ticketAdminData.assigned_device_name || ''}
                             onChange={(e) => setAdminAssignment({
                               ...adminAssignment,
@@ -287,7 +277,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                         className="btn-fulfill-admin"
                         onClick={() => handleAdminAssign(ticket.id)}
                       >
-                        🚀 Resolve Incident & Complete Ticket
+                        <CheckIcon size={16} /> Resolve Incident & Complete Ticket
                       </button>
                     </div>
                   </div>
@@ -303,7 +293,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
         <div>
           {adminQueue.length === 0 ? (
             <div className="empty-state">
-              <p>🎉 No requests currently waiting for admin device assignment.</p>
+              <p>No requests currently waiting for admin device assignment.</p>
             </div>
           ) : (
             <div className="queue-list">
@@ -325,7 +315,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                     <p className="ticket-desc">{ticket.description}</p>
 
                     <div className="approval-proof-box">
-                      <span>✓ Approved by Manager: <strong>{ticket.approver_name || ticket.manager_name}</strong></span>
+                      <span>Approved by Manager: <strong>{ticket.approver_name || ticket.manager_name}</strong></span>
                       {ticket.approval_comment && <p className="mgr-comment">"{ticket.approval_comment}"</p>}
                     </div>
 
@@ -335,7 +325,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                     </div>
 
                     <div className="admin-assign-box">
-                      <h4>🚀 Assign Hardware & Fulfill Request</h4>
+                      <h4>Assign Hardware & Fulfill Request</h4>
 
                       <div className="assign-form-row">
                         <div className="form-field">
@@ -395,7 +385,7 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                         className="btn-fulfill-admin"
                         onClick={() => handleAdminAssign(ticket.id)}
                       >
-                        🚀 Assign Device & Complete Fulfillment
+                        <CheckIcon size={16} /> Assign Device & Complete Fulfillment
                       </button>
                     </div>
                   </div>

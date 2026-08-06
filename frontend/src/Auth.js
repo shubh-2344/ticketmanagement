@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Auth.css';
-import { LogoIcon } from './components/Icons';
+import { LogoIcon, UserIcon, MailIcon, LockIcon, ClockIcon, AlertIcon, SuccessIcon } from './components/Icons';
 
 function Auth({ API_URL, onAuthSuccess, globalSettings }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -418,12 +418,12 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
 
             {otpSuccessMessage && (
               <div className="otp-success-banner">
-                <span>✅</span>
+                <SuccessIcon size={16} />
                 <span>{otpSuccessMessage}</span>
               </div>
             )}
 
-            {error && <div className="auth-error-banner">⚠️ {error}</div>}
+            {error && <div className="auth-error-banner"><AlertIcon size={16} /> {error}</div>}
 
             <form onSubmit={handleVerifyOtp} className="auth-form">
               <div className="form-group" style={{ marginBottom: '12px' }}>
@@ -432,7 +432,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
                     Enter 6-Digit Code
                   </label>
                   <div className={`otp-timer-badge ${timerSeconds === 0 ? 'expired' : ''}`}>
-                    <span>⏱️</span>
+                    <ClockIcon size={14} />
                     <span>{timerSeconds > 0 ? formatTimer(timerSeconds) : 'Expired'}</span>
                   </div>
                 </div>
@@ -468,7 +468,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
                   disabled={loading || timerSeconds > 0 || isVerifiedSuccess}
                   className="auth-btn-secondary-link"
                 >
-                  📩 {timerSeconds > 0 ? `Resend (${formatTimer(timerSeconds)})` : 'Resend OTP Code'}
+                  <MailIcon size={14} /> {timerSeconds > 0 ? `Resend (${formatTimer(timerSeconds)})` : 'Resend OTP Code'}
                 </button>
                 <button
                   type="button"
@@ -476,7 +476,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
                   disabled={loading || isVerifiedSuccess}
                   className="auth-btn-secondary-link"
                 >
-                  ← Back to Signup
+                  Back to Signup
                 </button>
               </div>
             </form>
@@ -498,14 +498,14 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
               </button>
             </div>
 
-            {error && <div className="auth-error-banner">⚠️ {error}</div>}
+            {error && <div className="auth-error-banner"><AlertIcon size={16} /> {error}</div>}
 
             <form onSubmit={handleSubmit} className="auth-form">
               {!isLogin && (
                 <div className="form-group">
                   <label>Full Name</label>
                   <div className="input-with-icon">
-                    <span className="input-icon">👤</span>
+                    <span className="input-icon"><UserIcon size={16} /></span>
                     <input
                       type="text"
                       name="name"
@@ -521,7 +521,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
               <div className="form-group">
                 <label>Email Address</label>
                 <div className="input-with-icon">
-                  <span className="input-icon">✉️</span>
+                  <span className="input-icon"><MailIcon size={16} /></span>
                   <input
                     type="email"
                     name="email"
@@ -536,7 +536,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
               <div className="form-group">
                 <label>Password</label>
                 <div className="input-with-icon">
-                  <span className="input-icon">🔒</span>
+                  <span className="input-icon"><LockIcon size={16} /></span>
                   <input
                     type="password"
                     name="password"

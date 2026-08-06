@@ -7,7 +7,11 @@ import {
   AlertIcon, 
   DevicesIcon, 
   DashboardIcon,
-  SuccessIcon
+  SuccessIcon,
+  TrendingUpIcon,
+  ShieldIcon,
+  UserIcon,
+  CheckIcon
 } from './components/Icons';
 
 function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTickets, onViewInventory, API_URL, onRefresh }) {
@@ -243,8 +247,8 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       {/* Top Welcome Title Banner */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', margin: '0 0 4px 0' }}>
-            {isManager ? '👔 Manager Team Dashboard' : '💼 Executive Command Center'}
+          <h2 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <TrendingUpIcon size={24} style={{ color: 'var(--accent)' }} /> {isManager ? 'Manager Team Dashboard' : 'Executive Command Center'}
           </h2>
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>
             {isManager 
@@ -300,41 +304,37 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
         {/* KPI 3 */}
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SLA Risk Monitor</span>
-            <span style={{ color: '#ef4444' }}><ClockIcon size={22} /></span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fleet Utilization</span>
+            <span style={{ color: '#38bdf8' }}><DevicesIcon size={22} /></span>
           </div>
-          <div style={{ fontSize: '32px', fontWeight: '800', color: metrics.slaBreached > 0 ? '#ef4444' : 'var(--text-main)' }}>
-            <CountUp end={metrics.slaBreached} duration={1200} suffix=" Overdue" />
+          <div style={{ fontSize: '32px', fontWeight: '800', color: '#38bdf8' }}>
+            <CountUp end={metrics.utilization} duration={1200} suffix="%" />
           </div>
-          <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: '#f59e0b' }}>⚠️ {metrics.slaAtRisk} critical risk tickets</p>
+          <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Of {totalDevices} total inventory hardware</p>
         </div>
 
         {/* KPI 4 */}
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fleet Utilization</span>
-            <span style={{ color: 'var(--accent-secondary, #06b6d4)' }}><DevicesIcon size={22} /></span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SLA At Risk</span>
+            <span style={{ color: '#ef4444' }}><ClockIcon size={22} /></span>
           </div>
-          <div style={{ fontSize: '32px', fontWeight: '800', color: 'var(--accent-secondary, #06b6d4)' }}>
-            <CountUp end={metrics.utilization} duration={1200} suffix="%" />
+          <div style={{ fontSize: '32px', fontWeight: '800', color: '#ef4444' }}>
+            <CountUp end={metrics.slaAtRisk + metrics.slaBreached} duration={1200} suffix=" Tickets" />
           </div>
-          <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', marginTop: '12px', overflow: 'hidden' }}>
-            <div style={{ width: animate ? `${metrics.utilization}%` : '0%', height: '100%', background: 'var(--accent-secondary, #06b6d4)', transition: 'width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)' }}></div>
-          </div>
+          <p style={{ margin: '8px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>{metrics.slaBreached} breached, {metrics.slaAtRisk} critical</p>
         </div>
       </div>
 
-      {/* Dashboard Analytics & Feed row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px', flexWrap: 'wrap' }} className="executive-grid-row">
-        
-        {/* Device Allocation breakdown */}
-        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0 }}>🖥️ Fleet Device Allocations</h3>
+      {/* Middle Row: Category Breakdown & Activity Feed */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        {/* Category Breakdown */}
+        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 16px 0' }}>Ticket Breakdown by Category</h3>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {Object.entries(metrics.categories).map(([cat, count]) => {
-              const maxCount = Math.max(...Object.values(metrics.categories), 1);
-              const percentage = Math.round((count / maxCount) * 100);
+              const percentage = metrics.total > 0 ? Math.round((count / metrics.total) * 100) : 0;
               return (
                 <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '13px', width: '100px' }}>{cat}</span>
@@ -352,7 +352,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }}></span>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0 }}>⚡ Live Activity Feed</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0 }}>Live Activity Feed</h3>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: '1' }}>
@@ -377,17 +377,21 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, letterSpacing: '-0.3px' }}>🚨 SLA Risk Monitor</h3>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <AlertIcon size={18} style={{ color: '#ef4444' }} /> SLA Risk Monitor
+            </h3>
             <span style={{ fontSize: '11px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 8px', borderRadius: '12px', fontWeight: '700' }}>
               {actionableTickets.length} Actionable
             </span>
           </div>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>⏱️ Live Real-Time Updates</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <ClockIcon size={14} /> Live Real-Time Updates
+          </span>
         </div>
         
         {actionableTickets.length === 0 ? (
           <div style={{ padding: '28px 0', textAlign: 'center', color: '#10b981', fontSize: '14px', fontWeight: '600' }}>
-            🎉 Zero active SLA risk or breached tickets. System SLA healthy!
+            Zero active SLA risk or breached tickets. System SLA healthy!
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -422,7 +426,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
 
                       {/* 2. Assigned Engineer */}
                       <td style={{ padding: '12px 10px', color: 'var(--text-main)', fontWeight: '500' }}>
-                        👤 {sla.assignedEngineer}
+                        {sla.assignedEngineer}
                       </td>
 
                       {/* 3. Priority */}
@@ -449,7 +453,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                         fontSize: '13px',
                         color: sla.slaStatus === 'Breached' ? '#ef4444' : '#f59e0b' 
                       }}>
-                        ⏳ {sla.timeRemainingStr}
+                        {sla.timeRemainingStr}
                       </td>
 
                       {/* 5. SLA Status (At Risk / Breached) */}
@@ -463,7 +467,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                           color: sla.slaStatus === 'Breached' ? '#ef4444' : '#f59e0b',
                           border: `1px solid ${sla.slaStatus === 'Breached' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`
                         }}>
-                          {sla.slaStatus === 'Breached' ? '🚨 BREACHED' : '⚠️ AT RISK'}
+                          {sla.slaStatus === 'Breached' ? 'BREACHED' : 'AT RISK'}
                         </span>
                       </td>
 
@@ -492,7 +496,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                           color: '#c084fc',
                           border: '1px solid rgba(168, 85, 247, 0.3)'
                         }}>
-                          📌 {sla.escalationLevel}
+                          {sla.escalationLevel}
                         </span>
                       </td>
 
@@ -512,7 +516,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                               fontWeight: '600'
                             }}
                           >
-                            👁️ View
+                            View
                           </button>
 
                           {/* Show Escalate action ONLY for High Risk or Breached tickets */}
@@ -532,7 +536,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                               }}
                               title={`Escalate along path: Engineer → Team Lead → Manager → Admin`}
                             >
-                              ⚡ Escalate
+                              Escalate
                             </button>
                           )}
                         </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { CheckIcon, XIcon } from './components/Icons';
 import './Toast.css';
 
 const Toast = ({ toast, onClose }) => {
@@ -8,7 +9,7 @@ const Toast = ({ toast, onClose }) => {
     <div className="tm-toast-wrapper">
       <div className={`tm-toast-card tm-toast-${toast.type || 'success'}`}>
         <div className="tm-toast-icon-box">
-          {toast.type === 'error' ? '✕' : '✓'}
+          {toast.type === 'error' ? <XIcon size={16} /> : <CheckIcon size={16} />}
         </div>
         <div className="tm-toast-message-body">
           {toast.message}
@@ -19,7 +20,7 @@ const Toast = ({ toast, onClose }) => {
           title="Dismiss"
           aria-label="Dismiss Notification"
         >
-          ✕
+          <XIcon size={14} />
         </button>
       </div>
     </div>
