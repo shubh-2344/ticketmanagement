@@ -63,7 +63,10 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
     }
   };
 
-  const handleAdminAssignSubmit = async (ticket) => {
+  const handleAdminAssign = async (ticketOrId) => {
+    const ticket = typeof ticketOrId === 'object' ? ticketOrId : tickets.find(t => t.id === ticketOrId);
+    if (!ticket) return;
+
     const data = adminAssignment[ticket.id] || {};
     const isIssue = ticket.type === 'issue';
 
@@ -100,6 +103,8 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
       alert(err.response?.data?.error || 'Assignment failed.');
     }
   };
+
+  const handleAdminAssignSubmit = handleAdminAssign;
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
