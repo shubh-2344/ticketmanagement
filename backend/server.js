@@ -9,6 +9,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { Pool } = require('pg');
+const emailService = require('./services/emailService');
 
 const app = express();
 
@@ -135,6 +136,9 @@ async function initializeDB() {
 
         // Migrations
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT 'Engineering';`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_code VARCHAR(10);`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT 'Engineering';`);
 
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS manager_id VARCHAR(50);`);
@@ -170,10 +174,10 @@ async function initializeDB() {
 
         for (const [id, name, email, passHash, role, dept] of seedUsers) {
             await pool.query(`
-                INSERT INTO users (id, name, email, password_hash, role, department)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO users (id, name, email, password_hash, role, department, is_verified)
+                VALUES ($1, $2, $3, $4, $5, $6, TRUE)
                 ON CONFLICT (email) DO UPDATE 
-                SET password_hash = $4, name = $2, role = $5, department = $6
+                SET password_hash = $4, name = $2, role = $5, department = $6, is_verified = TRUE
             `, [id, name, email, passHash, role, dept]);
         }
 
@@ -329,9 +333,9 @@ app.put('/api/settings', authenticateToken, requireRole(['admin']), async (req, 
     }
 });
 
-// Signup Endpoint (Users can register as Employee or Manager)
+// Signup Endpoint (Every new user automatically created with default role 'employee' / User)
 app.post('/api/auth/signup', async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
         return res.status(400).json({ error: 'Name, email, and password are required' });
@@ -341,33 +345,47 @@ app.post('/api/auth/signup', async (req, res) => {
         return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
-    const validRoles = ['employee', 'manager'];
-    const assignedRole = validRoles.includes(role) ? role : 'employee';
+    // Every new user signup automatically receives the default role 'employee' (User)
+    const assignedRole = 'employee';
 
     try {
-        const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email.trim().toLowerCase()]);
+        const existingUser = await pool.query('SELECT id, is_verified FROM users WHERE email = $1', [email.trim().toLowerCase()]);
         if (existingUser.rows.length > 0) {
-            return res.status(400).json({ error: 'User with this email already exists' });
+            const user = existingUser.rows[0];
+            if (user.is_verified) {
+                return res.status(400).json({ error: 'User with this email already exists and is verified. Please log in.' });
+            } else {
+                // If account exists but is unverified, generate fresh OTP and resend
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+                await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
+                
+                emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp });
+                return res.status(200).json({
+                    message: 'Account exists but is unverified. A new 6-digit OTP code has been sent to your email.',
+                    requireOtp: true,
+                    email: email.trim().toLowerCase()
+                });
+            }
         }
 
         const userId = 'usr_' + uuidv4().substring(0, 8);
         const hashedPassword = await bcrypt.hash(password, 10);
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
         await pool.query(
-            'INSERT INTO users(id, name, email, password_hash, role) VALUES($1, $2, $3, $4, $5)',
-            [userId, name.trim(), email.trim().toLowerCase(), hashedPassword, assignedRole]
+            'INSERT INTO users(id, name, email, password_hash, role, is_verified, otp_code, otp_expires_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8)',
+            [userId, name.trim(), email.trim().toLowerCase(), hashedPassword, assignedRole, false, otp, otpExpiresAt]
         );
 
-        const token = jwt.sign(
-            { id: userId, name: name.trim(), email: email.trim().toLowerCase(), role: assignedRole },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        // Send OTP verification email asynchronously
+        emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp });
 
         res.status(201).json({
-            message: 'User registered successfully',
-            token,
-            user: { id: userId, name: name.trim(), email: email.trim().toLowerCase(), role: assignedRole }
+            message: 'Registration successful! Please enter the 6-digit OTP sent to your email to activate your account.',
+            requireOtp: true,
+            email: email.trim().toLowerCase()
         });
     } catch (err) {
         console.error('Signup error:', err);
@@ -395,8 +413,23 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
+        // Prevent login until email is verified
+        if (!user.is_verified) {
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+            await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
+            
+            emailService.sendOtpEmail({ to: user.email, name: user.name, otp });
+
+            return res.status(403).json({
+                error: 'Your email address is not verified. A new 6-digit OTP code has been sent to your email.',
+                requireOtp: true,
+                email: user.email
+            });
+        }
+
         const token = jwt.sign(
-            { id: user.id, name: user.name, email: user.email, role: user.role },
+            { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -404,11 +437,104 @@ app.post('/api/auth/login', async (req, res) => {
         res.json({
             message: 'Login successful',
             token,
-            user: { id: user.id, name: user.name, email: user.email, role: user.role }
+            user: { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department }
         });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: err.message || 'Login failed.' });
+    }
+});
+
+// Verify OTP Endpoint
+app.post('/api/auth/verify-otp', async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+        return res.status(400).json({ error: 'Email and 6-digit OTP code are required' });
+    }
+
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email.trim().toLowerCase()]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User account not found' });
+        }
+
+        const user = result.rows[0];
+
+        if (user.is_verified) {
+            const token = jwt.sign(
+                { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+            return res.json({
+                message: 'Account is already verified!',
+                token,
+                user: { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department }
+            });
+        }
+
+        if (user.otp_code !== otp.trim()) {
+            return res.status(400).json({ error: 'Invalid OTP verification code. Please check your email and try again.' });
+        }
+
+        if (user.otp_expires_at && new Date(user.otp_expires_at).getTime() < Date.now()) {
+            return res.status(400).json({ error: 'OTP code has expired. Please click "Resend OTP" to receive a new code.' });
+        }
+
+        // Activate user account
+        await pool.query(
+            'UPDATE users SET is_verified = TRUE, otp_code = NULL, otp_expires_at = NULL WHERE id = $1',
+            [user.id]
+        );
+
+        const token = jwt.sign(
+            { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            message: 'Email address verified successfully! Welcome to Ticket Management System.',
+            token,
+            user: { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department }
+        });
+    } catch (err) {
+        console.error('Verify OTP error:', err);
+        res.status(500).json({ error: err.message || 'OTP verification failed' });
+    }
+});
+
+// Resend OTP Endpoint
+app.post('/api/auth/resend-otp', async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ error: 'Email address is required' });
+    }
+
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email.trim().toLowerCase()]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User account not found' });
+        }
+
+        const user = result.rows[0];
+        if (user.is_verified) {
+            return res.status(400).json({ error: 'This email account is already verified. Please log in.' });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+        await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
+
+        emailService.sendOtpEmail({ to: user.email, name: user.name, otp });
+
+        res.json({ message: 'A new 6-digit OTP code has been sent to your email.' });
+    } catch (err) {
+        console.error('Resend OTP error:', err);
+        res.status(500).json({ error: err.message || 'Failed to resend OTP' });
     }
 });
 
@@ -1004,6 +1130,49 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
             title,
             status: initialStatus
         });
+
+        // Dispatch Email Notification to Assigned Manager / Admin (Async non-blocking)
+        (async () => {
+            try {
+                let recipientEmail = null;
+                let recipientName = safeManagerName || 'Manager';
+
+                if (safeManagerId) {
+                    const mgrRes = await pool.query('SELECT name, email FROM users WHERE id = $1', [safeManagerId]);
+                    if (mgrRes.rows.length > 0) {
+                        recipientEmail = mgrRes.rows[0].email;
+                        recipientName = mgrRes.rows[0].name;
+                    }
+                }
+
+                if (!recipientEmail) {
+                    const anyRes = await pool.query("SELECT email, name FROM users WHERE role = 'manager' OR role = 'admin' LIMIT 1");
+                    if (anyRes.rows.length > 0) {
+                        recipientEmail = anyRes.rows[0].email;
+                        recipientName = anyRes.rows[0].name;
+                    }
+                }
+
+                if (recipientEmail) {
+                    await emailService.sendTicketCreatedEmail({
+                        to: recipientEmail,
+                        managerName: recipientName,
+                        ticket: {
+                            id,
+                            title: title.trim(),
+                            description: description.trim(),
+                            type,
+                            category,
+                            priority: ticketPriority,
+                            requester_name: req.user.name,
+                            requester_email: req.user.email
+                        }
+                    });
+                }
+            } catch (mailErr) {
+                console.error('Ticket creation email notification error:', mailErr);
+            }
+        })();
     } catch (err) {
         console.error('Create ticket error:', err);
         res.status(500).json({ error: err.message || 'Failed to create ticket' });
@@ -1102,6 +1271,21 @@ app.put('/api/tickets/:id/escalate', authenticateToken, async (req, res) => {
             message: `Ticket escalated to ${escalation_level} level successfully`,
             ticket: result.rows[0]
         });
+
+        // Dispatch Email Notification (Escalation / Resolution Alert)
+        (async () => {
+            try {
+                if (result.rows[0].requester_email) {
+                    await emailService.sendTicketResolvedEmail({
+                        to: result.rows[0].requester_email,
+                        userName: result.rows[0].requester_name,
+                        ticket: result.rows[0]
+                    });
+                }
+            } catch (mailErr) {
+                console.error('Escalation email notification error:', mailErr);
+            }
+        })();
     } catch (err) {
         console.error('Escalate ticket error:', err);
         res.status(500).json({ error: err.message || 'Failed to escalate ticket' });
@@ -1197,6 +1381,25 @@ app.put('/api/tickets/:id/manager-review', authenticateToken, requireRole(['mana
                 : 'Ticket denied by manager',
             ticket: result.rows[0]
         });
+
+        // Dispatch Email Notification to Admin if Approved
+        if (action === 'approve') {
+            (async () => {
+                try {
+                    const adminRes = await pool.query("SELECT email, name FROM users WHERE role = 'admin'");
+                    const adminEmails = adminRes.rows.map(r => r.email);
+                    if (adminEmails.length > 0) {
+                        await emailService.sendTicketApprovedEmail({
+                            to: adminEmails,
+                            adminName: 'Administrator',
+                            ticket: result.rows[0]
+                        });
+                    }
+                } catch (mailErr) {
+                    console.error('Manager approval email notification error:', mailErr);
+                }
+            })();
+        }
     } catch (err) {
         console.error('Manager review error:', err);
         res.status(500).json({ error: err.message || 'Failed to review ticket' });
@@ -1244,6 +1447,21 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
             message: 'Device successfully assigned and ticket fulfilled by Admin',
             ticket: result.rows[0]
         });
+
+        // Dispatch Email Notification (Admin Device Assigned -> User / Specialist)
+        (async () => {
+            try {
+                if (result.rows[0].requester_email) {
+                    await emailService.sendTicketAssignedEmail({
+                        to: result.rows[0].requester_email,
+                        engineerName: result.rows[0].requester_name,
+                        ticket: result.rows[0]
+                    });
+                }
+            } catch (mailErr) {
+                console.error('Admin device assign email notification error:', mailErr);
+            }
+        })();
     } catch (err) {
         console.error('Admin assign error:', err);
         res.status(500).json({ error: err.message || 'Device assignment failed' });
@@ -1255,12 +1473,14 @@ app.put('/api/tickets/:id/close', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     try {
-        const ticketResult = await pool.query('SELECT requester_id FROM tickets WHERE id = $1', [id]);
+        const ticketResult = await pool.query('SELECT * FROM tickets WHERE id = $1', [id]);
         if (ticketResult.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });
         }
 
-        if (req.user.role === 'employee' && ticketResult.rows[0].requester_id !== req.user.id) {
+        const targetTicket = ticketResult.rows[0];
+
+        if (req.user.role === 'employee' && targetTicket.requester_id !== req.user.id) {
             return res.status(403).json({ error: 'Forbidden: You can only close your own tickets' });
         }
 
@@ -1271,6 +1491,21 @@ app.put('/api/tickets/:id/close', authenticateToken, async (req, res) => {
         `, [id]);
 
         res.json({ message: 'Ticket closed successfully' });
+
+        // Dispatch Email Notification (Ticket Closed -> User)
+        (async () => {
+            try {
+                if (targetTicket.requester_email) {
+                    await emailService.sendTicketClosedEmail({
+                        to: targetTicket.requester_email,
+                        userName: targetTicket.requester_name,
+                        ticket: targetTicket
+                    });
+                }
+            } catch (mailErr) {
+                console.error('Ticket close email notification error:', mailErr);
+            }
+        })();
     } catch (err) {
         console.error('Close ticket error:', err);
         res.status(500).json({ error: err.message || 'Failed to close ticket' });
