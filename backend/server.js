@@ -135,6 +135,11 @@ async function initializeDB() {
         `);
 
         // Migrations
+        try {
+            await pool.query(`ALTER TABLE tickets ALTER COLUMN id TYPE VARCHAR(100) USING id::text;`);
+        } catch (mErr) {
+            // Ignore if already VARCHAR or permission restricted
+        }
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT 'Engineering';`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;`);
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_code VARCHAR(10);`);
@@ -1062,16 +1067,7 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
             );
         }
 
-        const prefix = type === 'issue' ? 'INC' : (type === 'device-request' ? 'REQ' : 'TKT');
-        const countRes = await pool.query(
-            `SELECT COUNT(*) FROM tickets WHERE type = $1 OR id LIKE $2`,
-            [type, `${prefix}-%`]
-        );
-        const nextNum = (parseInt(countRes.rows[0]?.count || '0', 10) || 0) + 1;
-        const candidateId = `${prefix}-${String(nextNum).padStart(6, '0')}`;
-        
-        const existingCheck = await pool.query(`SELECT id FROM tickets WHERE id = $1`, [candidateId]);
-        const id = existingCheck.rows.length === 0 ? candidateId : `${prefix}-${String(nextNum + Math.floor(Math.random() * 1000)).padStart(6, '0')}`;
+        const id = uuidv4();
         
         // If it is an issue, bypass manager review and send directly to Admin.
         const initialStatus = type === 'issue' ? 'pending_admin_assignment' : 'pending_manager_approval';
