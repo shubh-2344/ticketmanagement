@@ -58,7 +58,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
 
       await axios.put(`${API_URL}/tickets/${ticket.id}/return-device`);
       alert('Device marked as returned. Awaiting Administrator verification.');
-      window.location.reload();
+      if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Error marking device as returned:', err);
       alert(err.response?.data?.error || 'Failed to mark device as returned.');
@@ -78,7 +78,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
 
       await axios.put(`${API_URL}/tickets/${ticket.id}/verify-return`);
       alert('Device return verified successfully. Asset inventory restocked.');
-      window.location.reload();
+      if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Error verifying device return:', err);
       alert(err.response?.data?.error || 'Verification of return failed.');
@@ -138,7 +138,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       });
       alert(`SLA successfully extended by ${extendHours} hours!`);
       setExtendReason('');
-      window.location.reload();
+      if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Error extending SLA:', err);
       alert(err.response?.data?.error || 'SLA extension failed.');
@@ -288,7 +288,6 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       alert(isIssue ? 'Incident resolved and completed successfully!' : 'Device assigned and ticket fulfilled successfully!');
       setShowDeviceAssignForm(false);
       if (onRefresh) onRefresh();
-      if (onBack) onBack();
     } catch (err) {
       console.error('Error fulfilling ticket:', err);
       alert(err.response?.data?.error || 'Action failed.');

@@ -237,10 +237,14 @@ function App() {
   const handleCreateTicket = async (ticketData) => {
     try {
       await axios.post(`${API_URL}/tickets`, ticketData);
-      alert('Ticket created successfully and sent to manager for approval!');
+      alert('Ticket created successfully!');
       setSelectedDeviceForRequest(null);
-      fetchTickets();
-      setView('dashboard');
+      await fetchTickets(true);
+      if (currentUser?.role === 'employee' || currentUser?.role === 'manager') {
+        setView('my-tickets');
+      } else {
+        setView('tickets');
+      }
     } catch (error) {
       console.error('Error creating ticket:', error);
       alert(error.response?.data?.error || 'Failed to create ticket');
@@ -259,9 +263,8 @@ function App() {
         approval_comment: comment
       });
       alert('Ticket approved! Sent to Admin for device assignment.');
-      fetchTickets();
-      setSelectedTicket(null);
-      setView('dashboard');
+      await fetchTickets(true);
+      setSelectedTicket(prev => prev && prev.id === ticketId ? { ...prev, status: 'approved', approval_comment: comment } : prev);
     } catch (error) {
       console.error('Error approving ticket:', error);
       alert(error.response?.data?.error || 'Failed to approve ticket');
@@ -275,9 +278,8 @@ function App() {
         approval_comment: comment
       });
       alert('Ticket denied.');
-      fetchTickets();
-      setSelectedTicket(null);
-      setView('dashboard');
+      await fetchTickets(true);
+      setSelectedTicket(prev => prev && prev.id === ticketId ? { ...prev, status: 'rejected', approval_comment: comment } : prev);
     } catch (error) {
       console.error('Error rejecting ticket:', error);
       alert(error.response?.data?.error || 'Failed to reject ticket');
@@ -288,9 +290,8 @@ function App() {
     try {
       await axios.put(`${API_URL}/tickets/${ticketId}/close`, {});
       alert('Ticket closed successfully!');
-      fetchTickets();
-      setSelectedTicket(null);
-      setView('dashboard');
+      await fetchTickets(true);
+      setSelectedTicket(prev => prev && prev.id === ticketId ? { ...prev, status: 'closed' } : prev);
     } catch (error) {
       console.error('Error closing ticket:', error);
       alert(error.response?.data?.error || 'Failed to close ticket');
@@ -314,8 +315,10 @@ function App() {
       await axios.delete(`${API_URL}/tickets/${ticketId}`);
       alert('Ticket deleted successfully by Admin.');
       setSelectedTicket(null);
-      fetchTickets();
-      setView('dashboard');
+      await fetchTickets(true);
+      if (view === 'detail') {
+        setView('tickets');
+      }
     } catch (error) {
       console.error('Admin delete ticket error:', error);
       alert(error.response?.data?.error || 'Failed to delete ticket');

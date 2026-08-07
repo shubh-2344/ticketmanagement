@@ -66,7 +66,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated, uiDensity, onDen
     try {
       await axios.put(`${API_URL}/settings`, brandingData);
       alert('Global Branding & Theme settings updated successfully!');
-      window.location.reload();
+      fetchBrandingSettings();
     } catch (err) {
       console.error('Error saving branding settings:', err);
       alert(err.response?.data?.error || 'Failed to save settings');
@@ -86,7 +86,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated, uiDensity, onDen
         branding_login_background_url: ''
       });
       alert('Global Branding & Theme settings reset successfully!');
-      window.location.reload();
+      fetchBrandingSettings();
     } catch (err) {
       console.error('Error resetting branding settings:', err);
       alert(err.response?.data?.error || 'Failed to reset settings');
