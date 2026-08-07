@@ -247,18 +247,16 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             <p>No active device allocations match this filter.</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+          <div style={{ width: '100%' }}>
+            <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Ticket ID</th>
-                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Device</th>
-                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Assigned User</th>
-                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Assignment Date</th>
-                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Expected Return</th>
-                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Time Left</th>
-                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Status</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+                  <th style={{ width: '14%' }}>Ticket ID</th>
+                  <th style={{ width: '22%' }}>Device</th>
+                  <th style={{ width: '22%' }}>Assigned User</th>
+                  <th className="col-assigned-date" style={{ width: '14%' }}>Assignment Date</th>
+                  <th className="col-return-date" style={{ width: '14%' }}>Expected Return</th>
+                  <th style={{ width: '14%' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -266,16 +264,16 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                   const remaining = getReturnStatusInfo(item);
                   return (
                     <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)', verticalAlign: 'middle' }}>
-                      <td style={{ padding: '14px 10px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      <td className="ticket-id-cell">
                         {formatTicketId(item.ticket_id, item.ticket_type || 'device-request')}
                       </td>
-                      <td style={{ padding: '14px 10px', fontWeight: '600', whiteSpace: 'nowrap' }}>{item.assigned_device_name}</td>
-                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>
-                        <div style={{ fontWeight: '600' }}>{item.requester_name}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.requester_email}</div>
+                      <td style={{ fontWeight: '600', wordBreak: 'break-word' }}>{item.assigned_device_name}</td>
+                      <td>
+                        <div style={{ fontWeight: '600', wordBreak: 'break-word' }}>{item.requester_name}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', wordBreak: 'break-all' }}>{item.requester_email}</div>
                       </td>
-                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>{formatDate(item.assigned_at)}</td>
-                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>{formatDate(item.expected_return_date)}</td>
+                      <td className="col-assigned-date">{formatDate(item.assigned_at)}</td>
+                      <td className="col-return-date">{formatDate(item.expected_return_date)}</td>
                       <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>
                         <span className={remaining.class} style={{ ...remaining.style, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}>{remaining.text}</span>
                       </td>

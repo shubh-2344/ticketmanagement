@@ -69,18 +69,18 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
         </div>
       ) : viewMode === 'table' ? (
         /* TABLE VIEW LAYOUT */
-        <div className="table-responsive-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <table className="tickets-table-view">
+        <div className="table-responsive-container" style={{ width: '100%' }}>
+          <table className="tickets-table-view" style={{ width: '100%', tableLayout: 'fixed' }}>
             <thead>
               <tr>
-                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>ID</th>
-                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>TITLE & TYPE</th>
-                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>REQUESTER</th>
-                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>ASSIGNED MANAGER</th>
-                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>PRIORITY</th>
-                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>STATUS</th>
-                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>ASSIGNED DEVICE</th>
-                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>DATE</th>
+                <th style={{ width: '12%' }}>ID</th>
+                <th style={{ width: '25%' }}>TITLE & TYPE</th>
+                <th style={{ width: '15%' }}>REQUESTER</th>
+                <th className="col-manager" style={{ width: '13%' }}>ASSIGNED MANAGER</th>
+                <th style={{ width: '9%' }}>PRIORITY</th>
+                <th style={{ width: '13%' }}>STATUS</th>
+                <th className="col-device" style={{ width: '13%' }}>ASSIGNED DEVICE</th>
+                <th className="col-date" style={{ width: '10%' }}>DATE</th>
               </tr>
             </thead>
             <tbody>
@@ -88,28 +88,28 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                 const statusInfo = getStatusBadge(t.status, t.type);
                 return (
                   <tr key={t.id} onClick={() => onViewTicket(t)} className="clickable-row">
-                    <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap', padding: '12px 14px' }}>
+                    <td className="ticket-id-cell">
                       {formatTicketId(t.id, t.type)}
                     </td>
-                    <td style={{ padding: '12px 14px', maxWidth: '260px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                    <td>
                       <div className="table-title-cell">
                         <strong style={{ display: 'block', marginBottom: '2px', wordBreak: 'break-word' }}>{t.title}</strong>
-                        <span className="mini-type-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                        <span className="mini-type-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           {getCategoryIcon(t.category)}
                           {t.type === 'device-request' ? 'Device' : (t.type === 'device-return' ? 'Asset Return' : 'Issue')}
                         </span>
                       </div>
                     </td>
-                    <td style={{ padding: '12px 14px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{t.requester_name}</td>
-                    <td style={{ padding: '12px 14px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{(t.type === 'issue' || t.type === 'device-return') ? 'N/A - Direct Admin' : (t.manager_name || 'Manager')}</td>
-                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}><span className={`priority-text ${t.priority}`}>{t.priority.toUpperCase()}</span></td>
-                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>
-                      <span className="status-pill-table" style={{ background: statusInfo.bg, border: statusInfo.border, color: statusInfo.color, padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                    <td>{t.requester_name}</td>
+                    <td className="col-manager">{(t.type === 'issue' || t.type === 'device-return') ? 'N/A - Direct Admin' : (t.manager_name || 'Manager')}</td>
+                    <td><span className={`priority-text ${t.priority}`}>{t.priority.toUpperCase()}</span></td>
+                    <td>
+                      <span className="status-pill-table" style={{ background: statusInfo.bg, border: statusInfo.border, color: statusInfo.color }}>
                         {statusInfo.text}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 14px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{t.assigned_device_name || '-'}</td>
-                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}><small>{formatDate(t.created_at)}</small></td>
+                    <td className="col-device">{t.assigned_device_name || '-'}</td>
+                    <td className="col-date"><small>{formatDate(t.created_at)}</small></td>
                   </tr>
                 );
               })}

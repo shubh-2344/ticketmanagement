@@ -1199,58 +1199,71 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
-/* --- Universal Enterprise Data Table & Anti-Overflow Rules --- */
+/* --- Universal Enterprise Data Table & Zero-Horizontal-Scroll Rules --- */
 html, body {
-  max-width: 100vw;
-  overflow-x: hidden;
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
 }
 
 #root, .app, .ai-theme {
-  max-width: 100vw;
-  overflow-x: hidden;
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
 }
 
 .table-responsive-container,
 .table-responsive,
-.table-container,
-div:has(> table) {
+.table-container {
   width: 100% !important;
   max-width: 100% !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
+  overflow-x: hidden !important;
 }
 
 .tickets-table-view,
+.user-manage-table,
 table {
   border-collapse: separate !important;
   border-spacing: 0 !important;
   width: 100% !important;
   max-width: 100% !important;
-  table-layout: auto;
+  table-layout: fixed !important; /* CRITICAL: Forces table grid to stay within 100% parent width */
 }
 
 .tickets-table-view th,
+.user-manage-table th,
 table th {
   vertical-align: middle !important;
-  padding: 12px 10px !important;
+  padding: 10px 8px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
   line-height: 1.3 !important;
-  white-space: nowrap;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
 .tickets-table-view td,
+.user-manage-table td,
 table td {
   vertical-align: middle !important;
-  padding: 12px 10px !important;
-  line-height: 1.4 !important;
+  padding: 10px 8px !important;
+  font-size: 12.5px !important;
+  line-height: 1.35 !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
-/* Prevent Ticket IDs from wrapping hyphenated strings vertically */
+/* Prevent Ticket IDs from wrapping hyphenated strings vertically while keeping width tight */
 .ticket-id-cell,
 td:first-child,
 .ticket-id {
-  white-space: nowrap !important;
   font-family: monospace, var(--font-mono, monospace) !important;
-  width: 1%;
+  font-weight: 700 !important;
+  word-break: break-all !important;
 }
 
 /* Prevent status pill/badge text from wrapping vertically inside badges */
@@ -1259,26 +1272,45 @@ td:first-child,
 .status-tag,
 .badge,
 .return-status-pill {
-  white-space: nowrap !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   line-height: 1.2 !important;
   box-sizing: border-box !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
-/* Tablet & Mobile Responsiveness */
-@media (max-width: 1024px) {
-  .container {
-    flex-direction: column;
-    padding: 16px;
-    gap: 16px;
+/* Tablet & Mobile Responsiveness & Column Hiding */
+@media (max-width: 992px) {
+  .hide-tablet,
+  th.col-manager, td.col-manager,
+  th.col-device, td.col-device,
+  th.col-assigned-date, td.col-assigned-date {
+    display: none !important;
   }
+}
+
+@media (max-width: 768px) {
+  .hide-mobile,
+  th.col-category, td.col-category,
+  th.col-return-date, td.col-return-date,
+  th.col-date, td.col-date {
+    display: none !important;
+  }
+
+  .container {
+    flex-direction: column !important;
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+
   .sidebar {
     width: 100% !important;
   }
+
   .main-content {
-    padding: 20px;
+    padding: 16px !important;
   }
 }
 

@@ -922,17 +922,16 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             No hardware allocation records found matching filter/search.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+          <div style={{ width: '100%' }}>
+            <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '12px' }}>
-                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Ticket ID</th>
-                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Assigned Employee</th>
-                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Allocated Hardware Device</th>
-                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Assigned Date</th>
-                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Expected Return Date</th>
-                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Return Status</th>
-                  <th style={{ padding: '12px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+                  <th style={{ width: '14%' }}>Ticket ID</th>
+                  <th style={{ width: '24%' }}>Assigned Employee</th>
+                  <th style={{ width: '22%' }}>Allocated Hardware Device</th>
+                  <th className="col-assigned-date" style={{ width: '12%' }}>Assigned Date</th>
+                  <th className="col-return-date" style={{ width: '12%' }}>Expected Return Date</th>
+                  <th style={{ width: '16%' }}>Return Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -942,22 +941,22 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
 
                   return (
                     <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)' }}>
-                      <td style={{ padding: '12px 12px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      <td className="ticket-id-cell">
                         {formatTicketId(item.ticket_id, item.ticket_type)}
                       </td>
-                      <td style={{ padding: '12px 12px', fontWeight: '600', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                        {item.requester_name || 'N/A'}
+                      <td>
+                        <div style={{ fontWeight: '600', wordBreak: 'break-word' }}>{item.requester_name || 'N/A'}</div>
                         {item.requester_email && (
-                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400', wordBreak: 'break-all' }}>{item.requester_email}</span>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400', wordBreak: 'break-all' }}>{item.requester_email}</div>
                         )}
                       </td>
-                      <td style={{ padding: '12px 12px', fontWeight: '700', color: 'var(--accent)', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                      <td style={{ fontWeight: '700', color: 'var(--accent)', wordBreak: 'break-word' }}>
                         {item.assigned_device_name || item.inventory_name || 'Assigned Hardware'}
                       </td>
-                      <td style={{ padding: '12px 12px', color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                      <td className="col-assigned-date" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                         {item.assigned_at ? new Date(item.assigned_at).toLocaleDateString() : 'N/A'}
                       </td>
-                      <td style={{ padding: '12px 12px', color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                      <td className="col-return-date" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                         {item.expected_return_date ? new Date(item.expected_return_date).toLocaleDateString() : 'Continuous'}
                       </td>
                       <td style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>

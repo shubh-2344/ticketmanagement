@@ -255,33 +255,32 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
         </div>
       ) : viewMode === 'table' ? (
         /* TABLE VIEW */
-        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', color: 'var(--text-main)' }}>
+        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow)', width: '100%' }}>
+          <div style={{ width: '100%' }}>
+            <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', color: 'var(--text-main)' }}>
               <thead>
                 <tr style={{ background: 'rgba(0,0,0,0.15)', borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  <th onClick={() => handleSort('id')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('id')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '12%' }}>
                     ID {sortField === 'id' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('title')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('title')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '26%' }}>
                     Title & Type {sortField === 'title' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('requester_name')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('requester_name')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '16%' }}>
                     Requester {sortField === 'requester_name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('category')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th className="col-category" onClick={() => handleSort('category')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '14%' }}>
                     Category {sortField === 'category' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('priority')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('priority')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '10%' }}>
                     Priority {sortField === 'priority' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('status')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('status')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '12%' }}>
                     Status {sortField === 'status' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('created_at')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
-                    Created Date {sortField === 'created_at' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+                  <th className="col-date" onClick={() => handleSort('created_at')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '10%' }}>
+                    Date {sortField === 'created_at' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th style={{ padding: '14px 16px', textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -297,37 +296,37 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                      <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      <td className="ticket-id-cell">
                         {formatTicketId(t.id, t.type)}
                       </td>
-                      <td style={{ padding: '14px 16px', fontWeight: '600' }}>
+                      <td style={{ wordBreak: 'break-word' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <span onClick={() => onViewTicket(t)} style={{ cursor: 'pointer', color: 'var(--text-main)' }}>
+                          <span onClick={() => onViewTicket(t)} style={{ cursor: 'pointer', color: 'var(--text-main)', fontWeight: '600' }}>
                             {t.title}
                           </span>
                           <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center' }}>
                             {getCategoryIcon(t.category)}
-                            {t.type === 'device-request' ? 'Device Request' : 'Issue Ticket'}
+                            {t.type === 'device-request' ? 'Device Request' : (t.type === 'device-return' ? 'Asset Return' : 'Issue Ticket')}
                           </span>
                         </div>
                       </td>
-                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                      <td style={{ color: 'var(--text-muted)', wordBreak: 'break-word' }}>
                         {t.requester_name}
                       </td>
-                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                      <td className="col-category" style={{ color: 'var(--text-muted)' }}>
                         {t.category}
                       </td>
-                      <td style={{ padding: '14px 16px' }}>
+                      <td>
                         <span style={{ background: `${priorityColor}18`, color: priorityColor, border: `1px solid ${priorityColor}40`, fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
                           {priorityText}
                         </span>
                       </td>
-                      <td style={{ padding: '14px 16px' }}>
+                      <td>
                         <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
                           {statusText}
                         </span>
                       </td>
-                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      <td className="col-date" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                         {formatDate(t.created_at)}
                       </td>
                       <td style={{ padding: '14px 16px', textAlign: 'right' }}>

@@ -276,31 +276,29 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
         </div>
       ) : viewMode === 'table' ? (
         /* ENTERPRISE DATA TABLE VIEW */
-        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', color: 'var(--text-main)' }}>
+        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow)', width: '100%' }}>
+          <div style={{ width: '100%' }}>
+            <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', color: 'var(--text-main)' }}>
               <thead>
                 <tr style={{ background: 'rgba(0,0,0,0.15)', borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  <th onClick={() => handleSort('id')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('id')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '12%' }}>
                     ID {sortField === 'id' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('title')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('title')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '28%' }}>
                     Title {sortField === 'title' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('requester_name')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('requester_name')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '18%' }}>
                     Requester {sortField === 'requester_name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('category')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th className="col-category" onClick={() => handleSort('category')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '14%' }}>
                     Category {sortField === 'category' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('priority')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('priority')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '12%' }}>
                     Priority {sortField === 'priority' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th onClick={() => handleSort('status')} style={{ padding: '14px 16px', cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('status')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '16%' }}>
                     Status {sortField === 'status' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
-                  <th style={{ padding: '14px 16px' }}>Assigned Specialist</th>
-                  <th style={{ padding: '14px 16px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -317,34 +315,30 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                      <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      <td className="ticket-id-cell">
                         {formatTicketId(t.id, t.type)}
                       </td>
-                      <td style={{ padding: '14px 16px', fontWeight: '600' }}>
-                        <span onClick={() => onViewTicket(t)} style={{ cursor: 'pointer', color: 'var(--text-main)' }}>
+                      <td style={{ wordBreak: 'break-word' }}>
+                        <span onClick={() => onViewTicket(t)} style={{ cursor: 'pointer', color: 'var(--text-main)', fontWeight: '600' }}>
                           {t.title}
                         </span>
                       </td>
-                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                      <td style={{ color: 'var(--text-muted)', wordBreak: 'break-word' }}>
                         {t.requester_name}
                       </td>
-                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                      <td className="col-category" style={{ color: 'var(--text-muted)' }}>
                         {t.category}
                       </td>
-                      <td style={{ padding: '14px 16px' }}>
+                      <td>
                         <span style={{ background: `${priorityColor}18`, color: priorityColor, border: `1px solid ${priorityColor}40`, fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
                           {priorityText}
                         </span>
                       </td>
-                      <td style={{ padding: '14px 16px' }}>
+                      <td>
                         <span style={{ background: `${statusColor}18`, color: statusColor, border: `1px solid ${statusColor}40`, fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
                           {statusText}
                         </span>
                       </td>
-                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
-                        {t.assigned_engineer || 'System Admin'}
-                      </td>
-                      <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: '6px' }}>
                           <button
                             onClick={() => onViewTicket(t)}

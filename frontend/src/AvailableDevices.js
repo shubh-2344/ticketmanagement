@@ -155,17 +155,16 @@ function AvailableDevices({ API_URL, onRequestDevice }) {
         </div>
       ) : (
         /* TABLE / LIST VIEW */
-        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', color: 'var(--text-main)' }}>
+        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'var(--shadow)', width: '100%' }}>
+          <div style={{ width: '100%' }}>
+            <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', color: 'var(--text-main)' }}>
               <thead>
                 <tr style={{ background: 'rgba(0,0,0,0.15)', borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  <th style={{ padding: '14px 16px' }}>Device Name</th>
-                  <th style={{ padding: '14px 16px' }}>Category</th>
-                  <th style={{ padding: '14px 16px' }}>Description</th>
-                  <th style={{ padding: '14px 16px' }}>Stock Units</th>
-                  <th style={{ padding: '14px 16px' }}>Status</th>
-                  <th style={{ padding: '14px 16px', textAlign: 'right' }}>Action</th>
+                  <th style={{ width: '25%' }}>Device Name</th>
+                  <th className="col-category" style={{ width: '18%' }}>Category</th>
+                  <th style={{ width: '32%' }}>Description</th>
+                  <th style={{ width: '13%' }}>Stock Units</th>
+                  <th style={{ width: '12%', textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -174,27 +173,22 @@ function AvailableDevices({ API_URL, onRequestDevice }) {
 
                   return (
                     <tr key={device.id} style={{ borderBottom: 'var(--border-card)', verticalAlign: 'middle' }}>
-                      <td style={{ padding: '14px 16px', fontWeight: '700' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <DevicesIcon size={18} style={{ color: 'var(--accent)' }} />
+                      <td style={{ fontWeight: '700', wordBreak: 'break-word' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <DevicesIcon size={16} style={{ color: 'var(--accent)' }} />
                           <span>{device.name}</span>
                         </div>
                       </td>
-                      <td style={{ padding: '14px 16px' }}>
+                      <td className="col-category">
                         <span className="category-tag">{device.category}</span>
                       </td>
-                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)', maxWidth: '300px' }}>
+                      <td style={{ color: 'var(--text-muted)', wordBreak: 'break-word' }}>
                         {device.description || 'Standard company issued hardware equipment.'}
                       </td>
-                      <td style={{ padding: '14px 16px', fontWeight: '700' }}>
+                      <td style={{ fontWeight: '700' }}>
                         {device.quantity} units
                       </td>
-                      <td style={{ padding: '14px 16px' }}>
-                        <span className={`stock-badge ${isAvailable ? 'available' : 'out-of-stock'}`}>
-                          {isAvailable ? 'In Stock' : 'Out of Stock'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                      <td style={{ textAlign: 'right' }}>
                         <button
                           className={`btn-request-device ${!isAvailable ? 'disabled' : ''}`}
                           disabled={!isAvailable}
