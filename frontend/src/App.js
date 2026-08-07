@@ -502,7 +502,7 @@ function App() {
               onClick={() => setView('my-tickets')}
             >
               <span className="nav-icon"><InventoryIcon size={18} /></span>
-              <span>My Submitted Tickets</span>
+              <span>My Tickets</span>
             </button>
           )}
 
