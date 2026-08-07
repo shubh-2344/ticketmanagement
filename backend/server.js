@@ -160,6 +160,9 @@ async function initializeDB() {
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS returned_at TIMESTAMP;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_engineer VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS escalation_level VARCHAR(50) DEFAULT 'Engineer';`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS serial_number VARCHAR(100);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS model_number VARCHAR(100);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS return_reason TEXT;`);
 
         await pool.query(`ALTER TABLE tickets ALTER COLUMN status TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN priority TYPE VARCHAR(50);`);
@@ -736,6 +739,37 @@ app.get('/api/managers', authenticateToken, async (req, res) => {
     }
 });
 
+// Get logged-in user's active allocated assets / fulfilled tickets for asset return selection
+app.get('/api/user/assigned-assets', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                t.id as ticket_id, 
+                t.title, 
+                t.assigned_device_name, 
+                t.inventory_id, 
+                t.serial_number, 
+                t.model_number, 
+                t.assigned_at, 
+                t.expected_return_date, 
+                t.type, 
+                t.status,
+                i.name as inventory_name,
+                i.category as inventory_category
+            FROM tickets t
+            LEFT JOIN inventory i ON t.inventory_id = i.id
+            WHERE t.requester_id = $1 
+              AND t.assigned_device_name IS NOT NULL 
+              AND t.assigned_device_name != ''
+            ORDER BY COALESCE(t.assigned_at, t.updated_at, t.created_at) DESC
+        `, [req.user.id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Get user assigned assets error:', err);
+        res.status(500).json({ error: err.message || 'Internal server error' });
+    }
+});
+
 // User List Endpoint
 app.get('/api/users', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
     try {
@@ -1050,7 +1084,11 @@ app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
 
 // CREATE new ticket
 app.post('/api/tickets', authenticateToken, async (req, res) => {
-    const { title, description, type, category, priority, inventory_id, manager_id, manager_name, expected_return_date, reservation_duration } = req.body;
+    const { 
+        title, description, type, category, priority, inventory_id, 
+        manager_id, manager_name, expected_return_date, reservation_duration,
+        serial_number, model_number, return_reason, assigned_device_name
+    } = req.body;
 
     if (!title || !description || !type || !category) {
         return res.status(400).json({ error: 'Missing required fields (title, description, type, category)' });
@@ -1069,13 +1107,14 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
 
         const id = uuidv4();
         
-        // If it is an issue, bypass manager review and send directly to Admin.
-        const initialStatus = type === 'issue' ? 'pending_admin_assignment' : 'pending_manager_approval';
+        // If it is an issue or device-return, bypass manager review and send directly to Admin.
+        const isDirectToAdmin = type === 'issue' || type === 'device-return';
+        const initialStatus = type === 'device-return' ? 'return_pending_verification' : (type === 'issue' ? 'pending_admin_assignment' : 'pending_manager_approval');
 
         const safeInventoryId = isValidUUID(inventory_id) ? inventory_id : null;
-        // Issues don't need a manager assignment
-        const safeManagerId = (type !== 'issue' && manager_id && manager_id !== 'undefined') ? manager_id : null;
-        const safeManagerName = type === 'issue' ? null : (manager_name || 'Assigned Manager');
+        // Direct-to-admin tickets don't need a manager assignment
+        const safeManagerId = (!isDirectToAdmin && manager_id && manager_id !== 'undefined') ? manager_id : null;
+        const safeManagerName = isDirectToAdmin ? null : (manager_name || 'Assigned Manager');
 
         // Calculate SLA hours and target resolution date based on priority
         const ticketPriority = priority || 'medium';
@@ -1089,9 +1128,10 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
                 requester_id, requester_name, requester_email,
                 manager_id, manager_name, inventory_id,
                 sla_hours, target_resolution_date,
-                expected_return_date, reservation_duration
+                expected_return_date, reservation_duration,
+                serial_number, model_number, return_reason, assigned_device_name
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
         `, [
             id,
             title.trim(),
@@ -1109,13 +1149,19 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
             slaHours,
             targetResolutionDate,
             expected_return_date ? new Date(expected_return_date) : null,
-            reservation_duration || null
+            reservation_duration || null,
+            serial_number ? serial_number.trim() : null,
+            model_number ? model_number.trim() : null,
+            return_reason ? return_reason.trim() : null,
+            assigned_device_name ? assigned_device_name.trim() : null
         ]);
 
         res.status(201).json({
-            message: type === 'issue' 
-                ? 'Ticket created successfully and sent to Admin for review' 
-                : 'Ticket created successfully and sent to manager for approval',
+            message: type === 'device-return'
+                ? 'Asset Return request submitted successfully to Admin for verification'
+                : (type === 'issue' 
+                    ? 'Ticket created successfully and sent to Admin for review' 
+                    : 'Ticket created successfully and sent to manager for approval'),
             id,
             title,
             status: initialStatus
@@ -1419,8 +1465,8 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
         }
 
         const ticketCheck = await pool.query('SELECT type FROM tickets WHERE id = $1', [id]);
-        const isIssue = ticketCheck.rows.length > 0 && ticketCheck.rows[0].type === 'issue';
-        const targetStatus = isIssue ? 'closed' : 'approved';
+        // Automatically close ticket once asset is assigned to user
+        const targetStatus = 'closed';
 
         const result = await pool.query(`
             UPDATE tickets

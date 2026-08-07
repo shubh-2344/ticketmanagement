@@ -35,7 +35,7 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
         const matchesTitle = (t.title || '').toLowerCase().includes(query);
         const matchesDesc = (t.description || '').toLowerCase().includes(query);
         const matchesReq = (t.requester_name || '').toLowerCase().includes(query);
-        const matchesId = String(t.id).toLowerCase().includes(query);
+        const matchesId = formatTicketId(t.id, t.type).toLowerCase().includes(query) || String(t.id).toLowerCase().includes(query);
         if (!matchesTitle && !matchesDesc && !matchesReq && !matchesId) return false;
       }
 

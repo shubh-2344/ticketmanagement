@@ -271,9 +271,12 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       if (deviceSearch.trim()) {
         const q = deviceSearch.toLowerCase();
         const titleMatch = (item.ticket_title || '').toLowerCase().includes(q);
-        const userMatch = (item.requester_name || '').toLowerCase().includes(q);
+        const userMatch = (item.requester_name || '').toLowerCase().includes(q) || (item.requester_email || '').toLowerCase().includes(q);
         const deviceMatch = (item.assigned_device_name || '').toLowerCase().includes(q);
-        return titleMatch || userMatch || deviceMatch;
+        const serialMatch = (item.serial_number || '').toLowerCase().includes(q);
+        const modelMatch = (item.model_number || '').toLowerCase().includes(q);
+        const idMatch = (item.ticket_id || '').toLowerCase().includes(q);
+        return titleMatch || userMatch || deviceMatch || serialMatch || modelMatch || idMatch;
       }
       return true;
     });
@@ -923,13 +926,13 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '12px' }}>
-                  <th style={{ padding: '12px 10px' }}>Ticket ID</th>
-                  <th style={{ padding: '12px 10px' }}>Assigned Employee</th>
-                  <th style={{ padding: '12px 10px' }}>Allocated Hardware Device</th>
-                  <th style={{ padding: '12px 10px' }}>Assigned Date</th>
-                  <th style={{ padding: '12px 10px' }}>Expected Return Date</th>
-                  <th style={{ padding: '12px 10px' }}>Return Status</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Assigned Employee</th>
+                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Allocated Hardware Device</th>
+                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Assigned Date</th>
+                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Expected Return Date</th>
+                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>Return Status</th>
+                  <th style={{ padding: '12px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -939,33 +942,38 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
 
                   return (
                     <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)' }}>
-                      <td style={{ padding: '12px 10px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      <td style={{ padding: '12px 12px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                         {formatTicketId(item.ticket_id, item.ticket_type)}
                       </td>
-                      <td style={{ padding: '12px 10px', fontWeight: '600' }}>
+                      <td style={{ padding: '12px 12px', fontWeight: '600', whiteSpace: 'nowrap' }}>
                         {item.requester_name || 'N/A'}
                         {item.requester_email && (
                           <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400' }}>{item.requester_email}</span>
                         )}
                       </td>
-                      <td style={{ padding: '12px 10px', fontWeight: '700', color: 'var(--accent)' }}>
+                      <td style={{ padding: '12px 12px', fontWeight: '700', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
                         {item.assigned_device_name || item.inventory_name || 'Assigned Hardware'}
                       </td>
-                      <td style={{ padding: '12px 10px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      <td style={{ padding: '12px 12px', color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
                         {item.assigned_at ? new Date(item.assigned_at).toLocaleDateString() : 'N/A'}
                       </td>
-                      <td style={{ padding: '12px 10px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      <td style={{ padding: '12px 12px', color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
                         {item.expected_return_date ? new Date(item.expected_return_date).toLocaleDateString() : 'Continuous'}
                       </td>
-                      <td style={{ padding: '12px 10px' }}>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>
                         <span style={{
-                          padding: '4px 10px',
+                          padding: '5px 12px',
                           borderRadius: '12px',
                           fontSize: '11px',
                           fontWeight: '800',
                           background: statusInfo.bg,
                           color: statusInfo.color,
-                          border: statusInfo.border
+                          border: statusInfo.border,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          whiteSpace: 'nowrap',
+                          lineHeight: '1.2'
                         }}>
                           {statusInfo.text}
                         </span>

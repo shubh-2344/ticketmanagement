@@ -454,7 +454,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               <div className="detail-item">
                 <span className="label">Type:</span>
                 <span className="value">
-                  {ticket.type === 'device-request' ? 'Device Request' : 'Issue Report'}
+                  {ticket.type === 'device-request' ? 'Device Request' : (ticket.type === 'device-return' ? 'Asset Return Request' : 'Issue Report')}
                 </span>
               </div>
               <div className="detail-item">
@@ -496,6 +496,44 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
           </section>
 
+          {/* ASSET RETURN DETAILED INFORMATION PANEL */}
+          {ticket.type === 'device-return' && (
+            <section className="section" style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', padding: '20px' }}>
+              <h2 style={{ color: 'var(--accent)', marginTop: 0 }}>Asset Return Details</h2>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <span className="label">Asset Serial Number:</span>
+                  <span className="value font-bold" style={{ color: '#38bdf8' }}>{ticket.serial_number || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Model / Device Details:</span>
+                  <span className="value font-bold" style={{ color: '#f8fafc' }}>{ticket.model_number || ticket.assigned_device_name || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Return Reason:</span>
+                  <span className="value font-bold" style={{ color: '#f59e0b' }}>{ticket.return_reason || 'Hardware Upgrade'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Return Verification Status:</span>
+                  <span className="value font-bold" style={{ color: ticket.status === 'closed' ? '#10b981' : '#38bdf8' }}>
+                    {ticket.status === 'closed' ? 'Returned & Inventory Restocked' : 'Pending Physical Verification by Admin'}
+                  </span>
+                </div>
+              </div>
+
+              {isAdmin && ticket.status === 'return_pending_verification' && (
+                <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  <button
+                    onClick={() => handleVerifyReturn(ticket.id)}
+                    style={{ padding: '10px 20px', borderRadius: '8px', background: '#10b981', border: 'none', color: '#ffffff', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
+                  >
+                    Verify Physical Return & Restock Inventory
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
+
           <section className="section">
             <h2>Requester & Assigned Manager</h2>
             <div className="details-grid">
@@ -505,7 +543,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               </div>
               <div className="detail-item">
                 <span className="label">Assigned Manager:</span>
-                <span className="value">{ticket.type === 'issue' ? 'N/A - Direct Admin' : (ticket.manager_name || 'Assigned Manager')}</span>
+                <span className="value">{(ticket.type === 'issue' || ticket.type === 'device-return') ? 'N/A - Direct Admin' : (ticket.manager_name || 'Assigned Manager')}</span>
               </div>
             </div>
           </section>

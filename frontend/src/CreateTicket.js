@@ -14,7 +14,11 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
     manager_id: '',
     manager_name: '',
     reservation_duration: '30',
-    expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    serial_number: '',
+    model_number: '',
+    return_reason: 'Hardware Upgrade',
+    assigned_device_name: ''
   });
 
   useEffect(() => {
@@ -30,10 +34,12 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
 
   const [inventoryList, setInventoryList] = useState([]);
   const [managerList, setManagerList] = useState([]);
+  const [assignedAssets, setAssignedAssets] = useState([]);
 
   useEffect(() => {
     fetchInventory();
     fetchManagers();
+    fetchUserAssignedAssets();
   }, []);
 
   useEffect(() => {
@@ -79,11 +85,32 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
     }
   };
 
+  const fetchUserAssignedAssets = async () => {
+    try {
+      if (API_URL) {
+        const response = await axios.get(`${API_URL}/user/assigned-assets`);
+        setAssignedAssets(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching user assigned assets:', err);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleTypeChange = (e) => {
+    const newType = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      type: newType,
+      category: newType === 'device-return' ? 'Hardware Return' : (newType === 'device-request' ? 'Laptop' : 'Access/Permission'),
+      title: prev.title || (newType === 'device-return' ? 'Return Asset Request' : '')
     }));
   };
 
@@ -116,6 +143,28 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
     }
   };
 
+  const handleAssignedAssetSelect = (e) => {
+    const selectedTicketId = e.target.value;
+    const selectedAsset = assignedAssets.find((a) => a.ticket_id === selectedTicketId);
+
+    if (selectedAsset) {
+      setFormData((prev) => ({
+        ...prev,
+        assigned_device_name: selectedAsset.assigned_device_name,
+        inventory_id: selectedAsset.inventory_id || '',
+        title: `Return Asset: ${selectedAsset.assigned_device_name}`,
+        model_number: selectedAsset.model_number || selectedAsset.assigned_device_name,
+        serial_number: selectedAsset.serial_number || prev.serial_number
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        assigned_device_name: '',
+        inventory_id: ''
+      }));
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -124,9 +173,24 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       return;
     }
 
-    if (formData.type !== 'issue' && !formData.manager_id) {
+    if (formData.type === 'device-request' && !formData.manager_id) {
       alert('Please select a manager for approval');
       return;
+    }
+
+    if (formData.type === 'device-return') {
+      if (!formData.serial_number.trim()) {
+        alert('Asset Serial Number is required for asset return.');
+        return;
+      }
+      if (!formData.model_number.trim()) {
+        alert('Asset Model Number / Device Details are required for asset return.');
+        return;
+      }
+      if (!formData.return_reason.trim()) {
+        alert('Please select a Return Reason.');
+        return;
+      }
     }
 
     if (formData.type === 'device-request') {
@@ -150,7 +214,11 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       manager_id: managerList.length > 0 ? managerList[0].id : '',
       manager_name: managerList.length > 0 ? managerList[0].name : '',
       reservation_duration: '30',
-      expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      expected_return_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      serial_number: '',
+      model_number: '',
+      return_reason: 'Hardware Upgrade',
+      assigned_device_name: ''
     });
   };
 
@@ -172,15 +240,24 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
       'Security',
       'Performance',
       'Other'
+    ],
+    'device-return': [
+      'Hardware Return',
+      'Laptop Return',
+      'Monitor Return',
+      'Peripheral Return',
+      'Other'
     ]
   };
+
+  const isDirectToAdmin = formData.type === 'issue' || formData.type === 'device-return';
 
   return (
     <div className="create-ticket">
       <h2>Create New Ticket</h2>
 
       <form onSubmit={handleSubmit} className="form">
-        {formData.type !== 'issue' && (
+        {!isDirectToAdmin && (
           <div className="form-group">
             <label htmlFor="manager_id">Assign Specific Manager for Approval *</label>
             <select
@@ -210,7 +287,7 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
                 name="type"
                 value="device-request"
                 checked={formData.type === 'device-request'}
-                onChange={handleChange}
+                onChange={handleTypeChange}
               />
               <span><DevicesIcon size={16} /> Device Request</span>
             </label>
@@ -220,12 +297,97 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
                 name="type"
                 value="issue"
                 checked={formData.type === 'issue'}
-                onChange={handleChange}
+                onChange={handleTypeChange}
               />
               <span><AlertIcon size={16} /> Report Issue</span>
             </label>
+            <label className="radio-label">
+              <input
+                type="radio"
+                name="type"
+                value="device-return"
+                checked={formData.type === 'device-return'}
+                onChange={handleTypeChange}
+              />
+              <span><CheckIcon size={16} /> Return Asset</span>
+            </label>
           </div>
         </div>
+
+        {/* RETURN ASSET SPECIFIC MANDATORY FIELDS */}
+        {formData.type === 'device-return' && (
+          <div className="return-asset-card" style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '18px', borderRadius: '10px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h3 style={{ margin: 0, fontSize: '15px', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Asset Return Information (Direct Admin Submission)
+            </h3>
+
+            {assignedAssets.length > 0 && (
+              <div className="form-group">
+                <label htmlFor="assigned_asset_select">Link to Allocated Asset Record (Optional)</label>
+                <select
+                  id="assigned_asset_select"
+                  onChange={handleAssignedAssetSelect}
+                  style={{ background: 'rgba(15, 23, 42, 0.6)', color: 'var(--text-main)', border: 'var(--border-card)', padding: '10px', borderRadius: '8px', width: '100%' }}
+                >
+                  <option value="">-- Choose from your allocated devices --</option>
+                  {assignedAssets.map((asset) => (
+                    <option key={asset.ticket_id} value={asset.ticket_id}>
+                      {asset.assigned_device_name} (Assigned: {new Date(asset.assigned_at || Date.now()).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+                <span className="field-hint">Select a device from your active hardware allocation list to auto-fill asset details.</span>
+              </div>
+            )}
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="serial_number">Asset Serial Number *</label>
+                <input
+                  type="text"
+                  id="serial_number"
+                  name="serial_number"
+                  value={formData.serial_number}
+                  onChange={handleChange}
+                  placeholder="e.g. SN-998234-X"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="model_number">Model Number / Device Details *</label>
+                <input
+                  type="text"
+                  id="model_number"
+                  name="model_number"
+                  value={formData.model_number}
+                  onChange={handleChange}
+                  placeholder="e.g. MacBook Pro 16 M3 Pro / Dell XPS 15"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="return_reason">Reason for Return *</label>
+              <select
+                id="return_reason"
+                name="return_reason"
+                value={formData.return_reason}
+                onChange={handleChange}
+                required
+                style={{ background: 'rgba(15, 23, 42, 0.6)', color: 'var(--text-main)', border: 'var(--border-card)', padding: '10px', borderRadius: '8px', width: '100%' }}
+              >
+                <option value="Hardware Upgrade">Hardware Upgrade</option>
+                <option value="Faulty / Damaged Hardware">Faulty / Damaged Hardware</option>
+                <option value="Leaving Company / Offboarding">Leaving Company / Offboarding</option>
+                <option value="Project Completed">Project Completed</option>
+                <option value="No Longer Needed">No Longer Needed</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        )}
 
         {formData.type === 'device-request' && (
           <div className="form-group">
@@ -302,8 +464,8 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
             name="description"
             value={formData.description}
             onChange={handleChange}
-            placeholder="Provide detailed description of your request or issue"
-            rows={5}
+            placeholder="Provide detailed description of your request, issue, or return details"
+            rows={4}
             maxLength={500}
             required
           />
@@ -346,13 +508,23 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary">
-            {formData.type === 'issue' ? 'Submit Ticket directly to Admin' : 'Submit Request to Manager'}
+            {formData.type === 'device-return'
+              ? 'Submit Asset Return directly to Admin'
+              : (formData.type === 'issue' ? 'Submit Ticket directly to Admin' : 'Submit Request to Manager')}
           </button>
         </div>
       </form>
 
       <div className="info-box">
-        {formData.type === 'issue' ? (
+        {formData.type === 'device-return' ? (
+          <>
+            <h4>Asset Return Verification Workflow</h4>
+            <ul>
+              <li><strong>Stage 1:</strong> Submit Return Asset details (Serial #, Model #, Reason) directly to Admin.</li>
+              <li><strong>Stage 2:</strong> Admin inspects hardware upon physical drop-off, restocks inventory, and completes the ticket.</li>
+            </ul>
+          </>
+        ) : formData.type === 'issue' ? (
           <>
             <h4>Direct Admin Support Workflow</h4>
             <ul>
@@ -366,7 +538,7 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
             <ul>
               <li><strong>Stage 1:</strong> Submit request to your assigned Manager.</li>
               <li><strong>Stage 2:</strong> Manager reviews request (Approve or Deny).</li>
-              <li><strong>Stage 3:</strong> If approved, Admin assigns device & hardware specifications.</li>
+              <li><strong>Stage 3:</strong> If approved, Admin assigns device & hardware specifications (Ticket closes upon assignment).</li>
             </ul>
           </>
         )}

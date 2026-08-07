@@ -73,14 +73,14 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
           <table className="tickets-table-view">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Title & Type</th>
-                <th>Requester</th>
-                <th>Assigned Manager</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Assigned Device</th>
-                <th>Date</th>
+                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>ID</th>
+                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>TITLE & TYPE</th>
+                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>REQUESTER</th>
+                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>ASSIGNED MANAGER</th>
+                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>PRIORITY</th>
+                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>STATUS</th>
+                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>ASSIGNED DEVICE</th>
+                <th style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>DATE</th>
               </tr>
             </thead>
             <tbody>
@@ -88,28 +88,28 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                 const statusInfo = getStatusBadge(t.status, t.type);
                 return (
                   <tr key={t.id} onClick={() => onViewTicket(t)} className="clickable-row">
-                    <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap', padding: '12px 14px' }}>
                       {formatTicketId(t.id, t.type)}
                     </td>
-                    <td>
+                    <td style={{ padding: '12px 14px', minWidth: '170px' }}>
                       <div className="table-title-cell">
-                        <strong>{t.title}</strong>
-                        <span className="mini-type-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <strong style={{ display: 'block', marginBottom: '2px' }}>{t.title}</strong>
+                        <span className="mini-type-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
                           {getCategoryIcon(t.category)}
-                          {t.type === 'device-request' ? 'Device' : 'Issue'}
+                          {t.type === 'device-request' ? 'Device' : (t.type === 'device-return' ? 'Asset Return' : 'Issue')}
                         </span>
                       </div>
                     </td>
-                    <td>{t.requester_name}</td>
-                    <td>{t.type === 'issue' ? 'N/A - Admin' : (t.manager_name || 'Manager')}</td>
-                    <td><span className={`priority-text ${t.priority}`}>{t.priority.toUpperCase()}</span></td>
-                    <td>
-                      <span className="status-pill-table" style={{ color: statusInfo.color }}>
+                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>{t.requester_name}</td>
+                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>{(t.type === 'issue' || t.type === 'device-return') ? 'N/A - Admin' : (t.manager_name || 'Manager')}</td>
+                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}><span className={`priority-text ${t.priority}`}>{t.priority.toUpperCase()}</span></td>
+                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>
+                      <span className="status-pill-table" style={{ background: statusInfo.bg, border: statusInfo.border, color: statusInfo.color, padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
                         {statusInfo.text}
                       </span>
                     </td>
-                    <td>{t.assigned_device_name || '-'}</td>
-                    <td><small>{formatDate(t.created_at)}</small></td>
+                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>{t.assigned_device_name || '-'}</td>
+                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}><small>{formatDate(t.created_at)}</small></td>
                   </tr>
                 );
               })}

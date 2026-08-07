@@ -10,6 +10,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
@@ -57,11 +58,19 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
     }
   };
 
-  const getRemainingTime = (expectedDateStr, ticketStatus) => {
-    if (ticketStatus === 'closed') return { text: 'Returned', class: 'text-emerald' };
-    if (!expectedDateStr) return { text: 'No return date set', class: '' };
+  const getReturnStatusInfo = (item) => {
+    if (item.ticket_status === 'closed') {
+      return { text: 'Returned & Restocked', class: 'status-tag closed' };
+    }
+    if (item.ticket_status === 'return_pending_verification') {
+      return { text: 'Return Pending Verification', class: 'status-tag pending' };
+    }
+    
+    if (!item.expected_return_date) {
+      return { text: 'Active Allocation', class: 'status-tag active' };
+    }
 
-    const expected = new Date(expectedDateStr).getTime();
+    const expected = new Date(item.expected_return_date).getTime();
     const now = Date.now();
     const diff = expected - now;
 
@@ -93,12 +102,19 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
   };
 
   const filteredList = trackingList.filter(item => {
-    if (filterStatus === 'all') return true;
-    if (filterStatus === 'overdue') {
-      return item.ticket_status !== 'closed' && new Date(item.expected_return_date) < new Date();
+    if (filterStatus === 'overdue' && !(item.ticket_status !== 'closed' && item.expected_return_date && new Date(item.expected_return_date) < new Date())) {
+      return false;
     }
-    if (filterStatus === 'pending_return') {
-      return item.ticket_status === 'return_pending_verification';
+    if (filterStatus === 'pending_return' && item.ticket_status !== 'return_pending_verification') {
+      return false;
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      const titleMatch = (item.ticket_title || '').toLowerCase().includes(q);
+      const userMatch = (item.requester_name || '').toLowerCase().includes(q) || (item.requester_email || '').toLowerCase().includes(q);
+      const deviceMatch = (item.assigned_device_name || '').toLowerCase().includes(q);
+      const idMatch = formatTicketId(item.ticket_id, item.ticket_type).toLowerCase().includes(q);
+      if (!titleMatch && !userMatch && !deviceMatch && !idMatch) return false;
     }
     return true;
   });
@@ -187,7 +203,24 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             <FileTextIcon size={18} /> Device Allocation & Return Tracking
           </h3>
           
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ position: 'relative', width: '220px' }}>
+              <input
+                type="text"
+                placeholder="Search device, user, serial..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  background: 'var(--bg-body)',
+                  border: 'var(--border-card)',
+                  color: 'var(--text-main)',
+                  fontSize: '12px'
+                }}
+              />
+            </div>
             <button 
               onClick={() => setFilterStatus('all')} 
               style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'all' ? 'var(--accent)' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'all' ? '#ffffff' : 'var(--text-main)' }}
@@ -218,43 +251,47 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '12px 8px' }}>Ticket ID</th>
-                  <th style={{ padding: '12px 8px' }}>Device</th>
-                  <th style={{ padding: '12px 8px' }}>Assigned User</th>
-                  <th style={{ padding: '12px 8px' }}>Assignment Date</th>
-                  <th style={{ padding: '12px 8px' }}>Expected Return</th>
-                  <th style={{ padding: '12px 8px' }}>Time Left</th>
-                  <th style={{ padding: '12px 8px' }}>Status</th>
-                  <th style={{ padding: '12px 8px', textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Device</th>
+                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Assigned User</th>
+                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Assignment Date</th>
+                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Expected Return</th>
+                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Time Left</th>
+                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredList.map(item => {
-                  const remaining = getRemainingTime(item.expected_return_date, item.ticket_status);
+                  const remaining = getReturnStatusInfo(item);
                   return (
                     <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)', verticalAlign: 'middle' }}>
-                      <td style={{ padding: '16px 8px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      <td style={{ padding: '14px 10px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                         {formatTicketId(item.ticket_id, item.ticket_type || 'device-request')}
                       </td>
-                      <td style={{ padding: '16px 8px', fontWeight: '600' }}>{item.assigned_device_name}</td>
-                      <td style={{ padding: '16px 8px' }}>
-                        <div>{item.requester_name}</div>
+                      <td style={{ padding: '14px 10px', fontWeight: '600', whiteSpace: 'nowrap' }}>{item.assigned_device_name}</td>
+                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: '600' }}>{item.requester_name}</div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.requester_email}</div>
                       </td>
-                      <td style={{ padding: '16px 8px' }}>{formatDate(item.assigned_at)}</td>
-                      <td style={{ padding: '16px 8px' }}>{formatDate(item.expected_return_date)}</td>
-                      <td style={{ padding: '16px 8px' }}>
-                        <span className={remaining.class} style={remaining.style}>{remaining.text}</span>
+                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>{formatDate(item.assigned_at)}</td>
+                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>{formatDate(item.expected_return_date)}</td>
+                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>
+                        <span className={remaining.class} style={{ ...remaining.style, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}>{remaining.text}</span>
                       </td>
-                      <td style={{ padding: '16px 8px' }}>
+                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>
                         <span style={{
-                          padding: '4px 8px',
+                          padding: '5px 12px',
                           borderRadius: '12px',
-                          fontSize: '10px',
-                          fontWeight: '700',
+                          fontSize: '11px',
+                          fontWeight: '800',
                           backgroundColor: item.ticket_status === 'return_pending_verification' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(16, 185, 129, 0.2)',
                           color: item.ticket_status === 'return_pending_verification' ? '#c084fc' : '#34d399',
-                          border: item.ticket_status === 'return_pending_verification' ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)'
+                          border: item.ticket_status === 'return_pending_verification' ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          whiteSpace: 'nowrap'
                         }}>
                           {item.ticket_status === 'return_pending_verification' ? 'RETURN REQUESTED' : 'ASSIGNED'}
                         </span>
