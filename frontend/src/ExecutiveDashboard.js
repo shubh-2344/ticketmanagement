@@ -323,21 +323,10 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
   }, [trackingData, deviceFilter, deviceSearch, now]);
 
   const deviceMetrics = useMemo(() => {
-    let totalAllocated = 0;
-    let overdueCount = 0;
-    let pendingReturnCount = 0;
-    let returnedCount = 0;
-
-    trackingData.forEach(item => {
-      const derived = deriveAllocationStatus(item, now);
-      if (derived.isReturned) {
-        returnedCount++;
-      } else {
-        totalAllocated++;
-        if (derived.isOverdue) overdueCount++;
-        if (derived.isPendingReturn) pendingReturnCount++;
-      }
-    });
+    const totalAllocated = trackingData.filter(i => i.ticket_status !== 'closed').length;
+    const overdueCount = trackingData.filter(i => i.ticket_status !== 'closed' && i.expected_return_date && new Date(i.expected_return_date).getTime() < now).length;
+    const pendingReturnCount = trackingData.filter(i => i.ticket_status === 'return_pending_verification').length;
+    const returnedCount = trackingData.filter(i => i.ticket_status === 'closed').length;
 
     return { totalAllocated, overdueCount, pendingReturnCount, returnedCount };
   }, [trackingData, now]);
@@ -425,10 +414,10 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     if (isPendingReturn) {
       return {
         statusKey: 'pending_return',
-        statusText: 'RETURN REQUESTED',
-        bg: 'rgba(245, 158, 11, 0.2)',
-        color: '#f59e0b',
-        border: '1px solid rgba(245, 158, 11, 0.4)',
+        statusText: 'RETURN PENDING',
+        bg: 'rgba(56, 189, 248, 0.15)',
+        color: '#38bdf8',
+        border: '1px solid rgba(56, 189, 248, 0.4)',
         timeLeftText: 'Verification Pending',
         isPendingReturn: true
       };
@@ -443,7 +432,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
         return {
           statusKey: 'overdue',
           statusText: 'OVERDUE',
-          bg: 'rgba(239, 68, 68, 0.2)',
+          bg: 'rgba(239, 68, 68, 0.18)',
           color: '#ef4444',
           border: '1px solid rgba(239, 68, 68, 0.4)',
           timeLeftText: overdueDays > 0 ? `${overdueDays}d overdue` : 'Overdue today',
@@ -454,9 +443,9 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
         return {
           statusKey: 'assigned',
           statusText: 'ASSIGNED',
-          bg: '#7c3aed',
-          color: '#ffffff',
-          border: '1px solid #6d28d9',
+          bg: 'rgba(16, 185, 129, 0.12)',
+          color: '#10b981',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
           timeLeftText: days > 0 ? `${days}d left` : 'Due today'
         };
       }
@@ -465,9 +454,9 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     return {
       statusKey: 'assigned',
       statusText: 'ASSIGNED',
-      bg: '#7c3aed',
-      color: '#ffffff',
-      border: '1px solid #6d28d9',
+      bg: 'rgba(16, 185, 129, 0.12)',
+      color: '#10b981',
+      border: '1px solid rgba(16, 185, 129, 0.3)',
       timeLeftText: '—'
     };
   };
@@ -1196,12 +1185,12 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                  <th style={{ width: '16%', minWidth: '110px', padding: '12px 10px', whiteSpace: 'nowrap' }}>TICKET ID</th>
-                  <th style={{ width: '24%', minWidth: '140px', padding: '12px 10px' }}>DEVICE</th>
-                  <th style={{ width: '26%', minWidth: '160px', padding: '12px 10px' }}>ASSIGNED USER</th>
-                  <th style={{ width: '14%', minWidth: '110px', padding: '12px 10px', whiteSpace: 'nowrap' }}>STATUS</th>
-                  <th style={{ width: '12%', minWidth: '120px', padding: '12px 10px', whiteSpace: 'nowrap' }}>TIME LEFT</th>
-                  <th style={{ width: '8%', minWidth: '80px', padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>ACTION</th>
+                  <th style={{ width: '16%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '24%', padding: '12px 10px' }}>Device</th>
+                  <th style={{ width: '26%', padding: '12px 10px' }}>Assigned User</th>
+                  <th style={{ width: '14%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ width: '12%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Time Left</th>
+                  <th style={{ width: '8%', padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Action</th>
                 </tr>
               </thead>
               <tbody>

@@ -81,11 +81,11 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
     if (isPendingReturn) {
       return {
         statusKey: 'pending_return',
-        statusText: 'RETURN REQUESTED',
+        statusText: 'RETURN PENDING',
         style: {
-          backgroundColor: 'rgba(245, 158, 11, 0.2)',
-          color: '#f59e0b',
-          border: '1px solid rgba(245, 158, 11, 0.4)'
+          backgroundColor: 'rgba(56, 189, 248, 0.15)',
+          color: '#38bdf8',
+          border: '1px solid rgba(56, 189, 248, 0.4)'
         },
         timeLeftText: 'Verification Pending',
         isReturned: false,
@@ -104,7 +104,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
           statusKey: 'overdue',
           statusText: 'OVERDUE',
           style: {
-            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+            backgroundColor: 'rgba(239, 68, 68, 0.18)',
             color: '#ef4444',
             border: '1px solid rgba(239, 68, 68, 0.4)'
           },
@@ -119,9 +119,9 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
           statusKey: 'assigned',
           statusText: 'ASSIGNED',
           style: {
-            backgroundColor: '#7c3aed',
-            color: '#ffffff',
-            border: '1px solid #6d28d9'
+            backgroundColor: 'rgba(16, 185, 129, 0.12)',
+            color: '#10b981',
+            border: '1px solid rgba(16, 185, 129, 0.3)'
           },
           timeLeftText: days > 0 ? `${days}d left` : 'Due today',
           isReturned: false,
@@ -135,9 +135,9 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
       statusKey: 'assigned',
       statusText: 'ASSIGNED',
       style: {
-        backgroundColor: '#7c3aed',
-        color: '#ffffff',
-        border: '1px solid #6d28d9'
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+        color: '#10b981',
+        border: '1px solid rgba(16, 185, 129, 0.3)'
       },
       timeLeftText: '—',
       isReturned: false,
@@ -231,7 +231,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
 
           <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Active Allocations</div>
-            <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: '#c084fc' }}>{trackingList.filter(item => !deriveAllocationStatus(item).isReturned).length} Units</div>
+            <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: '#c084fc' }}>{metrics.statusCounts?.Assigned || 0} Units</div>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>Currently assigned to employees</span>
           </div>
 
@@ -316,14 +316,14 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                  <th style={{ width: '14%', minWidth: '110px', padding: '12px 10px', whiteSpace: 'nowrap' }}>TICKET ID</th>
-                  <th style={{ width: '18%', minWidth: '130px', padding: '12px 10px' }}>DEVICE</th>
-                  <th style={{ width: '20%', minWidth: '160px', padding: '12px 10px' }}>ASSIGNED USER</th>
-                  <th className="col-assigned-date" style={{ width: '10%', minWidth: '100px', padding: '12px 10px', whiteSpace: 'nowrap' }}>ASSIGN DATE</th>
-                  <th className="col-return-date" style={{ width: '13%', minWidth: '120px', padding: '12px 10px', whiteSpace: 'nowrap' }}>EXPECTED RETURN</th>
-                  <th style={{ width: '12%', minWidth: '120px', padding: '12px 10px', whiteSpace: 'nowrap' }}>TIME LEFT</th>
-                  <th style={{ width: '10%', minWidth: '110px', padding: '12px 10px', whiteSpace: 'nowrap' }}>STATUS</th>
-                  <th style={{ width: '5%', minWidth: '80px', padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>ACTIONS</th>
+                  <th style={{ width: '13%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '18%', padding: '12px 10px' }}>Device</th>
+                  <th style={{ width: '23%', padding: '12px 10px' }}>Assigned User</th>
+                  <th className="col-assigned-date" style={{ width: '11%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Asg-Date</th>
+                  <th className="col-return-date" style={{ width: '12%', padding: '12px 10px', whiteSpace: 'nowrap' }}>EXP-Return</th>
+                  <th style={{ width: '12%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Time Left</th>
+                  <th style={{ width: '11%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ width: '10%', padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
