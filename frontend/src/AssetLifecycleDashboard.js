@@ -60,7 +60,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
 
   const getReturnStatusInfo = (item) => {
     if (item.ticket_status === 'closed') {
-      return { text: 'Returned & Restocked', class: 'status-tag closed' };
+      return { text: 'Returned', class: 'status-tag closed' };
     }
     if (item.ticket_status === 'return_pending_verification') {
       return { text: 'Return Pending Verification', class: 'status-tag pending' };
@@ -255,7 +255,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                   <th style={{ width: '18%' }}>Device</th>
                   <th style={{ width: '18%' }}>Assigned User</th>
                   <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Asg-Date</th>
-                  <th className="col-return-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Expected Return</th>
+                  <th className="col-return-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>EXP-Return</th>
                   <th style={{ width: '11%', whiteSpace: 'nowrap' }}>Time Left</th>
                   <th style={{ width: '11%', whiteSpace: 'nowrap' }}>Status</th>
                   <th style={{ width: '8%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>

@@ -357,7 +357,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
 
   const getReturnStatusInfo = (item) => {
     if (item.ticket_status === 'closed') {
-      return { text: 'Returned & Restocked', bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' };
+      return { text: 'Returned', bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' };
     }
     if (item.ticket_status === 'return_pending_verification') {
       return { text: 'Return Pending Verification', bg: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' };
