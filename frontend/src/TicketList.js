@@ -57,7 +57,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
   return (
     <div className="ticket-list">
       <div className="list-title-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>{currentUser.role === 'employee' ? 'My Submitted Tickets' : 'All System Tickets'}</h2>
+        <h2>{currentUser.role === 'employee' || !onViewModeChange ? 'My Submitted Tickets' : 'Tickets Overview'}</h2>
         {onViewModeChange && (
           <ViewToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
         )}

@@ -495,14 +495,14 @@ function App() {
             </button>
           )}
 
-          {/* My Tickets Link (EMPLOYEE ONLY) */}
-          {currentUser.role === 'employee' && (
+          {/* My Tickets Link (MANAGER & EMPLOYEE) */}
+          {(currentUser.role === 'manager' || currentUser.role === 'employee') && (
             <button
-              className={`nav-button ${view === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setView('dashboard')}
+              className={`nav-button ${view === 'my-tickets' || (currentUser.role === 'employee' && view === 'dashboard') ? 'active' : ''}`}
+              onClick={() => setView('my-tickets')}
             >
               <span className="nav-icon"><InventoryIcon size={18} /></span>
-              <span>My Tickets</span>
+              <span>My Submitted Tickets</span>
             </button>
           )}
 
@@ -640,6 +640,16 @@ function App() {
                   currentUser={currentUser}
                   onViewTicket={handleViewTicket}
                   viewMode={globalViewMode}
+                  onViewModeChange={handleGlobalViewModeChange}
+                />
+              )}
+
+              {view === 'my-tickets' && (
+                <TicketList
+                  tickets={tickets.filter(t => t.requester_id === currentUser.id || (t.requester_email || '').toLowerCase() === (currentUser.email || '').toLowerCase())}
+                  currentUser={currentUser}
+                  onViewTicket={handleViewTicket}
+                  viewMode={globalViewMode || ticketViewMode}
                   onViewModeChange={handleGlobalViewModeChange}
                 />
               )}
