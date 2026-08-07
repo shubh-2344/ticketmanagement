@@ -10,7 +10,10 @@ import {
 } from './components/Icons';
 
 function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onViewModeChange }) {
-  const getStatusBadge = (status, type) => {
+  const getStatusBadge = (status, type, isRejected) => {
+    if (isRejected || status === 'rejected') {
+      return { text: 'REJECTED', bg: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5' };
+    }
     const isIssue = type === 'issue';
     switch (status) {
       case 'pending_manager_approval':
@@ -20,8 +23,6 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
         return { text: isIssue ? 'Pending IT Action' : 'Pending Admin Device Assignment', bg: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.4)', color: '#c084fc' };
       case 'approved':
         return { text: isIssue ? 'Resolved by IT' : 'Device Assigned', bg: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', color: '#4ade80' };
-      case 'rejected':
-        return { text: isIssue ? 'Rejected by IT Admin' : 'Denied Request', bg: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5' };
       case 'closed':
         return { text: isIssue ? 'Resolved & Closed' : 'Fulfilled & Closed', bg: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#4ade80' };
       default:
@@ -87,7 +88,8 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
             </thead>
             <tbody>
               {tickets.map((t) => {
-                const statusInfo = getStatusBadge(t.status, t.type);
+                const isRejected = t.is_rejected || t.status === 'rejected' || !!(t.rejection_comment && t.rejection_comment.trim());
+                const statusInfo = getStatusBadge(t.status, t.type, isRejected);
                 return (
                   <tr key={t.id} onClick={() => onViewTicket(t)} className="clickable-row">
                     <td className="ticket-id-cell">
@@ -113,9 +115,16 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                     </td>
                     <td><span className={`priority-text ${t.priority}`}>{t.priority.toUpperCase()}</span></td>
                     <td>
-                      <span className="status-pill-table" style={{ background: statusInfo.bg, border: statusInfo.border, color: statusInfo.color }}>
-                        {statusInfo.text}
-                      </span>
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        {isRejected && (
+                          <span className="status-pill-table" style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5', fontWeight: '800' }}>
+                            REJECTED
+                          </span>
+                        )}
+                        <span className="status-pill-table" style={{ background: isRejected ? 'rgba(100, 116, 139, 0.2)' : statusInfo.bg, border: isRejected ? '1px solid rgba(100, 116, 139, 0.4)' : statusInfo.border, color: isRejected ? '#94a3b8' : statusInfo.color }}>
+                          {isRejected ? 'Closed' : statusInfo.text}
+                        </span>
+                      </div>
                     </td>
                     <td className="col-device">{t.assigned_device_name || '-'}</td>
                     <td className="col-date"><small>{formatDate(t.created_at)}</small></td>
@@ -128,28 +137,47 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
       ) : viewMode === 'compact' ? (
         /* COMPACT LIST VIEW LAYOUT */
         <div className="compact-list-container">
-          {tickets.map((ticket) => {
-            const statusInfo = getStatusBadge(ticket.status, ticket.type);
-            return (
-              <div key={ticket.id} className="compact-row" onClick={() => onViewTicket(ticket)}>
-                <div className="compact-left">
-                  <span className="compact-type" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {getCategoryIcon(ticket.category)}
-                  </span>
-                  <div className="compact-title-group">
-                    <h4>{formatTicketId(ticket.id, ticket.type)}: {ticket.title}</h4>
-                    <small>By {ticket.requester_name}{ticket.type !== 'issue' && ` • Manager: ${ticket.manager_name || 'Manager'}`}</small>
+            {tickets.map((ticket) => {
+              const isRejected = ticket.is_rejected || ticket.status === 'rejected' || !!(ticket.rejection_comment && ticket.rejection_comment.trim());
+              const statusInfo = getStatusBadge(ticket.status, ticket.type, isRejected);
+              return (
+                <div key={ticket.id} className="ticket-card clickable-card" onClick={() => onViewTicket(ticket)}>
+                  <div className="card-header">
+                    <div>
+                      <span className="ticket-id-tag">{formatTicketId(ticket.id, ticket.type)}</span>
+                      <h3 className="ticket-title">{ticket.title}</h3>
+                    </div>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {isRejected && (
+                        <span className="status-pill" style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5', fontWeight: '800' }}>
+                          REJECTED
+                        </span>
+                      )}
+                      <span
+                        className="status-pill"
+                        style={{ background: isRejected ? 'rgba(100, 116, 139, 0.2)' : statusInfo.bg, border: isRejected ? '1px solid rgba(100, 116, 139, 0.4)' : statusInfo.border, color: isRejected ? '#94a3b8' : statusInfo.color }}
+                      >
+                        {isRejected ? 'Closed' : statusInfo.text}
+                      </span>
+                    </div>
                   </div>
+
+                  <p className="ticket-description">{ticket.description}</p>
+                  
+                  {isRejected ? (
+                    <div style={{ fontSize: '11px', color: '#fca5a5', background: 'rgba(239, 68, 68, 0.1)', padding: '6px 10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                      🚫 <strong>Rejection Comment:</strong> {ticket.rejection_comment || ticket.approval_comment || 'Request denied by Admin'}
+                    </div>
+                  ) : (
+                    ticket.reassignment_comment && (
+                      <div style={{ fontSize: '11px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '6px 10px', borderRadius: '6px', marginBottom: '10px' }}>
+                        💬 <strong>Reassignment Note:</strong> {ticket.reassignment_comment}
+                      </div>
+                    )
+                  )}<small className="compact-date">{formatDate(ticket.created_at)}</small>
                 </div>
-                <div className="compact-right">
-                  <span className="badge status-pill" style={{ background: statusInfo.bg, border: statusInfo.border, color: statusInfo.color }}>
-                    {statusInfo.text}
-                  </span>
-                  <small className="compact-date">{formatDate(ticket.created_at)}</small>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       ) : (
         /* DEFAULT GRID CARDS VIEW LAYOUT */

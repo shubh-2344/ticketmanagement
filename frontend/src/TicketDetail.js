@@ -442,7 +442,10 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     });
   };
 
-  const getStatusBadge = (status, type) => {
+  const getStatusBadge = (status, type, isRejected) => {
+    if (isRejected || status === 'rejected') {
+      return { text: 'REJECTED', bg: '#ef4444' };
+    }
     const isIssue = type === 'issue';
     switch (status) {
       case 'pending_manager_approval':
@@ -452,8 +455,6 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         return { text: isIssue ? 'Pending IT Action' : 'Pending Admin Device Assignment', bg: '#8b5cf6' };
       case 'approved':
         return { text: isIssue ? 'Resolved & Closed' : 'Device Assigned & Fulfilled', bg: '#10b981' };
-      case 'rejected':
-        return { text: isIssue ? 'Rejected by IT Admin' : 'Denied Request', bg: '#ef4444' };
       case 'closed':
         return { text: isIssue ? 'Resolved & Closed' : 'Fulfilled & Closed', bg: '#10b981' };
       default:
@@ -461,7 +462,8 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     }
   };
 
-  const statusInfo = getStatusBadge(ticket.status, ticket.type);
+  const isTicketRejected = ticket.is_rejected || ticket.status === 'rejected' || !!(ticket.rejection_comment && ticket.rejection_comment.trim());
+  const statusInfo = getStatusBadge(ticket.status, ticket.type, isTicketRejected);
   const isManager = currentUser.role === 'manager';
   const isAdmin = currentUser.role === 'admin';
   const isRequester = currentUser.id === ticket.requester_id;
@@ -502,12 +504,19 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           <h1>{ticket.title}</h1>
           <p className="ticket-id">Ticket ID: {formatTicketId(ticket.id, ticket.type)}</p>
         </div>
-        <span
-          className="status-badge"
-          style={{ backgroundColor: statusInfo.bg }}
-        >
-          {statusInfo.text}
-        </span>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {isTicketRejected && (
+            <span className="status-badge" style={{ backgroundColor: '#ef4444', color: '#ffffff', fontWeight: '800' }}>
+              REJECTED
+            </span>
+          )}
+          <span
+            className="status-badge"
+            style={{ backgroundColor: isTicketRejected ? '#475569' : statusInfo.bg }}
+          >
+            {isTicketRejected ? 'Closed' : statusInfo.text}
+          </span>
+        </div>
       </div>
 
       {/* Current Ticket Handler / Owner Ownership Banner */}
@@ -526,10 +535,16 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
           </div>
         </div>
-        {ticket.reassignment_comment && (
-          <div style={{ fontSize: '12px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.2)', maxWidth: '400px' }}>
-            💬 <strong>Reassignment Reason:</strong> {ticket.reassignment_comment}
+        {isTicketRejected ? (
+          <div style={{ fontSize: '12px', color: '#ef4444', background: 'rgba(239, 68, 68, 0.12)', padding: '8px 14px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.3)', maxWidth: '450px' }}>
+            🚫 <strong>Rejection Reason:</strong> {ticket.rejection_comment || ticket.approval_comment || 'Request denied by Admin'}
           </div>
+        ) : (
+          ticket.reassignment_comment && (
+            <div style={{ fontSize: '12px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.2)', maxWidth: '400px' }}>
+              💬 <strong>Reassignment Reason:</strong> {ticket.reassignment_comment}
+            </div>
+          )
         )}
       </div>
 

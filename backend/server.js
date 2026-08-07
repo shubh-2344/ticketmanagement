@@ -175,6 +175,8 @@ async function initializeDB() {
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_admin_id VARCHAR(50);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_admin_name VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS reassignment_comment TEXT;`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS is_rejected BOOLEAN DEFAULT FALSE;`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS rejection_comment TEXT;`);
 
         // Default Seed Users
         const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
@@ -1402,19 +1404,23 @@ app.put('/api/tickets/:id/manager-review', authenticateToken, requireRole(['mana
     }
 
     try {
-        const nextStatus = action === 'approve' ? 'pending_admin_assignment' : 'rejected';
+        const nextStatus = action === 'approve' ? 'pending_admin_assignment' : 'closed';
+        const isRejected = action === 'reject';
 
         const result = await pool.query(`
             UPDATE tickets
             SET status = $1,
-                approver_id = $2,
-                approver_name = $3,
-                approval_comment = $4,
+                is_rejected = $2,
+                approver_id = $3,
+                approver_name = $4,
+                approval_comment = $5,
+                rejection_comment = CASE WHEN $2 = TRUE THEN $5 ELSE rejection_comment END,
+                reassignment_comment = CASE WHEN $2 = TRUE THEN NULL ELSE reassignment_comment END,
                 approval_date = CURRENT_TIMESTAMP,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = $5
+            WHERE id = $6
             RETURNING *
-        `, [nextStatus, req.user.id, req.user.name, comment, id]);
+        `, [nextStatus, isRejected, req.user.id, req.user.name, comment || null, id]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });
@@ -1701,8 +1707,10 @@ app.put('/api/tickets/:id/admin-reject', authenticateToken, requireRole(['admin'
         const result = await pool.query(`
             UPDATE tickets
             SET status = 'closed',
+                is_rejected = TRUE,
+                rejection_comment = $1,
                 approval_comment = $1,
-                reassignment_comment = $1,
+                reassignment_comment = NULL,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = $2
             RETURNING *

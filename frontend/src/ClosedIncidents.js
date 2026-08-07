@@ -322,15 +322,22 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
                         </span>
                       </td>
                       <td>
-                        {t.status === 'rejected' || (t.approval_comment && t.approval_comment.toLowerCase().includes('reject')) ? (
-                          <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '12px' }}>
-                            Rejected
-                          </span>
-                        ) : (
-                          <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '12px' }}>
-                            Closed / Resolved
-                          </span>
-                        )}
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          {(t.is_rejected || t.status === 'rejected' || (t.approval_comment && t.approval_comment.toLowerCase().includes('reject'))) ? (
+                            <>
+                              <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)', fontSize: '11px', fontWeight: '800', padding: '3px 8px', borderRadius: '6px' }}>
+                                REJECTED
+                              </span>
+                              <span style={{ background: 'rgba(100, 116, 139, 0.2)', color: '#94a3b8', border: '1px solid rgba(100, 116, 139, 0.4)', fontSize: '11px', fontWeight: '600', padding: '3px 8px', borderRadius: '6px' }}>
+                                Closed
+                              </span>
+                            </>
+                          ) : (
+                            <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '6px' }}>
+                              Closed / Resolved
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="col-date" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                         {formatDate(t.created_at)}
