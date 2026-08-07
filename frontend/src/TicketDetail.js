@@ -28,6 +28,18 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
   const [selectedAdminName, setSelectedAdminName] = useState('');
   const [transferComment, setTransferComment] = useState('');
 
+  const [lifecycleData, setLifecycleData] = useState(null);
+
+  useEffect(() => {
+    if (API_URL && (ticket.type === 'device-request' || ticket.type === 'device-return')) {
+      axios.get(`${API_URL}/asset-lifecycles/ticket/${ticket.id}`)
+        .then(res => setLifecycleData(res.data))
+        .catch(err => setLifecycleData(null));
+    } else {
+      setLifecycleData(null);
+    }
+  }, [API_URL, ticket]);
+
   useEffect(() => {
     if (API_URL) {
       axios.get(`${API_URL}/users`)
@@ -308,6 +320,140 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         <div className="sla-footer-meta" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>
           <span>Initial SLA Limit: {ticket.sla_hours || (ticket.priority === 'high' ? 24 : 48)} Hours</span>
           <span>Priority: {(ticket.priority || 'medium').toUpperCase()}</span>
+        </div>
+      </section>
+    );
+  };
+
+  const renderAssetLifecycleCard = () => {
+    if (ticket.type === 'issue') return null;
+    if (ticket.type !== 'device-request' && ticket.type !== 'device-return') return null;
+
+    const lc = lifecycleData;
+    const lifecycleId = lc?.lifecycle_id || 'AST-2026-0001';
+    const status = lc?.lifecycle_status || (ticket.status === 'closed' && ticket.returned_at ? 'Returned' : (ticket.status === 'return_pending_verification' ? 'Return Pending' : 'Assigned'));
+
+    return (
+      <section className="section asset-lifecycle-vertical-card" style={{
+        background: 'var(--bg-card)',
+        border: '1px solid rgba(56, 189, 248, 0.35)',
+        borderRadius: '12px',
+        padding: '20px',
+        marginBottom: '20px',
+        boxShadow: '0 8px 20px rgba(0,0,0,0.25)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <h2 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <LinkIcon size={18} style={{ color: '#38bdf8' }} /> Assigned Asset Lifecycle Track
+          </h2>
+          <span style={{
+            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(168, 85, 247, 0.2))',
+            color: '#38bdf8',
+            border: '1px solid rgba(56, 189, 248, 0.5)',
+            padding: '4px 12px',
+            borderRadius: '8px',
+            fontFamily: 'monospace',
+            fontWeight: '800',
+            fontSize: '13px'
+          }}>
+            Lifecycle ID: {lifecycleId}
+          </span>
+        </div>
+
+        {/* Vertical UI Flowchart with Arrows */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0', marginTop: '14px' }}>
+          {/* Stage 1 (Top): Request Ticket */}
+          <div style={{ width: '100%', background: 'var(--bg-body)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '14px 16px', position: 'relative', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '10px', fontWeight: '800', background: '#3b82f6', color: '#fff', padding: '2px 8px', borderRadius: '4px', position: 'absolute', top: '-10px', left: '16px' }}>
+              STAGE 1: REQUEST
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
+              <div>
+                <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#38bdf8', fontSize: '13px' }}>
+                  {formatTicketId(lc?.request_ticket_id || (ticket.type === 'device-request' ? ticket.id : (ticket.parent_ticket_id || ticket.id)), 'device-request')}
+                </span>
+                <span style={{ marginLeft: '10px', fontWeight: '700', color: '#fff' }}>{lc?.request_title || ticket.title}</span>
+              </div>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: '6px' }}>
+                REQUEST APPROVED
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', flexWrap: 'wrap', gap: '8px' }}>
+              <span>Requester: {lc?.user_name || ticket.requester_name} ({lc?.user_email || ticket.requester_email})</span>
+              <span>Request SLA: {ticket.type === 'device-request' ? (ticket.sla_hours || 48) : (lc?.request_sla_hours || 48)} Hours (Tracked Independently)</span>
+            </div>
+          </div>
+
+          {/* Vertical Arrow 1 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '6px 0' }}>
+            <div style={{ width: '2px', height: '18px', background: 'linear-gradient(180deg, #38bdf8, #c084fc)' }}></div>
+            <div style={{ fontSize: '14px', color: '#c084fc', fontWeight: '900', marginTop: '-4px' }}>↓</div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Asset Approved & Assigned</div>
+          </div>
+
+          {/* Stage 2 (Middle): Asset Assigned */}
+          <div style={{ width: '100%', background: 'var(--bg-body)', border: '1px solid rgba(192, 132, 252, 0.3)', borderRadius: '10px', padding: '14px 16px', position: 'relative', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '10px', fontWeight: '800', background: '#8b5cf6', color: '#fff', padding: '2px 8px', borderRadius: '4px', position: 'absolute', top: '-10px', left: '16px' }}>
+              STAGE 2: ASSET ASSIGNED
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
+              <div>
+                <strong style={{ fontSize: '14px', color: '#ffffff' }}>{lc?.asset_name || ticket.assigned_device_name || 'Hardware Asset'}</strong>
+                {lc?.serial_number && <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>S/N: {lc.serial_number}</span>}
+              </div>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: '800',
+                padding: '3px 10px',
+                borderRadius: '10px',
+                backgroundColor: status === 'Returned' ? 'rgba(16, 185, 129, 0.2)' : (status === 'Return Pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(139, 92, 246, 0.2)'),
+                color: status === 'Returned' ? '#10b981' : (status === 'Return Pending' ? '#f59e0b' : '#c084fc')
+              }}>
+                {status.toUpperCase()}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', flexWrap: 'wrap', gap: '8px' }}>
+              <span>Assigned Date: {lc?.assigned_at ? new Date(lc.assigned_at).toLocaleDateString() : (ticket.assigned_at ? new Date(ticket.assigned_at).toLocaleDateString() : 'N/A')}</span>
+              <span style={{ color: '#38bdf8' }}>Expected Return: {lc?.expected_return_date ? new Date(lc.expected_return_date).toLocaleDateString() : (ticket.expected_return_date ? new Date(ticket.expected_return_date).toLocaleDateString() : 'No expiry')}</span>
+            </div>
+          </div>
+
+          {/* Vertical Arrow 2 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '6px 0' }}>
+            <div style={{ width: '2px', height: '18px', background: 'linear-gradient(180deg, #c084fc, #f59e0b)' }}></div>
+            <div style={{ fontSize: '14px', color: '#f59e0b', fontWeight: '900', marginTop: '-4px' }}>↓</div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Hardware Return & Verification</div>
+          </div>
+
+          {/* Stage 3 (Bottom): Return Ticket */}
+          <div style={{ width: '100%', background: 'var(--bg-body)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '14px 16px', position: 'relative', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '10px', fontWeight: '800', background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: '4px', position: 'absolute', top: '-10px', left: '16px' }}>
+              STAGE 3: RETURN
+            </div>
+            {(lc?.return_ticket_id || ticket.type === 'device-return') ? (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
+                  <div>
+                    <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#f59e0b', fontSize: '13px' }}>
+                      {formatTicketId(lc?.return_ticket_id || (ticket.type === 'device-return' ? ticket.id : ''), 'device-return')}
+                    </span>
+                    <span style={{ marginLeft: '10px', fontWeight: '700', color: '#fff' }}>{lc?.return_title || 'Return Request for Hardware'}</span>
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: (lc?.return_status === 'closed' || ticket.status === 'closed') ? '#10b981' : '#f59e0b', background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '6px' }}>
+                    {(lc?.return_status || ticket.status || 'PENDING').toUpperCase()}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                  <span>Restocked Date: {lc?.returned_at ? new Date(lc.returned_at).toLocaleDateString() : (ticket.returned_at ? new Date(ticket.returned_at).toLocaleDateString() : 'Awaiting physical verification')}</span>
+                  <span>Return Verification SLA: 48 Hours (Tracked Independently)</span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ color: 'var(--text-muted)', fontSize: '12px', textAlign: 'center', padding: '8px 0' }}>
+                Return ticket not initiated yet. Device is currently active with user.
+              </div>
+            )}
+          </div>
         </div>
       </section>
     );
@@ -595,6 +741,9 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
 
       <div className="detail-container">
         <div className="main-panel">
+          {/* Assigned Asset Lifecycle Track Card (Asset Requests & Returns only) */}
+          {renderAssetLifecycleCard()}
+
           {/* SLA Resolution Progress Dashboard */}
           {renderSLADashboard()}
 

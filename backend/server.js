@@ -134,6 +134,27 @@ async function initializeDB() {
             )
         `);
 
+        // Asset Lifecycle Table (Tracks hardware assignment & return flow linked by Lifecycle ID AST-YYYY-XXXX)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS asset_lifecycle (
+                lifecycle_id VARCHAR(50) PRIMARY KEY,
+                request_ticket_id VARCHAR(100) UNIQUE NOT NULL,
+                return_ticket_id VARCHAR(100),
+                inventory_id UUID,
+                asset_name VARCHAR(150) NOT NULL,
+                serial_number VARCHAR(100),
+                user_id VARCHAR(50) NOT NULL,
+                user_name VARCHAR(100) NOT NULL,
+                user_email VARCHAR(100),
+                status VARCHAR(50) DEFAULT 'Assigned',
+                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expected_return_date TIMESTAMP,
+                returned_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // Migrations
         try {
             await pool.query(`ALTER TABLE tickets ALTER COLUMN id TYPE VARCHAR(100) USING id::text;`);
@@ -212,9 +233,112 @@ async function initializeDB() {
             `, [uuidv4(), uuidv4(), uuidv4(), uuidv4(), uuidv4()]);
         }
 
+        // Retroactively migrate existing approved device-request tickets into asset_lifecycle if not present
+        const unlinkedRequests = await pool.query(`
+            SELECT t.* 
+            FROM tickets t
+            LEFT JOIN asset_lifecycle al ON t.id = al.request_ticket_id
+            WHERE t.type = 'device-request' 
+              AND t.assigned_device_name IS NOT NULL 
+              AND t.assigned_device_name != ''
+              AND al.lifecycle_id IS NULL
+            ORDER BY t.created_at ASC
+        `);
+
+        for (const reqTicket of unlinkedRequests.rows) {
+            const currentYear = new Date(reqTicket.created_at || Date.now()).getFullYear();
+            const prefix = `AST-${currentYear}-`;
+            const maxRes = await pool.query("SELECT lifecycle_id FROM asset_lifecycle WHERE lifecycle_id LIKE $1 ORDER BY lifecycle_id DESC LIMIT 1", [`${prefix}%`]);
+            let nextNum = 1;
+            if (maxRes.rows.length > 0) {
+                const parts = maxRes.rows[0].lifecycle_id.split('-');
+                if (parts.length === 3) {
+                    const parsed = parseInt(parts[2], 10);
+                    if (!isNaN(parsed)) nextNum = parsed + 1;
+                }
+            }
+            const lifecycleId = `${prefix}${String(nextNum).padStart(4, '0')}`;
+
+            const returnRes = await pool.query(`
+                SELECT id, returned_at, status FROM tickets 
+                WHERE (parent_ticket_id = $1 OR original_allocation_id = $1) 
+                  AND type = 'device-return'
+                LIMIT 1
+            `, [reqTicket.id]);
+
+            const linkedReturn = returnRes.rows[0];
+            let lifecycleStatus = 'Assigned';
+            let returnedAt = reqTicket.returned_at || null;
+
+            if (linkedReturn) {
+                if (linkedReturn.status === 'closed' || reqTicket.status === 'closed') {
+                    lifecycleStatus = 'Returned';
+                    returnedAt = returnedAt || linkedReturn.returned_at || new Date();
+                } else if (linkedReturn.status === 'return_pending_verification' || reqTicket.status === 'return_pending_verification') {
+                    lifecycleStatus = 'Return Pending';
+                }
+            } else if (reqTicket.status === 'closed' && reqTicket.returned_at) {
+                lifecycleStatus = 'Returned';
+            } else if (reqTicket.status === 'return_pending_verification') {
+                lifecycleStatus = 'Return Pending';
+            } else if (reqTicket.expected_return_date && new Date(reqTicket.expected_return_date).getTime() < Date.now()) {
+                lifecycleStatus = 'Overdue';
+            }
+
+            await pool.query(`
+                INSERT INTO asset_lifecycle (
+                    lifecycle_id, request_ticket_id, return_ticket_id, inventory_id,
+                    asset_name, serial_number, user_id, user_name, user_email,
+                    status, assigned_at, expected_return_date, returned_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                ON CONFLICT (request_ticket_id) DO NOTHING
+            `, [
+                lifecycleId,
+                reqTicket.id,
+                linkedReturn ? linkedReturn.id : null,
+                reqTicket.inventory_id || null,
+                reqTicket.assigned_device_name,
+                reqTicket.serial_number || null,
+                reqTicket.requester_id,
+                reqTicket.requester_name || 'User',
+                reqTicket.requester_email || '',
+                lifecycleStatus,
+                reqTicket.assigned_at || reqTicket.created_at,
+                reqTicket.expected_return_date || null,
+                returnedAt
+            ]);
+        }
+
         console.log("Database initialized successfully.");
     } catch (err) {
         console.error("Database initialization error:", err.message);
+    }
+}
+
+// Helper to generate unique Lifecycle ID (AST-YYYY-XXXX)
+async function generateLifecycleId() {
+    try {
+        const currentYear = new Date().getFullYear();
+        const prefix = `AST-${currentYear}-`;
+        const res = await pool.query(
+            "SELECT lifecycle_id FROM asset_lifecycle WHERE lifecycle_id LIKE $1 ORDER BY lifecycle_id DESC LIMIT 1",
+            [`${prefix}%`]
+        );
+        let nextNum = 1;
+        if (res.rows.length > 0) {
+            const lastId = res.rows[0].lifecycle_id;
+            const parts = lastId.split('-');
+            if (parts.length === 3) {
+                const parsed = parseInt(parts[2], 10);
+                if (!isNaN(parsed)) {
+                    nextNum = parsed + 1;
+                }
+            }
+        }
+        return `${prefix}${String(nextNum).padStart(4, '0')}`;
+    } catch (err) {
+        console.error("Error generating lifecycle ID:", err);
+        return `AST-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 }
 
@@ -1499,9 +1623,47 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
             return res.status(404).json({ error: 'Ticket not found' });
         }
 
+        const updatedTicket = result.rows[0];
+
+        // Track hardware asset lifecycle with unique AST-YYYY-XXXX Lifecycle ID for asset requests
+        if (!isIssue) {
+            try {
+                const lcCheck = await pool.query('SELECT lifecycle_id FROM asset_lifecycle WHERE request_ticket_id = $1', [id]);
+                if (lcCheck.rows.length === 0) {
+                    const lifecycleId = await generateLifecycleId();
+                    await pool.query(`
+                        INSERT INTO asset_lifecycle (
+                            lifecycle_id, request_ticket_id, inventory_id, asset_name,
+                            user_id, user_name, user_email, status, assigned_at, expected_return_date
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Assigned', CURRENT_TIMESTAMP, $8)
+                    `, [
+                        lifecycleId,
+                        id,
+                        safeInventoryId,
+                        assigned_device_name.trim(),
+                        updatedTicket.requester_id,
+                        updatedTicket.requester_name || 'User',
+                        updatedTicket.requester_email || '',
+                        updatedTicket.expected_return_date || null
+                    ]);
+                } else {
+                    await pool.query(`
+                        UPDATE asset_lifecycle
+                        SET inventory_id = COALESCE($1, inventory_id),
+                            asset_name = $2,
+                            status = 'Assigned',
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE request_ticket_id = $3
+                    `, [safeInventoryId, assigned_device_name.trim(), id]);
+                }
+            } catch (lcErr) {
+                console.error("Error managing asset lifecycle during assignment:", lcErr);
+            }
+        }
+
         res.json({
             message: 'Device successfully assigned and ticket fulfilled by Admin',
-            ticket: result.rows[0]
+            ticket: updatedTicket
         });
 
         // Dispatch Email Notification (Admin Device Assigned -> User / Specialist)
@@ -1737,7 +1899,7 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
     const { id } = req.params;
 
     try {
-        const ticketResult = await pool.query('SELECT requester_id, status, assigned_device_name FROM tickets WHERE id = $1', [id]);
+        const ticketResult = await pool.query('SELECT requester_id, requester_name, requester_email, status, assigned_device_name, inventory_id FROM tickets WHERE id = $1', [id]);
         if (ticketResult.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });
         }
@@ -1757,16 +1919,35 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
             return res.status(400).json({ error: 'Device can only be marked as returned for approved requests' });
         }
 
+        // Validate that an active asset_lifecycle record exists for this device assignment
+        const lcCheck = await pool.query(`
+            SELECT lifecycle_id 
+            FROM asset_lifecycle 
+            WHERE request_ticket_id = $1 
+               OR (user_id = $2 AND asset_name = $3 AND status IN ('Assigned', 'Overdue', 'Return Pending'))
+        `, [id, req.user.id || ticket.requester_id, ticket.assigned_device_name]);
+
+        if (lcCheck.rows.length === 0) {
+            return res.status(400).json({ error: 'Cannot initiate return: No active assigned asset lifecycle found for this device. Untracked returns are not permitted.' });
+        }
+        const activeLifecycleId = lcCheck.rows[0].lifecycle_id;
+
         // Generate a new linked Return Request Ticket (RET-XXXXXX)
         const returnTicketId = `RET-${Math.floor(100000 + Math.random() * 900000)}`;
+
+        // Calculate Return Ticket SLA (e.g., 48 hours for return verification)
+        const slaHours = 48;
+        const targetResolutionDate = new Date();
+        targetResolutionDate.setHours(targetResolutionDate.getHours() + slaHours);
 
         await pool.query(`
             INSERT INTO tickets (
                 id, title, description, type, category, priority, status,
                 requester_id, requester_name, requester_email,
-                assigned_device_name, parent_ticket_id, original_allocation_id, inventory_id, created_at
+                assigned_device_name, parent_ticket_id, original_allocation_id, inventory_id,
+                sla_hours, target_resolution_date, created_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP)
         `, [
             returnTicketId,
             `Return Request for ${ticket.assigned_device_name}`,
@@ -1781,10 +1962,12 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
             ticket.assigned_device_name,
             id,
             id,
-            ticket.inventory_id
+            ticket.inventory_id,
+            slaHours,
+            targetResolutionDate
         ]);
 
-        // Update original allocation ticket status to PENDING_RETURN
+        // Update original allocation ticket status to return_pending_verification
         const result = await pool.query(`
             UPDATE tickets
             SET status = 'return_pending_verification',
@@ -1793,6 +1976,15 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
             RETURNING *
         `, [id]);
 
+        // Update asset_lifecycle table with return_ticket_id and status
+        await pool.query(`
+            UPDATE asset_lifecycle
+            SET return_ticket_id = $1,
+                status = 'Return Pending',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE lifecycle_id = $2
+        `, [returnTicketId, activeLifecycleId]);
+
         // Trigger email notification to user & admin
         if (typeof sendHtmlEmail === 'function') {
             const subject = `[Return Request Submitted] ${returnTicketId} for ${ticket.assigned_device_name}`;
@@ -1800,7 +1992,7 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
                 <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b;">
                     <h2 style="color: #38bdf8;">Return Request Created (${returnTicketId})</h2>
                     <p>Hello <strong>${ticket.requester_name}</strong>,</p>
-                    <p>Your return request for device <strong>${ticket.assigned_device_name}</strong> has been logged under Return Ticket <strong>${returnTicketId}</strong> (Linked Parent Assignment: <strong>${id}</strong>).</p>
+                    <p>Your return request for device <strong>${ticket.assigned_device_name}</strong> has been logged under Return Ticket <strong>${returnTicketId}</strong> (Linked Lifecycle ID: <strong>${activeLifecycleId}</strong>).</p>
                     <p>An Administrator will inspect and complete the physical return verification shortly.</p>
                     <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
                     <small style="color: #64748b;">DevSecOps IT Asset Management System</small>
@@ -1812,7 +2004,8 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
         res.json({
             message: `Return request ticket ${returnTicketId} generated successfully. Awaiting Administrator verification.`,
             ticket: result.rows[0],
-            return_ticket_id: returnTicketId
+            return_ticket_id: returnTicketId,
+            lifecycle_id: activeLifecycleId
         });
     } catch (err) {
         console.error('Return device error:', err);
@@ -1860,6 +2053,15 @@ app.put('/api/tickets/:id/verify-return', authenticateToken, requireRole(['admin
             WHERE parent_ticket_id = $1
         `, [id]);
 
+        // Update asset_lifecycle status to Returned
+        await pool.query(`
+            UPDATE asset_lifecycle
+            SET status = 'Returned',
+                returned_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE request_ticket_id = $1 OR return_ticket_id = $1 OR (return_ticket_id IS NOT NULL AND return_ticket_id = $2)
+        `, [id, ticket.parent_ticket_id || id]);
+
         // Restock inventory item
         if (ticket.inventory_id) {
             await pool.query(`
@@ -1893,6 +2095,137 @@ app.put('/api/tickets/:id/verify-return', authenticateToken, requireRole(['admin
     } catch (err) {
         console.error('Verify return error:', err);
         res.status(500).json({ error: err.message || 'Verification of device return failed' });
+    }
+});
+
+// GET /api/admin/asset-lifecycles (Full Admin Lifecycle Tracking List & KPI Metrics)
+app.get('/api/admin/asset-lifecycles', authenticateToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const lifecyclesRes = await pool.query(`
+            SELECT 
+                al.lifecycle_id,
+                al.request_ticket_id,
+                al.return_ticket_id,
+                al.inventory_id,
+                al.asset_name,
+                al.serial_number,
+                al.user_id,
+                al.user_name,
+                al.user_email,
+                al.status as lifecycle_status,
+                al.assigned_at,
+                al.expected_return_date,
+                al.returned_at,
+                al.created_at,
+                req_t.title as request_title,
+                req_t.status as request_status,
+                req_t.type as request_type,
+                req_t.created_at as request_created_at,
+                req_t.target_resolution_date as request_target_date,
+                req_t.sla_hours as request_sla_hours,
+                ret_t.id as return_ticket_id_val,
+                ret_t.title as return_title,
+                ret_t.status as return_status,
+                ret_t.created_at as return_created_at,
+                ret_t.target_resolution_date as return_target_date,
+                ret_t.sla_hours as return_sla_hours,
+                i.name as inventory_name,
+                i.category as inventory_category
+            FROM asset_lifecycle al
+            LEFT JOIN tickets req_t ON al.request_ticket_id = req_t.id
+            LEFT JOIN tickets ret_t ON al.return_ticket_id = ret_t.id
+            LEFT JOIN inventory i ON al.inventory_id = i.id
+            ORDER BY al.created_at DESC
+        `);
+
+        const lifecycles = lifecyclesRes.rows;
+        const now = Date.now();
+
+        let assetsInUse = 0;
+        let pendingReturns = 0;
+        let overdueReturns = 0;
+
+        lifecycles.forEach(lc => {
+            const isReturned = lc.lifecycle_status === 'Returned';
+            const isPendingReturn = lc.lifecycle_status === 'Return Pending' || lc.return_status === 'return_pending_verification';
+            const isOverdue = !isReturned && lc.expected_return_date && new Date(lc.expected_return_date).getTime() < now;
+
+            if (isOverdue) {
+                overdueReturns++;
+            }
+            if (isPendingReturn) {
+                pendingReturns++;
+            }
+            if (!isReturned && !isPendingReturn) {
+                assetsInUse++;
+            }
+        });
+
+        res.json({
+            metrics: {
+                totalLifecycles: lifecycles.length,
+                assetsInUse,
+                pendingReturns,
+                overdueReturns
+            },
+            lifecycles
+        });
+    } catch (err) {
+        console.error('Get asset lifecycles error:', err);
+        res.status(500).json({ error: err.message || 'Failed to fetch asset lifecycles' });
+    }
+});
+
+// GET /api/asset-lifecycles/ticket/:ticketId (Fetch Vertical Flow Data for specific ticket)
+app.get('/api/asset-lifecycles/ticket/:ticketId', authenticateToken, async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const resLc = await pool.query(`
+            SELECT 
+                al.lifecycle_id,
+                al.request_ticket_id,
+                al.return_ticket_id,
+                al.inventory_id,
+                al.asset_name,
+                al.serial_number,
+                al.user_id,
+                al.user_name,
+                al.user_email,
+                al.status as lifecycle_status,
+                al.assigned_at,
+                al.expected_return_date,
+                al.returned_at,
+                al.created_at,
+                req_t.title as request_title,
+                req_t.status as request_status,
+                req_t.type as request_type,
+                req_t.created_at as request_created_at,
+                req_t.target_resolution_date as request_target_date,
+                req_t.sla_hours as request_sla_hours,
+                ret_t.id as return_ticket_id_val,
+                ret_t.title as return_title,
+                ret_t.status as return_status,
+                ret_t.created_at as return_created_at,
+                ret_t.target_resolution_date as return_target_date,
+                ret_t.sla_hours as return_sla_hours,
+                i.name as inventory_name,
+                i.category as inventory_category
+            FROM asset_lifecycle al
+            LEFT JOIN tickets req_t ON al.request_ticket_id = req_t.id
+            LEFT JOIN tickets ret_t ON al.return_ticket_id = ret_t.id
+            LEFT JOIN inventory i ON al.inventory_id = i.id
+            WHERE al.request_ticket_id = $1 OR al.return_ticket_id = $1 OR al.lifecycle_id = $1
+            LIMIT 1
+        `, [ticketId]);
+
+        if (resLc.rows.length === 0) {
+            return res.status(404).json({ error: 'No active lifecycle found for this ticket' });
+        }
+
+        res.json(resLc.rows[0]);
+    } catch (err) {
+        console.error('Get lifecycle for ticket error:', err);
+        res.status(500).json({ error: err.message || 'Failed to fetch lifecycle details' });
     }
 });
 

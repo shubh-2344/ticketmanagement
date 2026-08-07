@@ -13,6 +13,7 @@ import AvailableDevices from './AvailableDevices';
 import Toast from './Toast';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import AssetLifecycleDashboard from './AssetLifecycleDashboard';
+import AssignedAssetTrack from './AssignedAssetTrack';
 import ExecutiveDashboard from './ExecutiveDashboard';
 import OpenIncidents from './OpenIncidents';
 import ClosedIncidents from './ClosedIncidents';
@@ -516,13 +517,23 @@ function App() {
 
           {/* All Tickets Link (ADMIN ONLY) */}
           {currentUser.role === 'admin' && (
-            <button
-              className={`nav-button ${view === 'tickets-list' ? 'active' : ''}`}
-              onClick={() => setView('tickets-list')}
-            >
-              <span className="nav-icon"><InventoryIcon size={18} /></span>
-              <span>All Tickets</span>
-            </button>
+            <>
+              <button
+                className={`nav-button ${view === 'tickets-list' ? 'active' : ''}`}
+                onClick={() => setView('tickets-list')}
+              >
+                <span className="nav-icon"><InventoryIcon size={18} /></span>
+                <span>All Tickets</span>
+              </button>
+
+              <button
+                className={`nav-button ${view === 'assigned-asset-track' ? 'active' : ''}`}
+                onClick={() => setView('assigned-asset-track')}
+              >
+                <span className="nav-icon"><DevicesIcon size={18} style={{ color: '#38bdf8' }} /></span>
+                <span>Assigned Asset Track</span>
+              </button>
+            </>
           )}
 
           {/* My Tickets Link (MANAGER & EMPLOYEE) */}
@@ -722,6 +733,24 @@ function App() {
                   viewMode={globalViewMode}
                   onViewModeChange={handleGlobalViewModeChange}
                 />
+              )}
+
+              {view === 'assigned-asset-track' && (
+                currentUser.role === 'admin' ? (
+                  <AssignedAssetTrack
+                    API_URL={API_URL}
+                    onSelectTicket={handleViewTicketById}
+                  />
+                ) : (
+                  <div className="access-denied-card">
+                    <div className="denied-icon"><LockIcon size={36} /></div>
+                    <h2>Access Restricted</h2>
+                    <p>Only Administrator accounts can access the Assigned Asset Track view.</p>
+                    <button className="btn-return-home" onClick={() => setView('dashboard')}>
+                      Return to Dashboard
+                    </button>
+                  </div>
+                )
               )}
 
               {view === 'inventory' && (
