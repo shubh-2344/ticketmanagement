@@ -11,7 +11,8 @@ import {
   XIcon,
   SettingsIcon,
   BarChartIcon,
-  LinkIcon
+  LinkIcon,
+  UserIcon
 } from './components/Icons';
 
 function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBack, onAdminUpdate, onAdminDelete, onRefresh, API_URL }) {

@@ -242,7 +242,6 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                       onChange={(e) => setReviewComment({ ...reviewComment, [ticket.id]: e.target.value })}
                     />
                     <div className="action-buttons-flex">
-                      <div className="action-row">
                       <button
                         className="btn-approve"
                         onClick={() => handleManagerReview(ticket.id, 'approve')}
