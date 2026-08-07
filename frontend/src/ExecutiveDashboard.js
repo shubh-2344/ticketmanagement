@@ -396,7 +396,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
   };
 
   const deriveAllocationStatus = (item, currentTime = now) => {
-    const isReturned = item.is_returned || item.ticket_status === 'closed' || item.ticket_status === 'resolved';
+    const isReturned = Boolean(item.returned_at) || item.is_returned === true || (item.ticket_type === 'device-return' && item.ticket_status === 'closed');
     const isPendingReturn = item.ticket_status === 'return_pending_verification';
 
     if (isReturned) {
@@ -1185,12 +1185,12 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                  <th style={{ width: '16%', whiteSpace: 'nowrap' }}>Ticket ID</th>
-                  <th style={{ width: '24%' }}>Device</th>
-                  <th style={{ width: '26%' }}>Assigned User</th>
-                  <th style={{ width: '14%', whiteSpace: 'nowrap' }}>Status</th>
-                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Time Left</th>
-                  <th style={{ width: '8%', textAlign: 'right', whiteSpace: 'nowrap' }}>Action</th>
+                  <th style={{ width: '16%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '24%', padding: '12px 10px' }}>Device</th>
+                  <th style={{ width: '26%', padding: '12px 10px' }}>Assigned User</th>
+                  <th style={{ width: '14%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ width: '12%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Time Left</th>
+                  <th style={{ width: '8%', padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Action</th>
                 </tr>
               </thead>
               <tbody>

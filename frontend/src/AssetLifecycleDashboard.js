@@ -59,7 +59,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
   };
 
   const deriveAllocationStatus = (item) => {
-    const isReturned = item.is_returned || item.ticket_status === 'closed' || item.ticket_status === 'resolved';
+    const isReturned = Boolean(item.returned_at) || item.is_returned === true || (item.ticket_type === 'device-return' && item.ticket_status === 'closed');
     const isPendingReturn = item.ticket_status === 'return_pending_verification';
 
     if (isReturned) {
@@ -316,14 +316,14 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                  <th style={{ width: '14%', whiteSpace: 'nowrap' }}>Ticket ID</th>
-                  <th style={{ width: '22%' }}>Device</th>
-                  <th style={{ width: '22%' }}>Assigned User</th>
-                  <th className="col-assigned-date" style={{ width: '10%', whiteSpace: 'nowrap' }}>Asg-Date</th>
-                  <th className="col-return-date" style={{ width: '10%', whiteSpace: 'nowrap' }}>EXP-Return</th>
-                  <th style={{ width: '10%', whiteSpace: 'nowrap' }}>Time Left</th>
-                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Status</th>
-                  <th style={{ width: '10%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+                  <th style={{ width: '13%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '18%', padding: '12px 10px' }}>Device</th>
+                  <th style={{ width: '23%', padding: '12px 10px' }}>Assigned User</th>
+                  <th className="col-assigned-date" style={{ width: '11%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Asg-Date</th>
+                  <th className="col-return-date" style={{ width: '12%', padding: '12px 10px', whiteSpace: 'nowrap' }}>EXP-Return</th>
+                  <th style={{ width: '12%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Time Left</th>
+                  <th style={{ width: '11%', padding: '12px 10px', whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ width: '10%', padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>

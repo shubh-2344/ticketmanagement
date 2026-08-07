@@ -1469,8 +1469,9 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
         }
 
         const ticketCheck = await pool.query('SELECT type FROM tickets WHERE id = $1', [id]);
-        // Automatically close ticket once asset is assigned to user
-        const targetStatus = 'closed';
+        const isIssue = ticketCheck.rows[0]?.type === 'issue';
+        // Active device allocations stay in 'approved' status (ASSIGNED). Issues are resolved and 'closed'.
+        const targetStatus = isIssue ? 'closed' : 'approved';
 
         const result = await pool.query(`
             UPDATE tickets
