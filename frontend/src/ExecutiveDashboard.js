@@ -299,6 +299,72 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     return list;
   }, [deviceTrackingList, scopedTickets]);
 
+  const deriveAllocationStatus = (item, currentTime = now) => {
+    const isReturned = Boolean(item.returned_at) || item.is_returned === true || (item.ticket_type === 'device-return' && item.ticket_status === 'closed');
+    const isPendingReturn = item.ticket_status === 'return_pending_verification';
+
+    if (isReturned) {
+      return {
+        statusKey: 'returned',
+        statusText: 'RETURNED',
+        bg: 'rgba(16, 185, 129, 0.15)',
+        color: '#10b981',
+        border: '1px solid rgba(16, 185, 129, 0.4)',
+        timeLeftText: '—',
+        isReturned: true
+      };
+    }
+
+    if (isPendingReturn) {
+      return {
+        statusKey: 'pending_return',
+        statusText: 'RETURN REQUESTED',
+        bg: 'rgba(245, 158, 11, 0.2)',
+        color: '#f59e0b',
+        border: '1px solid rgba(245, 158, 11, 0.4)',
+        timeLeftText: 'Verification Pending',
+        isPendingReturn: true
+      };
+    }
+
+    if (item.expected_return_date) {
+      const expected = new Date(item.expected_return_date).getTime();
+      const diff = expected - currentTime;
+
+      if (diff < 0) {
+        const overdueDays = Math.floor(Math.abs(diff) / (1000 * 3600 * 24));
+        return {
+          statusKey: 'overdue',
+          statusText: 'OVERDUE',
+          bg: 'rgba(239, 68, 68, 0.2)',
+          color: '#ef4444',
+          border: '1px solid rgba(239, 68, 68, 0.4)',
+          timeLeftText: overdueDays > 0 ? `${overdueDays}d overdue` : 'Overdue today',
+          isOverdue: true
+        };
+      } else {
+        const days = Math.floor(diff / (1000 * 3600 * 24));
+        return {
+          statusKey: 'assigned',
+          statusText: 'ASSIGNED',
+          bg: '#7c3aed',
+          color: '#ffffff',
+          border: '1px solid #6d28d9',
+          timeLeftText: days > 0 ? `${days}d left` : 'Due today'
+        };
+      }
+    }
+
+    return {
+      statusKey: 'assigned',
+      statusText: 'ASSIGNED',
+      bg: '#7c3aed',
+      color: '#ffffff',
+      border: '1px solid #6d28d9',
+      timeLeftText: '—'
+    };
+  };
+
   const filteredTrackingData = useMemo(() => {
     return trackingData.filter(item => {
       const isOverdue = item.ticket_status !== 'closed' && item.expected_return_date && new Date(item.expected_return_date).getTime() < now;
@@ -406,71 +472,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     }
   };
 
-  const deriveAllocationStatus = (item, currentTime = now) => {
-    const isReturned = Boolean(item.returned_at) || item.is_returned === true || (item.ticket_type === 'device-return' && item.ticket_status === 'closed');
-    const isPendingReturn = item.ticket_status === 'return_pending_verification';
 
-    if (isReturned) {
-      return {
-        statusKey: 'returned',
-        statusText: 'RETURNED',
-        bg: 'rgba(16, 185, 129, 0.15)',
-        color: '#10b981',
-        border: '1px solid rgba(16, 185, 129, 0.4)',
-        timeLeftText: '—',
-        isReturned: true
-      };
-    }
-
-    if (isPendingReturn) {
-      return {
-        statusKey: 'pending_return',
-        statusText: 'RETURN REQUESTED',
-        bg: 'rgba(245, 158, 11, 0.2)',
-        color: '#f59e0b',
-        border: '1px solid rgba(245, 158, 11, 0.4)',
-        timeLeftText: 'Verification Pending',
-        isPendingReturn: true
-      };
-    }
-
-    if (item.expected_return_date) {
-      const expected = new Date(item.expected_return_date).getTime();
-      const diff = expected - currentTime;
-
-      if (diff < 0) {
-        const overdueDays = Math.floor(Math.abs(diff) / (1000 * 3600 * 24));
-        return {
-          statusKey: 'overdue',
-          statusText: 'OVERDUE',
-          bg: 'rgba(239, 68, 68, 0.2)',
-          color: '#ef4444',
-          border: '1px solid rgba(239, 68, 68, 0.4)',
-          timeLeftText: overdueDays > 0 ? `${overdueDays}d overdue` : 'Overdue today',
-          isOverdue: true
-        };
-      } else {
-        const days = Math.floor(diff / (1000 * 3600 * 24));
-        return {
-          statusKey: 'assigned',
-          statusText: 'ASSIGNED',
-          bg: '#7c3aed',
-          color: '#ffffff',
-          border: '1px solid #6d28d9',
-          timeLeftText: days > 0 ? `${days}d left` : 'Due today'
-        };
-      }
-    }
-
-    return {
-      statusKey: 'assigned',
-      statusText: 'ASSIGNED',
-      bg: '#7c3aed',
-      color: '#ffffff',
-      border: '1px solid #6d28d9',
-      timeLeftText: '—'
-    };
-  };
 
   const isManager = currentUser?.role === 'manager';
 
