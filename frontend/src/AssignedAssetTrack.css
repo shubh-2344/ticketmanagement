@@ -456,7 +456,7 @@
   position: absolute;
   top: -10px;
   left: 20px;
-  background: #3b82f6;
+  background: #10b981;
   color: #ffffff;
   font-size: 10px;
   font-weight: 800;
@@ -465,8 +465,20 @@
   letter-spacing: 0.5px;
 }
 
-.stage-badge.badge-middle { background: #8b5cf6; }
-.stage-badge.badge-bottom { background: #f59e0b; }
+.stage-badge.badge-middle { background: #3b82f6; }
+.stage-badge.badge-bottom { background: #f97316; }
+
+.flow-card.stage-request {
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.flow-card.stage-assigned {
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.flow-card.stage-return {
+  border-color: rgba(249, 115, 22, 0.35);
+}
 
 .card-header-row {
   display: flex;
@@ -486,23 +498,23 @@
   font-family: monospace;
   font-weight: 700;
   font-size: 13px;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.15);
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
   padding: 3px 8px;
   border-radius: 4px;
 }
 
 .flow-ticket-id.ret-id {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.15);
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.15);
 }
 
 .flow-lifecycle-badge {
   font-family: monospace;
   font-weight: 800;
   font-size: 13px;
-  color: #c084fc;
-  background: rgba(192, 132, 252, 0.15);
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
   padding: 3px 8px;
   border-radius: 4px;
 }
@@ -566,7 +578,7 @@
   border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
-/* Vertical Arrow Divider */
+/* Vertical Arrow Dividers */
 .vertical-arrow-divider {
   display: flex;
   flex-direction: column;
@@ -574,24 +586,37 @@
   margin: 8px 0;
 }
 
-.arrow-line {
+.vertical-arrow-divider.forward-arrow .arrow-line {
   width: 2px;
   height: 20px;
-  background: linear-gradient(180deg, rgba(56, 189, 248, 0.6), rgba(168, 85, 247, 0.6));
+  background: linear-gradient(180deg, #10b981, #3b82f6);
 }
 
-.arrow-head {
-  font-size: 16px;
-  color: #c084fc;
+.vertical-arrow-divider.forward-arrow .arrow-head {
+  font-size: 18px;
+  color: #3b82f6;
   font-weight: 900;
   margin-top: -6px;
 }
 
+.vertical-arrow-divider.backward-arrow .arrow-line {
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(180deg, #3b82f6, #f97316);
+}
+
+.vertical-arrow-divider.backward-arrow .arrow-head {
+  font-size: 18px;
+  color: #f97316;
+  font-weight: 900;
+  margin-bottom: -6px;
+}
+
 .arrow-label {
-  font-size: 10.5px;
+  font-size: 11px;
   color: #94a3b8;
-  font-weight: 600;
-  margin-top: 2px;
+  font-weight: 700;
+  margin-top: 3px;
   letter-spacing: 0.4px;
 }
 

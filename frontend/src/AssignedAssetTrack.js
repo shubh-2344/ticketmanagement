@@ -422,11 +422,11 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
                 })()}
               </div>
 
-              {/* DOWNWARD ARROW 1 */}
-              <div className="vertical-arrow-divider">
+              {/* DOWNWARD FORWARD ARROW (Request -> Assigned) */}
+              <div className="vertical-arrow-divider forward-arrow">
                 <div className="arrow-line"></div>
                 <div className="arrow-head">↓</div>
-                <div className="arrow-label">Asset Approved & Assigned</div>
+                <div className="arrow-label">Request Approved → Asset Assigned</div>
               </div>
 
               {/* STAGE 2 (MIDDLE): ASSET ASSIGNED */}
@@ -461,11 +461,11 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
                 </div>
               </div>
 
-              {/* DOWNWARD ARROW 2 */}
-              <div className="vertical-arrow-divider">
+              {/* UPWARD BACKWARD ARROW (Assigned -> Return Flow) */}
+              <div className="vertical-arrow-divider backward-arrow">
                 <div className="arrow-line"></div>
-                <div className="arrow-head">↓</div>
-                <div className="arrow-label">Return Request & Physical Verification</div>
+                <div className="arrow-head">↑</div>
+                <div className="arrow-label">Hardware Return Flow Progression</div>
               </div>
 
               {/* STAGE 3 (BOTTOM): RETURN TICKET */}

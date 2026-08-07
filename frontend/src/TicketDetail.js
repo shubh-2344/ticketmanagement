@@ -362,14 +362,14 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
 
         {/* Vertical UI Flowchart with Arrows */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0', marginTop: '14px' }}>
-          {/* Stage 1 (Top): Request Ticket */}
-          <div style={{ width: '100%', background: 'var(--bg-body)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '14px 16px', position: 'relative', boxSizing: 'border-box' }}>
-            <div style={{ fontSize: '10px', fontWeight: '800', background: '#3b82f6', color: '#fff', padding: '2px 8px', borderRadius: '4px', position: 'absolute', top: '-10px', left: '16px' }}>
+          {/* Stage 1 (Top): Request Ticket (GREEN) */}
+          <div style={{ width: '100%', background: 'var(--bg-body)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '10px', padding: '14px 16px', position: 'relative', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '10px', fontWeight: '800', background: '#10b981', color: '#fff', padding: '2px 8px', borderRadius: '4px', position: 'absolute', top: '-10px', left: '16px' }}>
               STAGE 1: REQUEST
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
               <div>
-                <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#38bdf8', fontSize: '13px' }}>
+                <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#10b981', fontSize: '13px' }}>
                   {formatTicketId(lc?.request_ticket_id || (ticket.type === 'device-request' ? ticket.id : (ticket.parent_ticket_id || ticket.id)), 'device-request')}
                 </span>
                 <span style={{ marginLeft: '10px', fontWeight: '700', color: '#fff' }}>{lc?.request_title || ticket.title}</span>
@@ -384,16 +384,16 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
           </div>
 
-          {/* Vertical Arrow 1 */}
+          {/* FORWARD DOWNWARD ARROW (↓) */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '6px 0' }}>
-            <div style={{ width: '2px', height: '18px', background: 'linear-gradient(180deg, #38bdf8, #c084fc)' }}></div>
-            <div style={{ fontSize: '14px', color: '#c084fc', fontWeight: '900', marginTop: '-4px' }}>↓</div>
-            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Asset Approved & Assigned</div>
+            <div style={{ width: '2px', height: '18px', background: 'linear-gradient(180deg, #10b981, #3b82f6)' }}></div>
+            <div style={{ fontSize: '16px', color: '#3b82f6', fontWeight: '900', marginTop: '-4px' }}>↓</div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '700' }}>Request Approved → Asset Assigned</div>
           </div>
 
-          {/* Stage 2 (Middle): Asset Assigned */}
-          <div style={{ width: '100%', background: 'var(--bg-body)', border: '1px solid rgba(192, 132, 252, 0.3)', borderRadius: '10px', padding: '14px 16px', position: 'relative', boxSizing: 'border-box' }}>
-            <div style={{ fontSize: '10px', fontWeight: '800', background: '#8b5cf6', color: '#fff', padding: '2px 8px', borderRadius: '4px', position: 'absolute', top: '-10px', left: '16px' }}>
+          {/* Stage 2 (Middle): Asset Assigned (BLUE) */}
+          <div style={{ width: '100%', background: 'var(--bg-body)', border: '1px solid rgba(59, 130, 246, 0.35)', borderRadius: '10px', padding: '14px 16px', position: 'relative', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '10px', fontWeight: '800', background: '#3b82f6', color: '#fff', padding: '2px 8px', borderRadius: '4px', position: 'absolute', top: '-10px', left: '16px' }}>
               STAGE 2: ASSET ASSIGNED
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
@@ -406,8 +406,8 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 fontWeight: '800',
                 padding: '3px 10px',
                 borderRadius: '10px',
-                backgroundColor: status === 'Returned' ? 'rgba(16, 185, 129, 0.2)' : (status === 'Return Pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(139, 92, 246, 0.2)'),
-                color: status === 'Returned' ? '#10b981' : (status === 'Return Pending' ? '#f59e0b' : '#c084fc')
+                backgroundColor: status === 'Returned' ? 'rgba(16, 185, 129, 0.2)' : (status === 'Return Pending' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(59, 130, 246, 0.2)'),
+                color: status === 'Returned' ? '#10b981' : (status === 'Return Pending' ? '#f97316' : '#38bdf8')
               }}>
                 {status.toUpperCase()}
               </span>
@@ -418,28 +418,28 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
           </div>
 
-          {/* Vertical Arrow 2 */}
+          {/* BACKWARD UPWARD ARROW (↑) */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '6px 0' }}>
-            <div style={{ width: '2px', height: '18px', background: 'linear-gradient(180deg, #c084fc, #f59e0b)' }}></div>
-            <div style={{ fontSize: '14px', color: '#f59e0b', fontWeight: '900', marginTop: '-4px' }}>↓</div>
-            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Hardware Return & Verification</div>
+            <div style={{ width: '2px', height: '18px', background: 'linear-gradient(180deg, #3b82f6, #f97316)' }}></div>
+            <div style={{ fontSize: '16px', color: '#f97316', fontWeight: '900', marginBottom: '-4px' }}>↑</div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '700' }}>Hardware Return Flow Progression</div>
           </div>
 
-          {/* Stage 3 (Bottom): Return Ticket */}
-          <div style={{ width: '100%', background: 'var(--bg-body)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '14px 16px', position: 'relative', boxSizing: 'border-box' }}>
-            <div style={{ fontSize: '10px', fontWeight: '800', background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: '4px', position: 'absolute', top: '-10px', left: '16px' }}>
+          {/* Stage 3 (Bottom): Return Ticket (ORANGE) */}
+          <div style={{ width: '100%', background: 'var(--bg-body)', border: '1px solid rgba(249, 115, 22, 0.35)', borderRadius: '10px', padding: '14px 16px', position: 'relative', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '10px', fontWeight: '800', background: '#f97316', color: '#fff', padding: '2px 8px', borderRadius: '4px', position: 'absolute', top: '-10px', left: '16px' }}>
               STAGE 3: RETURN
             </div>
             {(lc?.return_ticket_id || ticket.type === 'device-return') ? (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
                   <div>
-                    <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#f59e0b', fontSize: '13px' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#f97316', fontSize: '13px' }}>
                       {formatTicketId(lc?.return_ticket_id || (ticket.type === 'device-return' ? ticket.id : ''), 'device-return')}
                     </span>
                     <span style={{ marginLeft: '10px', fontWeight: '700', color: '#fff' }}>{lc?.return_title || 'Return Request for Hardware'}</span>
                   </div>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: (lc?.return_status === 'closed' || ticket.status === 'closed') ? '#10b981' : '#f59e0b', background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '6px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: (lc?.return_status === 'closed' || ticket.status === 'closed') ? '#10b981' : '#f97316', background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '6px' }}>
                     {(lc?.return_status || ticket.status || 'PENDING').toUpperCase()}
                   </span>
                 </div>
@@ -450,7 +450,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               </div>
             ) : (
               <div style={{ color: 'var(--text-muted)', fontSize: '12px', textAlign: 'center', padding: '8px 0' }}>
-                Return ticket not initiated yet. Device is currently active with user.
+                Return ticket not initiated yet. Device is currently active with assigned employee.
               </div>
             )}
           </div>

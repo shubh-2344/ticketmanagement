@@ -152,6 +152,8 @@ function CreateTicket({ onSubmit, API_URL, initialDevice, currentUser }) {
         ...prev,
         assigned_device_name: selectedAsset.assigned_device_name,
         inventory_id: selectedAsset.inventory_id || '',
+        parent_ticket_id: selectedAsset.ticket_id,
+        original_allocation_id: selectedAsset.ticket_id,
         title: `Return Asset: ${selectedAsset.assigned_device_name}`,
         model_number: selectedAsset.model_number || selectedAsset.assigned_device_name,
         serial_number: selectedAsset.serial_number || prev.serial_number
@@ -160,7 +162,9 @@ function CreateTicket({ onSubmit, API_URL, initialDevice, currentUser }) {
       setFormData((prev) => ({
         ...prev,
         assigned_device_name: '',
-        inventory_id: ''
+        inventory_id: '',
+        parent_ticket_id: '',
+        original_allocation_id: ''
       }));
     }
   };

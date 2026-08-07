@@ -1238,6 +1238,17 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
             );
         }
 
+        // Data Integrity: For Return Tickets, verify that the initiating user is either the original requester or an Admin
+        if (type === 'device-return' && req.body.parent_ticket_id) {
+            const parentRes = await pool.query('SELECT requester_id FROM tickets WHERE id = $1', [req.body.parent_ticket_id]);
+            if (parentRes.rows.length > 0) {
+                const origRequesterId = parentRes.rows[0].requester_id;
+                if (req.user.role !== 'admin' && origRequesterId !== req.user.id) {
+                    return res.status(403).json({ error: 'Forbidden: Only the user assigned to this asset (or an Administrator) can create a return ticket.' });
+                }
+            }
+        }
+
         const id = uuidv4();
         
         // If it is an issue, device-return, or created by a Manager/Admin, bypass manager review and send directly to Admin.
@@ -1263,9 +1274,10 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
                 manager_id, manager_name, inventory_id,
                 sla_hours, target_resolution_date,
                 expected_return_date, reservation_duration,
-                serial_number, model_number, return_reason, assigned_device_name
+                serial_number, model_number, return_reason, assigned_device_name,
+                parent_ticket_id, original_allocation_id
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
         `, [
             id,
             title.trim(),
@@ -1287,8 +1299,38 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
             serial_number ? serial_number.trim() : null,
             model_number ? model_number.trim() : null,
             return_reason ? return_reason.trim() : null,
-            assigned_device_name ? assigned_device_name.trim() : null
+            assigned_device_name ? assigned_device_name.trim() : null,
+            req.body.parent_ticket_id || null,
+            req.body.original_allocation_id || req.body.parent_ticket_id || null
         ]);
+
+        // Auto-sync asset_lifecycle for return tickets
+        if (type === 'device-return') {
+            try {
+                const parentId = req.body.parent_ticket_id || req.body.original_allocation_id;
+                const deviceName = assigned_device_name ? assigned_device_name.trim() : null;
+                
+                let lcRes = null;
+                if (parentId) {
+                    lcRes = await pool.query('SELECT lifecycle_id FROM asset_lifecycle WHERE request_ticket_id = $1 LIMIT 1', [parentId]);
+                }
+                if ((!lcRes || lcRes.rows.length === 0) && deviceName) {
+                    lcRes = await pool.query('SELECT lifecycle_id FROM asset_lifecycle WHERE user_id = $1 AND asset_name = $2 AND status IN (\'Assigned\', \'Overdue\', \'Return Pending\') LIMIT 1', [req.user.id, deviceName]);
+                }
+
+                if (lcRes && lcRes.rows.length > 0) {
+                    await pool.query(`
+                        UPDATE asset_lifecycle
+                        SET return_ticket_id = $1,
+                            status = 'Return Pending',
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE lifecycle_id = $2
+                    `, [id, lcRes.rows[0].lifecycle_id]);
+                }
+            } catch (lcSyncErr) {
+                console.error("Error auto-syncing asset lifecycle on return ticket creation:", lcSyncErr);
+            }
+        }
 
         res.status(201).json({
             message: type === 'device-return'
@@ -2098,8 +2140,8 @@ app.put('/api/tickets/:id/verify-return', authenticateToken, requireRole(['admin
     }
 });
 
-// GET /api/admin/asset-lifecycles (Full Admin Lifecycle Tracking List & KPI Metrics)
-app.get('/api/admin/asset-lifecycles', authenticateToken, requireRole(['admin']), async (req, res) => {
+// GET /api/admin/asset-lifecycles (Full Admin & Manager Lifecycle Tracking List & KPI Metrics)
+app.get('/api/admin/asset-lifecycles', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
     try {
         const lifecyclesRes = await pool.query(`
             SELECT 
