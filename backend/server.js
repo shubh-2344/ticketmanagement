@@ -1107,9 +1107,10 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
 
         const id = uuidv4();
         
-        // If it is an issue or device-return, bypass manager review and send directly to Admin.
-        const isDirectToAdmin = type === 'issue' || type === 'device-return';
-        const initialStatus = type === 'device-return' ? 'return_pending_verification' : (type === 'issue' ? 'pending_admin_assignment' : 'pending_manager_approval');
+        // If it is an issue, device-return, or created by a Manager/Admin, bypass manager review and send directly to Admin.
+        const isManagerOrAdmin = req.user.role === 'manager' || req.user.role === 'admin';
+        const isDirectToAdmin = type === 'issue' || type === 'device-return' || isManagerOrAdmin;
+        const initialStatus = type === 'device-return' ? 'return_pending_verification' : (isDirectToAdmin ? 'pending_admin_assignment' : 'pending_manager_approval');
 
         const safeInventoryId = isValidUUID(inventory_id) ? inventory_id : null;
         // Direct-to-admin tickets don't need a manager assignment

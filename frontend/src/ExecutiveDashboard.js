@@ -68,17 +68,30 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     return () => clearInterval(interval);
   }, []);
 
-  // Manager Department Scope & Assigned Approval Filtering
+  // Manager Role-Specific Dashboard Scope
   const scopedTickets = useMemo(() => {
     if (currentUser?.role === 'manager') {
       const mgrId = currentUser.id;
+      const mgrEmail = (currentUser.email || '').toLowerCase();
       const mgrDept = (currentUser.department || '').toLowerCase();
-      return tickets.filter(t =>
-        t.manager_id === mgrId ||
-        t.approver_id === mgrId ||
-        t.requester_id === mgrId ||
-        (mgrDept && (t.department || '').toLowerCase() === mgrDept)
-      );
+
+      return tickets.filter(t => {
+        const isRaisedBySelf = t.requester_id === mgrId || (t.requester_email || '').toLowerCase() === mgrEmail;
+        const isAssignedToMgr = t.manager_id === mgrId || t.approver_id === mgrId;
+        const isSameDept = mgrDept && (t.department || '').toLowerCase() === mgrDept;
+
+        // Category 1: Tickets approved by the Manager and currently pending with Admin for fulfillment
+        const isApprovedPendingAdmin = (isAssignedToMgr || isSameDept) && (
+          t.status === 'pending_admin_assignment' || 
+          t.status === 'approved' || 
+          t.status === 'in_progress'
+        );
+
+        // Category 2: Tickets raised by their direct team members (or raised by self)
+        const isTeamMemberTicket = isAssignedToMgr || isSameDept || isRaisedBySelf;
+
+        return isApprovedPendingAdmin || isTeamMemberTicket;
+      });
     }
     return tickets;
   }, [tickets, currentUser]);

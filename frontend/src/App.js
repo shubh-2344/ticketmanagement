@@ -656,6 +656,7 @@ function App() {
                   onSubmit={handleCreateTicket}
                   API_URL={API_URL}
                   initialDevice={selectedDeviceForRequest}
+                  currentUser={currentUser}
                 />
               )}
 

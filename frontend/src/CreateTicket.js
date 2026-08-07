@@ -3,7 +3,7 @@ import axios from 'axios';
 import { DevicesIcon, AlertIcon, UserIcon, CheckIcon } from './components/Icons';
 import './CreateTicket.css';
 
-function CreateTicket({ onSubmit, API_URL, initialDevice }) {
+function CreateTicket({ onSubmit, API_URL, initialDevice, currentUser }) {
   const [formData, setFormData] = useState({
     title: initialDevice ? `Request: ${initialDevice.name}` : '',
     description: initialDevice ? `Requesting company device: ${initialDevice.name} (${initialDevice.description || ''})` : '',
@@ -250,11 +250,17 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
     ]
   };
 
-  const isDirectToAdmin = formData.type === 'issue' || formData.type === 'device-return';
+  const isDirectToAdmin = formData.type === 'issue' || formData.type === 'device-return' || currentUser?.role === 'manager' || currentUser?.role === 'admin';
 
   return (
     <div className="create-ticket">
       <h2>Create New Ticket</h2>
+
+      {currentUser?.role === 'manager' && (
+        <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', padding: '12px 16px', marginBottom: '20px', color: '#38bdf8', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>ℹ️</span> <strong>Manager Workflow:</strong> As a Manager, your ticket will be submitted directly to IT Administrator for fulfillment without additional approval layers.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="form">
         {!isDirectToAdmin && (
