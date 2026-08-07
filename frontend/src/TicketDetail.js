@@ -443,19 +443,21 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
   };
 
   const getStatusBadge = (status, type) => {
+    const isIssue = type === 'issue';
     switch (status) {
       case 'pending_manager_approval':
         return { text: 'Pending Manager Review', bg: '#f59e0b' };
       case 'pending_admin_assignment':
-        return { text: type === 'issue' ? 'Pending Admin Action' : 'Pending Admin Device Assignment', bg: '#8b5cf6' };
+      case 'pending':
+        return { text: isIssue ? 'Pending IT Action' : 'Pending Admin Device Assignment', bg: '#8b5cf6' };
       case 'approved':
-        return { text: type === 'issue' ? 'Resolved & Closed' : 'Device Assigned & Fulfilled', bg: '#10b981' };
+        return { text: isIssue ? 'Resolved & Closed' : 'Device Assigned & Fulfilled', bg: '#10b981' };
       case 'rejected':
-        return { text: 'Denied by Manager', bg: '#ef4444' };
+        return { text: isIssue ? 'Rejected by IT Admin' : 'Denied Request', bg: '#ef4444' };
       case 'closed':
-        return { text: 'Closed', bg: '#64748b' };
+        return { text: isIssue ? 'Resolved & Closed' : 'Fulfilled & Closed', bg: '#10b981' };
       default:
-        return { text: status.toUpperCase(), bg: '#3b82f6' };
+        return { text: status.toUpperCase().replace(/_/g, ' '), bg: '#3b82f6' };
     }
   };
 
@@ -517,7 +519,10 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           <div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.4px' }}>CURRENTLY ASSIGNED TO</div>
             <div style={{ fontSize: '14px', fontWeight: '800', color: ticket.assigned_admin_name ? '#38bdf8' : 'var(--text-main)' }}>
-              {ticket.assigned_admin_name || ticket.assigned_engineer || (ticket.status === 'pending_manager_approval' ? (ticket.manager_name || 'Assigned Manager') : 'IT Admin Desk')}
+              {ticket.type === 'issue'
+                ? (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk')
+                : (ticket.status === 'pending_manager_approval' ? (ticket.manager_name || 'Assigned Manager') : (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk'))
+              }
             </div>
           </div>
         </div>
@@ -670,39 +675,34 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           )}
 
           <section className="section">
-            <h2>Requester & Assigned Manager</h2>
+            <h2>{ticket.type === 'issue' ? 'Requester & IT Handler Info' : 'Requester & Assigned Manager'}</h2>
             <div className="details-grid">
               <div className="detail-item">
                 <span className="label">Requester Name:</span>
                 <span className="value">{ticket.requester_name} ({ticket.requester_email})</span>
               </div>
               <div className="detail-item">
-                <span className="label">Assigned Manager:</span>
-                <span className="value">{(ticket.type === 'issue' || ticket.type === 'device-return') ? 'N/A - Direct Admin' : (ticket.manager_name || 'Assigned Manager')}</span>
+                <span className="label">{ticket.type === 'issue' ? 'Assigned IT Engineer / Admin:' : 'Assigned Manager:'}</span>
+                <span className="value font-semibold" style={{ color: ticket.assigned_admin_name ? '#38bdf8' : 'var(--text-main)' }}>
+                  {ticket.type === 'issue'
+                    ? (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk')
+                    : (ticket.manager_name || 'Assigned Manager')
+                  }
+                </span>
               </div>
             </div>
           </section>
 
-          {/* STAGE 2: Manager Review Details (ONLY for Device Request Tickets) */}
-          {ticket.type === 'device-request' && ticket.approver_name && (
-            <section className={`section ${ticket.status === 'rejected' ? 'rejection-info' : 'approval-info'}`}>
-              <h2>STAGE 2: Manager Review Status</h2>
-              <div className="details-grid">
-                <div className="detail-item">
-                  <span className="label">Reviewed by:</span>
-                  <span className="value">{ticket.approver_name}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">Review Date:</span>
-                  <span className="value">{formatDate(ticket.approval_date)}</span>
-                </div>
+          {/* Rejection Details Banner (Visible if Rejected) */}
+          {ticket.status === 'rejected' && (
+            <section className="section rejection-info" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '20px' }}>
+              <h2 style={{ color: '#ef4444', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <XIcon size={18} /> {ticket.type === 'issue' ? 'Incident Rejected by IT Admin' : 'Ticket Request Denied'}
+              </h2>
+              <div className="approval-comment" style={{ background: 'rgba(0,0,0,0.1)', padding: '12px', borderRadius: '6px', color: '#fca5a5' }}>
+                <p><strong>Reason / Comment:</strong></p>
+                <p>{ticket.approval_comment || ticket.reassignment_comment || 'No comment specified.'}</p>
               </div>
-              {ticket.approval_comment && (
-                <div className="approval-comment">
-                  <p><strong>Manager Comment:</strong></p>
-                  <p>{ticket.approval_comment}</p>
-                </div>
-              )}
             </section>
           )}
 

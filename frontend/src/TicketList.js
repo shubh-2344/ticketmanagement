@@ -11,19 +11,21 @@ import {
 
 function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onViewModeChange }) {
   const getStatusBadge = (status, type) => {
+    const isIssue = type === 'issue';
     switch (status) {
       case 'pending_manager_approval':
-        return { text: 'Manager Review', bg: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24' };
+        return { text: 'Pending Manager Review', bg: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24' };
       case 'pending_admin_assignment':
-        return { text: type === 'issue' ? 'Pending Admin Action' : 'Admin Device Assignment', bg: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.4)', color: '#c084fc' };
+      case 'pending':
+        return { text: isIssue ? 'Pending IT Action' : 'Pending Admin Device Assignment', bg: 'rgba(139, 92, 246, 0.2)', border: '1px solid rgba(139, 92, 246, 0.4)', color: '#c084fc' };
       case 'approved':
-        return { text: type === 'issue' ? 'Resolved' : 'Device Assigned', bg: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', color: '#4ade80' };
+        return { text: isIssue ? 'Resolved by IT' : 'Device Assigned', bg: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.4)', color: '#4ade80' };
       case 'rejected':
-        return { text: 'Denied by Manager', bg: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5' };
+        return { text: isIssue ? 'Rejected by IT Admin' : 'Denied Request', bg: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5' };
       case 'closed':
-        return { text: 'Closed / Resolved', bg: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#4ade80' };
+        return { text: isIssue ? 'Resolved & Closed' : 'Fulfilled & Closed', bg: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#4ade80' };
       default:
-        return { text: status.toUpperCase(), bg: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#38bdf8' };
+        return { text: status.toUpperCase().replace(/_/g, ' '), bg: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#38bdf8' };
     }
   };
 
@@ -76,7 +78,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                 <th style={{ width: '12%' }}>ID</th>
                 <th style={{ width: '25%' }}>TITLE & TYPE</th>
                 <th style={{ width: '15%' }}>REQUESTER</th>
-                <th className="col-manager" style={{ width: '13%' }}>ASSIGNED MANAGER</th>
+                <th className="col-manager" style={{ width: '15%' }}>CURRENTLY WITH</th>
                 <th style={{ width: '9%' }}>PRIORITY</th>
                 <th style={{ width: '13%' }}>STATUS</th>
                 <th className="col-device" style={{ width: '13%' }}>ASSIGNED DEVICE</th>
@@ -103,7 +105,10 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                     <td>{t.requester_name}</td>
                     <td className="col-manager">
                       <div style={{ fontWeight: '600', color: t.assigned_admin_name ? '#38bdf8' : 'var(--text-main)' }}>
-                        {t.assigned_admin_name || t.assigned_engineer || (t.status === 'pending_manager_approval' ? (t.manager_name || 'Manager') : 'IT Admin Desk')}
+                        {t.type === 'issue'
+                          ? (t.assigned_admin_name || t.assigned_engineer || 'IT Admin Desk')
+                          : (t.status === 'pending_manager_approval' ? (t.manager_name || 'Manager Review') : (t.assigned_admin_name || t.assigned_engineer || 'IT Admin Desk'))
+                        }
                       </div>
                     </td>
                     <td><span className={`priority-text ${t.priority}`}>{t.priority.toUpperCase()}</span></td>
@@ -192,7 +197,10 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                   <div className="meta-item">
                     <span className="label">Currently With:</span>
                     <span className="value" style={{ fontWeight: '700', color: ticket.assigned_admin_name ? '#38bdf8' : '#a855f7' }}>
-                      {ticket.assigned_admin_name || ticket.assigned_engineer || (ticket.status === 'pending_manager_approval' ? (ticket.manager_name || 'Manager') : 'IT Admin Desk')}
+                      {ticket.type === 'issue'
+                        ? (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk')
+                        : (ticket.status === 'pending_manager_approval' ? (ticket.manager_name || 'Manager Review') : (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk'))
+                      }
                     </span>
                   </div>
                   <div className="meta-item">
