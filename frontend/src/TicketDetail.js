@@ -19,6 +19,73 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
   const [comment, setComment] = useState('');
   const [showApprovalForm, setShowApprovalForm] = useState(false);
   const [showAdminEditModal, setShowAdminEditModal] = useState(false);
+
+  // Admin Transfer & Rejection Modal States
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [adminList, setAdminList] = useState([]);
+  const [selectedAdminName, setSelectedAdminName] = useState('');
+  const [transferComment, setTransferComment] = useState('');
+
+  useEffect(() => {
+    if (API_URL) {
+      axios.get(`${API_URL}/users`)
+        .then(res => {
+          const admins = res.data.filter(u => u.role === 'admin' || u.role === 'manager');
+          setAdminList(admins);
+          if (admins.length > 0) setSelectedAdminName(admins[0].name);
+        })
+        .catch(err => console.error('Error fetching admin users:', err));
+    }
+  }, [API_URL]);
+
+  const handleAdminRejectSubmit = async (e) => {
+    e.preventDefault();
+    if (!rejectReason.trim()) {
+      alert('Please provide a reason for rejecting this ticket.');
+      return;
+    }
+    try {
+      await axios.put(`${API_URL}/tickets/${ticket.id}/admin-reject`, {
+        rejection_comment: rejectReason
+      });
+      alert('Ticket request has been rejected.');
+      setShowRejectModal(false);
+      setRejectReason('');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Error rejecting ticket:', err);
+      alert(err.response?.data?.error || 'Failed to reject ticket');
+    }
+  };
+
+  const handleAdminTransferSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedAdminName) {
+      alert('Please select an Admin/Engineer to transfer this ticket to.');
+      return;
+    }
+    if (!transferComment.trim()) {
+      alert('Please enter comments/reasons for transferring this ticket.');
+      return;
+    }
+    try {
+      const selected = adminList.find(a => a.name === selectedAdminName);
+      await axios.put(`${API_URL}/tickets/${ticket.id}/reassign-admin`, {
+        target_admin_id: selected?.id || null,
+        target_admin_name: selectedAdminName,
+        comment: transferComment
+      });
+      alert(`Ticket transferred to ${selectedAdminName}!`);
+      setShowTransferModal(false);
+      setTransferComment('');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Error transferring ticket:', err);
+      alert(err.response?.data?.error || 'Transfer failed.');
+    }
+  };
   const [showDeviceAssignForm, setShowDeviceAssignForm] = useState(false);
   
   const [inventoryList, setInventoryList] = useState([]);
@@ -409,12 +476,20 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         </button>
 
         {isAdmin && (
-          <div className="admin-quick-actions">
+          <div className="admin-quick-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button className="btn-admin-edit" onClick={() => setShowTransferModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(56, 189, 248, 0.15)', borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}>
+              Transfer to Admin
+            </button>
+            {ticket.status !== 'rejected' && ticket.status !== 'closed' && (
+              <button className="btn-admin-delete" onClick={() => setShowRejectModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#ef4444' }}>
+                <XIcon size={14} /> Reject Ticket
+              </button>
+            )}
             <button className="btn-admin-edit" onClick={() => setShowAdminEditModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <EditIcon size={14} /> Admin Edit Ticket
+              <EditIcon size={14} /> Edit Ticket
             </button>
             <button className="btn-admin-delete" onClick={handleAdminDeleteClick} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <TrashIcon size={14} /> Admin Delete
+              <TrashIcon size={14} /> Delete
             </button>
           </div>
         )}
@@ -995,6 +1070,90 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 </button>
                 <button type="submit" className="btn-save">
                   Save Ticket Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Admin Transfer Modal */}
+      {showTransferModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '480px' }}>
+            <div className="modal-header">
+              <h3>Transfer Ticket #{ticket.id}</h3>
+              <button className="modal-close" onClick={() => setShowTransferModal(false)}>
+                <XIcon size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleAdminTransferSubmit} className="modal-form">
+              <div className="form-group">
+                <label>Select Target Admin / Engineer *</label>
+                <select
+                  value={selectedAdminName}
+                  onChange={(e) => setSelectedAdminName(e.target.value)}
+                  required
+                >
+                  {adminList.map(adm => (
+                    <option key={adm.id} value={adm.name}>
+                      {adm.name} ({adm.role.toUpperCase()} - {adm.department || 'IT'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Comments / Transfer Reason *</label>
+                <textarea
+                  rows="3"
+                  value={transferComment}
+                  onChange={(e) => setTransferComment(e.target.value)}
+                  placeholder="Provide reason for transferring ticket to another admin..."
+                  required
+                ></textarea>
+              </div>
+
+              <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button type="button" className="btn-cancel" onClick={() => setShowTransferModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-save" style={{ background: '#38bdf8', color: '#0f172a' }}>
+                  Transfer Ticket
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Reject Ticket Modal */}
+      {showRejectModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '480px' }}>
+            <div className="modal-header">
+              <h3>Reject Ticket #{ticket.id}</h3>
+              <button className="modal-close" onClick={() => setShowRejectModal(false)}>
+                <XIcon size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleAdminRejectSubmit} className="modal-form">
+              <div className="form-group">
+                <label>Rejection Reason / Comments *</label>
+                <textarea
+                  rows="4"
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Provide detailed reasons for rejecting this ticket request..."
+                  required
+                ></textarea>
+              </div>
+
+              <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button type="button" className="btn-cancel" onClick={() => setShowRejectModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-save" style={{ background: '#ef4444', color: '#ffffff' }}>
+                  Reject Ticket
                 </button>
               </div>
             </form>

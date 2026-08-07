@@ -1688,6 +1688,40 @@ app.put('/api/tickets/:id/reassign-admin', authenticateToken, requireRole(['admi
     }
 });
 
+// Admin / Manager Reject Ticket (Incidents & Asset Requests)
+app.put('/api/tickets/:id/admin-reject', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
+    const { id } = req.params;
+    const { rejection_comment } = req.body;
+
+    if (!rejection_comment || !rejection_comment.trim()) {
+        return res.status(400).json({ error: 'Rejection reason/comment is required.' });
+    }
+
+    try {
+        const result = await pool.query(`
+            UPDATE tickets
+            SET status = 'rejected',
+                approval_comment = $1,
+                reassignment_comment = $1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $2
+            RETURNING *
+        `, [rejection_comment.trim(), id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        res.json({
+            message: 'Ticket request has been rejected successfully.',
+            ticket: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Admin reject ticket error:', err);
+        res.status(500).json({ error: err.message || 'Failed to reject ticket' });
+    }
+});
+
 // STAGE 4: DEVICE RETURN WORKFLOW & TRACKING APIs
 
 // Requester marks assigned device as returned
