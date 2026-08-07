@@ -250,13 +250,15 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
           <div style={{ width: '100%' }}>
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)' }}>
-                  <th style={{ width: '14%' }}>Ticket ID</th>
-                  <th style={{ width: '22%' }}>Device</th>
-                  <th style={{ width: '22%' }}>Assigned User</th>
-                  <th className="col-assigned-date" style={{ width: '14%' }}>Assignment Date</th>
-                  <th className="col-return-date" style={{ width: '14%' }}>Expected Return</th>
-                  <th style={{ width: '14%' }}>Status</th>
+                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '18%' }}>Device</th>
+                  <th style={{ width: '18%' }}>Assigned User</th>
+                  <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Assigned Date</th>
+                  <th className="col-return-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Expected Return</th>
+                  <th style={{ width: '11%', whiteSpace: 'nowrap' }}>Time Left</th>
+                  <th style={{ width: '11%', whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ width: '8%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -295,17 +297,17 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                         </span>
                       </td>
                       <td style={{ padding: '16px 8px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'flex-end' }}>
                           <button 
                             onClick={() => onSelectTicket(item.ticket_id)}
-                            style={{ padding: '4px 10px', borderRadius: '4px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            style={{ padding: '4px 10px', borderRadius: '4px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
                           >
                             <SearchIcon size={12} /> View Detail
                           </button>
                           {item.ticket_status === 'return_pending_verification' && (
                             <button 
                               onClick={() => handleVerifyReturn(item.ticket_id)}
-                              style={{ padding: '4px 10px', borderRadius: '4px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              style={{ padding: '4px 10px', borderRadius: '4px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
                             >
                               <CheckIcon size={12} /> Verify Return
                             </button>

@@ -925,13 +925,14 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
           <div style={{ width: '100%' }}>
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '12px' }}>
-                  <th style={{ width: '14%' }}>Ticket ID</th>
-                  <th style={{ width: '24%' }}>Assigned Employee</th>
-                  <th style={{ width: '22%' }}>Allocated Hardware Device</th>
-                  <th className="col-assigned-date" style={{ width: '12%' }}>Assigned Date</th>
-                  <th className="col-return-date" style={{ width: '12%' }}>Expected Return Date</th>
-                  <th style={{ width: '16%' }}>Return Status</th>
+                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '22%' }}>Assigned Employee</th>
+                  <th style={{ width: '20%' }}>Allocated Hardware Device</th>
+                  <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Assigned Date</th>
+                  <th className="col-return-date" style={{ width: '12%', whiteSpace: 'nowrap' }}>Expected Return</th>
+                  <th style={{ width: '13%', whiteSpace: 'nowrap' }}>Return Status</th>
+                  <th style={{ width: '10%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -959,9 +960,9 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                       <td className="col-return-date" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                         {item.expected_return_date ? new Date(item.expected_return_date).toLocaleDateString() : 'Continuous'}
                       </td>
-                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '12px 6px', whiteSpace: 'nowrap' }}>
                         <span style={{
-                          padding: '5px 12px',
+                          padding: '5px 10px',
                           borderRadius: '12px',
                           fontSize: '11px',
                           fontWeight: '800',
@@ -977,19 +978,20 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                           {statusInfo.text}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 10px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                      <td style={{ padding: '12px 6px', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'flex-end' }}>
                           <button
                             onClick={() => onSelectTicket(item.ticket_id)}
                             style={{
-                              padding: '5px 10px',
+                              padding: '5px 12px',
                               borderRadius: '6px',
                               background: 'var(--bg-body)',
                               border: 'var(--border-card)',
                               color: 'var(--text-main)',
                               cursor: 'pointer',
                               fontSize: '12px',
-                              fontWeight: '600'
+                              fontWeight: '600',
+                              whiteSpace: 'nowrap'
                             }}
                           >
                             Details
