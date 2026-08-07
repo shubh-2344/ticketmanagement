@@ -373,64 +373,73 @@
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.82);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 99999;
   padding: 20px;
   box-sizing: border-box;
 }
 
 .flow-modal-content {
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
   width: 100%;
-  max-width: 680px;
+  max-width: 620px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
   display: flex;
   flex-direction: column;
+  color: #f8fafc;
+  margin: auto;
+  box-sizing: border-box;
 }
 
 .flow-modal-header {
   padding: 20px 24px;
+  background: #1e293b;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .flow-modal-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
-  color: #f8fafc;
+  color: #ffffff;
   margin: 0 0 4px 0;
 }
 
 .flow-modal-subtitle {
-  font-size: 12.5px;
+  font-size: 12px;
   color: #94a3b8;
   margin: 0;
 }
 
 .btn-close-modal {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.1);
   border: none;
-  color: #94a3b8;
+  color: #ffffff;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-close-modal:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Vertical Flow Steps Container */
@@ -444,41 +453,42 @@
 
 .flow-card {
   width: 100%;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #1e293b;
   border-radius: 12px;
-  padding: 18px 20px;
+  padding: 20px;
   position: relative;
   box-sizing: border-box;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.flow-card.stage-request {
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.flow-card.stage-assigned {
+  border: 1px solid rgba(56, 189, 248, 0.5);
+}
+
+.flow-card.stage-return {
+  border: 1px solid rgba(249, 115, 22, 0.5);
 }
 
 .stage-badge {
   position: absolute;
-  top: -10px;
+  top: -11px;
   left: 20px;
   background: #10b981;
   color: #ffffff;
   font-size: 10px;
-  font-weight: 800;
-  padding: 2px 8px;
+  font-weight: 900;
+  padding: 3px 10px;
   border-radius: 4px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .stage-badge.badge-middle { background: #3b82f6; }
 .stage-badge.badge-bottom { background: #f97316; }
-
-.flow-card.stage-request {
-  border-color: rgba(16, 185, 129, 0.35);
-}
-
-.flow-card.stage-assigned {
-  border-color: rgba(59, 130, 246, 0.35);
-}
-
-.flow-card.stage-return {
-  border-color: rgba(249, 115, 22, 0.35);
-}
 
 .card-header-row {
   display: flex;
@@ -486,6 +496,8 @@
   align-items: center;
   margin-top: 4px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .ticket-title-group {
@@ -494,19 +506,51 @@
   gap: 10px;
 }
 
+.flow-status-pill {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.flow-status-pill.status-approved,
+.flow-status-pill.status-closed {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.flow-status-pill.status-pending_manager_approval,
+.flow-status-pill.status-pending_admin_assignment,
+.flow-status-pill.status-pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.flow-status-pill.status-returned {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
 .flow-ticket-id {
   font-family: monospace;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.15);
-  padding: 3px 8px;
-  border-radius: 4px;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
 .flow-ticket-id.ret-id {
   color: #f97316;
-  background: rgba(249, 115, 22, 0.15);
+  background: rgba(249, 115, 22, 0.18);
+  border: 1px solid rgba(249, 115, 22, 0.35);
 }
 
 .flow-lifecycle-badge {
@@ -514,9 +558,10 @@
   font-weight: 800;
   font-size: 13px;
   color: #38bdf8;
-  background: rgba(56, 189, 248, 0.15);
-  padding: 3px 8px;
-  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
 .flow-title-text {
@@ -531,17 +576,23 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
   font-size: 12.5px;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .card-details-grid .label {
   color: #94a3b8;
   display: block;
   font-size: 11px;
-  margin-bottom: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 3px;
 }
 
 .card-details-grid .val {
-  color: #f8fafc;
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -562,20 +613,20 @@
 
 .sla-ontrack {
   background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .sla-breached {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .sla-normal {
   background: rgba(148, 163, 184, 0.15);
   color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 /* Vertical Arrow Dividers */
@@ -583,41 +634,50 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 8px 0;
+  margin: 10px 0;
+  position: relative;
+  width: 100%;
 }
 
 .vertical-arrow-divider.forward-arrow .arrow-line {
   width: 2px;
-  height: 20px;
-  background: linear-gradient(180deg, #10b981, #3b82f6);
+  height: 24px;
+  background: linear-gradient(180deg, #10b981, #38bdf8);
 }
 
 .vertical-arrow-divider.forward-arrow .arrow-head {
-  font-size: 18px;
-  color: #3b82f6;
+  font-size: 20px;
+  color: #38bdf8;
   font-weight: 900;
   margin-top: -6px;
+  line-height: 1;
 }
 
 .vertical-arrow-divider.backward-arrow .arrow-line {
   width: 2px;
-  height: 20px;
-  background: linear-gradient(180deg, #3b82f6, #f97316);
+  height: 24px;
+  background: linear-gradient(180deg, #38bdf8, #f97316);
 }
 
 .vertical-arrow-divider.backward-arrow .arrow-head {
-  font-size: 18px;
+  font-size: 20px;
   color: #f97316;
   font-weight: 900;
   margin-bottom: -6px;
+  line-height: 1;
 }
 
 .arrow-label {
   font-size: 11px;
-  color: #94a3b8;
+  color: #f8fafc;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 14px;
+  border-radius: 14px;
   font-weight: 700;
-  margin-top: 3px;
+  margin-top: 4px;
   letter-spacing: 0.4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
 .no-return-state {
