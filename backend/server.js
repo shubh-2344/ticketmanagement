@@ -1700,7 +1700,7 @@ app.put('/api/tickets/:id/admin-reject', authenticateToken, requireRole(['admin'
     try {
         const result = await pool.query(`
             UPDATE tickets
-            SET status = 'rejected',
+            SET status = 'closed',
                 approval_comment = $1,
                 reassignment_comment = $1,
                 updated_at = CURRENT_TIMESTAMP

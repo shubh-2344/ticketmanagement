@@ -33,13 +33,23 @@ import {
 } from './components/Icons';
 
 function App() {
-  const [view, setView] = useState('dashboard');
+  const [view, setViewState] = useState(() => {
+    return localStorage.getItem('ticketmanagement_active_view') || 'dashboard';
+  });
+
+  const setView = (newView) => {
+    setViewState(newView);
+    localStorage.setItem('ticketmanagement_active_view', newView);
+  };
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [authLoading, setAuthLoading] = useState(!!localStorage.getItem('token'));
   const [tickets, setTickets] = useState([]);
   const [globalSettings, setGlobalSettings] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedTicketId, setSelectedTicketId] = useState(() => {
+    return localStorage.getItem('ticketmanagement_selected_ticket_id') || null;
+  });
   const [selectedDeviceForRequest, setSelectedDeviceForRequest] = useState(null);
   const [ticketViewMode, setTicketViewMode] = useState('grid');
   const [loading, setLoading] = useState(false);
@@ -144,6 +154,15 @@ function App() {
       fetchTickets(false);
     }
   }, [currentUser, token]);
+
+  useEffect(() => {
+    if (tickets.length > 0 && selectedTicketId && !selectedTicket) {
+      const found = tickets.find(t => String(t.id) === String(selectedTicketId));
+      if (found) {
+        setSelectedTicket(found);
+      }
+    }
+  }, [tickets, selectedTicketId, selectedTicket]);
 
   const fetchCurrentUser = async () => {
     setAuthLoading(true);
@@ -329,11 +348,17 @@ function App() {
 
   const handleViewTicket = (ticket) => {
     setSelectedTicket(ticket);
+    if (ticket && ticket.id) {
+      setSelectedTicketId(ticket.id);
+      localStorage.setItem('ticketmanagement_selected_ticket_id', String(ticket.id));
+    }
     setView('detail');
   };
 
   const handleViewTicketById = (ticketId) => {
-    const foundTicket = tickets.find(t => t.id === ticketId);
+    setSelectedTicketId(ticketId);
+    localStorage.setItem('ticketmanagement_selected_ticket_id', String(ticketId));
+    const foundTicket = tickets.find(t => String(t.id) === String(ticketId));
     if (foundTicket) {
       setSelectedTicket(foundTicket);
       setView('detail');

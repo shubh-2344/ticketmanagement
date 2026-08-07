@@ -24,11 +24,11 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
   const [sortField, setSortField] = useState('id');
   const [sortDir, setSortDir] = useState('desc');
 
-  // Filter ONLY closed / resolved tickets
+  // Filter ONLY closed / resolved / rejected tickets
   const closedTickets = useMemo(() => {
     let filtered = tickets.filter((t) => {
       const statusLower = (t.status || '').toLowerCase();
-      if (statusLower !== 'closed' && statusLower !== 'resolved') return false;
+      if (statusLower !== 'closed' && statusLower !== 'resolved' && statusLower !== 'rejected') return false;
 
       if (searchTerm.trim()) {
         const query = searchTerm.toLowerCase();
@@ -322,9 +322,15 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
                         </span>
                       </td>
                       <td>
-                        <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>
-                          {statusText}
-                        </span>
+                        {t.status === 'rejected' || (t.approval_comment && t.approval_comment.toLowerCase().includes('reject')) ? (
+                          <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '12px' }}>
+                            Rejected
+                          </span>
+                        ) : (
+                          <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '12px' }}>
+                            Closed / Resolved
+                          </span>
+                        )}
                       </td>
                       <td className="col-date" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                         {formatDate(t.created_at)}
