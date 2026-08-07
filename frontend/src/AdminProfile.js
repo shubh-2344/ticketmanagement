@@ -631,7 +631,6 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
               <select
                 value={brandingData.global_theme}
                 onChange={(e) => setBrandingData({ ...brandingData, global_theme: e.target.value })}
-                style={{ padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', width: '100%', borderRadius: '8px' }}
               >
                 <option value="">Enterprise Dark (Default)</option>
                 <option value="theme-enterprise-light">Enterprise Light (White Theme)</option>
@@ -661,7 +660,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                     value={brandingData.branding_primary_color}
                     onChange={(e) => setBrandingData({ ...brandingData, branding_primary_color: e.target.value })}
                     placeholder="#4f46e5"
-                    style={{ flex: '1', padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px' }}
+                    style={{ flex: '1' }}
                   />
                 </div>
               </div>
@@ -680,7 +679,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                     value={brandingData.branding_secondary_color}
                     onChange={(e) => setBrandingData({ ...brandingData, branding_secondary_color: e.target.value })}
                     placeholder="#06b6d4"
-                    style={{ flex: '1', padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px' }}
+                    style={{ flex: '1' }}
                   />
                 </div>
               </div>
@@ -693,7 +692,6 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                 value={brandingData.branding_logo_url}
                 onChange={(e) => setBrandingData({ ...brandingData, branding_logo_url: e.target.value })}
                 placeholder="e.g. https://company.com/logo.png"
-                style={{ padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px', width: '100%' }}
               />
             </div>
 
@@ -704,7 +702,6 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                 value={brandingData.branding_favicon_url}
                 onChange={(e) => setBrandingData({ ...brandingData, branding_favicon_url: e.target.value })}
                 placeholder="e.g. https://company.com/favicon.ico"
-                style={{ padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px', width: '100%' }}
               />
             </div>
 
@@ -715,7 +712,6 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                 value={brandingData.branding_login_background_url}
                 onChange={(e) => setBrandingData({ ...brandingData, branding_login_background_url: e.target.value })}
                 placeholder="e.g. https://images.unsplash.com/photo-xyz"
-                style={{ padding: '10px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: '8px', width: '100%' }}
               />
             </div>
 

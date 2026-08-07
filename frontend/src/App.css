@@ -716,6 +716,9 @@ body {
   --bg-sidebar: #ffffff;
   --bg-card: #ffffff;
   --border-card: 1px solid #e2e8f0;
+  --bg-input: #ffffff;
+  --border-input: 1px solid #cbd5e1;
+  --text-input: #0f172a;
   --text-main: #0f172a;
   --text-muted: #64748b;
   --accent: #2563eb;
@@ -1277,4 +1280,127 @@ td:first-child,
   .main-content {
     padding: 20px;
   }
+}
+
+/* --- UNIVERSAL FORM DESIGN SYSTEM (Standardized Inputs, Dropdowns, Labels & Radios) --- */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="date"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: var(--bg-input, #ffffff) !important;
+  color: var(--text-main, #0f172a) !important;
+  border: var(--border-input, 1px solid #cbd5e1) !important;
+  border-radius: 10px !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+}
+
+/* Light Theme Input Overrides */
+.theme-enterprise-light input[type="text"],
+.theme-enterprise-light input[type="email"],
+.theme-enterprise-light input[type="password"],
+.theme-enterprise-light input[type="url"],
+.theme-enterprise-light input[type="date"],
+.theme-enterprise-light input[type="number"],
+.theme-enterprise-light input[type="search"],
+.theme-enterprise-light select,
+.theme-enterprise-light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* Focus States */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="url"]:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent, #2563eb) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Dropdown Option Items */
+select option {
+  background-color: var(--bg-card, #ffffff) !important;
+  color: var(--text-main, #0f172a) !important;
+  padding: 8px 12px !important;
+}
+
+.theme-enterprise-light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Consistent Form Labels */
+label,
+.form-group label {
+  display: block;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--text-main, #0f172a) !important;
+  margin-bottom: 6px !important;
+}
+
+/* Field Hints */
+.field-hint {
+  display: block;
+  font-size: 12px !important;
+  color: var(--text-muted, #64748b) !important;
+  margin-top: 4px !important;
+}
+
+/* Uniform Radio Buttons & Group Pills */
+.radio-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px !important;
+  background: var(--bg-card, #ffffff);
+  border: var(--border-input, 1px solid #cbd5e1) !important;
+  color: var(--text-main, #0f172a);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-enterprise-light .radio-label {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.radio-label:hover {
+  border-color: var(--accent, #2563eb) !important;
+}
+
+.radio-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent, #2563eb);
+  cursor: pointer;
 }

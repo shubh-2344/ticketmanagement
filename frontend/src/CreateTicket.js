@@ -327,7 +327,6 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
                 <select
                   id="assigned_asset_select"
                   onChange={handleAssignedAssetSelect}
-                  style={{ background: 'rgba(15, 23, 42, 0.6)', color: 'var(--text-main)', border: 'var(--border-card)', padding: '10px', borderRadius: '8px', width: '100%' }}
                 >
                   <option value="">-- Choose from your allocated devices --</option>
                   {assignedAssets.map((asset) => (
@@ -376,7 +375,6 @@ function CreateTicket({ onSubmit, API_URL, initialDevice }) {
                 value={formData.return_reason}
                 onChange={handleChange}
                 required
-                style={{ background: 'rgba(15, 23, 42, 0.6)', color: 'var(--text-main)', border: 'var(--border-card)', padding: '10px', borderRadius: '8px', width: '100%' }}
               >
                 <option value="Hardware Upgrade">Hardware Upgrade</option>
                 <option value="Faulty / Damaged Hardware">Faulty / Damaged Hardware</option>
