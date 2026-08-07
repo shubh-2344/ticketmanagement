@@ -101,7 +101,11 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                       </div>
                     </td>
                     <td>{t.requester_name}</td>
-                    <td className="col-manager">{(t.type === 'issue' || t.type === 'device-return') ? 'N/A - Direct Admin' : (t.manager_name || 'Manager')}</td>
+                    <td className="col-manager">
+                      <div style={{ fontWeight: '600', color: t.assigned_admin_name ? '#38bdf8' : 'var(--text-main)' }}>
+                        {t.assigned_admin_name || t.assigned_engineer || (t.status === 'pending_manager_approval' ? (t.manager_name || 'Manager') : 'IT Admin Desk')}
+                      </div>
+                    </td>
                     <td><span className={`priority-text ${t.priority}`}>{t.priority.toUpperCase()}</span></td>
                     <td>
                       <span className="status-pill-table" style={{ background: statusInfo.bg, border: statusInfo.border, color: statusInfo.color }}>
@@ -186,14 +190,22 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
 
                 <div className="ticket-meta">
                   <div className="meta-item">
-                    <span className="label">{ticket.type === 'issue' ? 'Workflow:' : 'Assigned Manager:'}</span>
-                    <span className="value">{ticket.type === 'issue' ? 'Direct Admin Approval' : (ticket.manager_name || 'Manager')}</span>
+                    <span className="label">Currently With:</span>
+                    <span className="value" style={{ fontWeight: '700', color: ticket.assigned_admin_name ? '#38bdf8' : '#a855f7' }}>
+                      {ticket.assigned_admin_name || ticket.assigned_engineer || (ticket.status === 'pending_manager_approval' ? (ticket.manager_name || 'Manager') : 'IT Admin Desk')}
+                    </span>
                   </div>
                   <div className="meta-item">
                     <span className="label">Priority:</span>
                     <span className="value uppercase">{ticket.priority}</span>
                   </div>
                 </div>
+
+                {ticket.reassignment_comment && (
+                  <div style={{ fontSize: '11.5px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.2)', margin: '8px 0' }}>
+                    💬 Reassignment Note: {ticket.reassignment_comment}
+                  </div>
+                )}
 
                 {ticket.assigned_device_name && (
                   <div className="device-assigned-preview">

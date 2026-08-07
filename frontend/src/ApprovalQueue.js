@@ -8,16 +8,55 @@ import './ApprovalQueue.css';
 function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL, viewMode = 'grid', onViewModeChange }) {
   const [activeTab, setActiveTab] = useState(currentUser.role === 'admin' ? 'issue_queue' : 'manager_queue');
   const [inventoryList, setInventoryList] = useState([]);
+  const [adminList, setAdminList] = useState([]);
   const [reviewComment, setReviewComment] = useState({});
   const [adminAssignment, setAdminAssignment] = useState({});
+  const [transferTicket, setTransferTicket] = useState(null);
+  const [selectedAdminName, setSelectedAdminName] = useState('');
+  const [transferComment, setTransferComment] = useState('');
 
   useEffect(() => {
     if (API_URL) {
       axios.get(`${API_URL}/inventory`)
         .then(res => setInventoryList(res.data.filter(i => i.quantity > 0)))
         .catch(err => console.error('Error fetching inventory for assignment:', err));
+
+      axios.get(`${API_URL}/users`)
+        .then(res => {
+          const admins = res.data.filter(u => u.role === 'admin' || u.role === 'manager');
+          setAdminList(admins);
+          if (admins.length > 0) setSelectedAdminName(admins[0].name);
+        })
+        .catch(err => console.error('Error fetching admin list:', err));
     }
   }, [API_URL]);
+
+  const handleTransferSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedAdminName) {
+      alert('Please select an Admin/Engineer to transfer this ticket to.');
+      return;
+    }
+    if (!transferComment.trim()) {
+      alert('Please enter comments/reasons for transferring this ticket.');
+      return;
+    }
+    try {
+      const selected = adminList.find(a => a.name === selectedAdminName);
+      await axios.put(`${API_URL}/tickets/${transferTicket.id}/reassign-admin`, {
+        target_admin_id: selected?.id || null,
+        target_admin_name: selectedAdminName,
+        comment: transferComment
+      });
+      alert(`Ticket successfully transferred to ${selectedAdminName}!`);
+      setTransferTicket(null);
+      setTransferComment('');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Error transferring ticket:', err);
+      alert(err.response?.data?.error || 'Transfer failed.');
+    }
+  };
 
   // Queue Partitioning by Ticket Type
   const managerQueue = tickets.filter(
@@ -177,7 +216,16 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                     <span className={`priority-badge ${ticket.priority}`}>{ticket.priority.toUpperCase()}</span>
                   </div>
 
+                  <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    Currently With: <strong style={{ color: ticket.assigned_admin_name ? '#38bdf8' : '#c084fc' }}>{ticket.assigned_admin_name || ticket.manager_name || 'Assigned Manager'}</strong>
+                  </div>
+
                   <p className="ticket-desc">{ticket.description}</p>
+                  {ticket.reassignment_comment && (
+                    <div style={{ fontSize: '12px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '6px 10px', borderRadius: '6px', marginBottom: '10px' }}>
+                      💬 Transfer Comment: {ticket.reassignment_comment}
+                    </div>
+                  )}
 
                   <div className="card-meta-grid">
                     <div><span className="label">Requester:</span> <strong>{ticket.requester_name}</strong></div>
@@ -194,20 +242,30 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
                       onChange={(e) => setReviewComment({ ...reviewComment, [ticket.id]: e.target.value })}
                     />
                     <div className="action-buttons-flex">
+                      <div className="action-row">
                       <button
-                        type="button"
-                        className="btn-approve-sm"
+                        className="btn-approve"
                         onClick={() => handleManagerReview(ticket.id, 'approve')}
                       >
                         <CheckIcon size={14} /> Approve Request
                       </button>
+
                       <button
-                        type="button"
-                        className="btn-deny-sm"
+                        className="btn-deny"
                         onClick={() => handleManagerReview(ticket.id, 'reject')}
                       >
                         <XIcon size={14} /> Deny Request
                       </button>
+
+                      {currentUser.role === 'admin' && (
+                        <button
+                          className="btn-deny"
+                          style={{ background: 'rgba(56, 189, 248, 0.15)', borderColor: 'rgba(56, 189, 248, 0.3)', color: '#38bdf8' }}
+                          onClick={() => { setTransferTicket(ticket); if (adminList.length > 0) setSelectedAdminName(adminList[0].name); }}
+                        >
+                          <ArrowRightIcon size={14} /> Transfer to Admin
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -399,6 +457,55 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
               })}
             </div>
           )}
+        </div>
+      )}
+      {/* Transfer / Re-assign Admin Modal */}
+      {transferTicket && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '480px' }}>
+            <div className="modal-header">
+              <h3>Transfer Ticket #{transferTicket.id}</h3>
+              <button className="modal-close" onClick={() => setTransferTicket(null)}>
+                <XIcon size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleTransferSubmit} className="modal-form">
+              <div className="form-group">
+                <label>Select Target Admin / Engineer *</label>
+                <select
+                  value={selectedAdminName}
+                  onChange={(e) => setSelectedAdminName(e.target.value)}
+                  required
+                >
+                  {adminList.map(adm => (
+                    <option key={adm.id} value={adm.name}>
+                      {adm.name} ({adm.role.toUpperCase()} - {adm.department || 'IT'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Comments / Transfer Reason *</label>
+                <textarea
+                  rows="3"
+                  value={transferComment}
+                  onChange={(e) => setTransferComment(e.target.value)}
+                  placeholder="Provide details for transferring this ticket to another admin..."
+                  required
+                ></textarea>
+              </div>
+
+              <div className="modal-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button type="button" className="btn-cancel" onClick={() => setTransferTicket(null)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-save" style={{ background: '#38bdf8', color: '#0f172a' }}>
+                  Transfer Ticket
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

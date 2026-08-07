@@ -14,6 +14,50 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [adminList, setAdminList] = useState([]);
+  const [transferTicket, setTransferTicket] = useState(null);
+  const [selectedAdminName, setSelectedAdminName] = useState('');
+  const [transferComment, setTransferComment] = useState('');
+
+  React.useEffect(() => {
+    if (API_URL) {
+      axios.get(`${API_URL}/users`)
+        .then(res => {
+          const admins = res.data.filter(u => u.role === 'admin' || u.role === 'manager');
+          setAdminList(admins);
+          if (admins.length > 0) setSelectedAdminName(admins[0].name);
+        })
+        .catch(err => console.error('Error fetching admins:', err));
+    }
+  }, [API_URL]);
+
+  const handleTransferSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedAdminName) {
+      alert('Please select an Admin/Engineer to transfer this ticket to.');
+      return;
+    }
+    if (!transferComment.trim()) {
+      alert('Please enter comments/reasons for transferring this ticket.');
+      return;
+    }
+    try {
+      const selected = adminList.find(a => a.name === selectedAdminName);
+      await axios.put(`${API_URL}/tickets/${transferTicket.id}/reassign-admin`, {
+        target_admin_id: selected?.id || null,
+        target_admin_name: selectedAdminName,
+        comment: transferComment
+      });
+      alert(`Incident successfully transferred to ${selectedAdminName}!`);
+      setTransferTicket(null);
+      setTransferComment('');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Error transferring incident:', err);
+      alert(err.response?.data?.error || 'Transfer failed.');
+    }
+  };
+
   // Table sorting state
   const [sortField, setSortField] = useState('id');
   const [sortDir, setSortDir] = useState('desc');
@@ -299,6 +343,9 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
                   <th onClick={() => handleSort('status')} style={{ padding: '14px 12px', cursor: 'pointer', userSelect: 'none', width: '16%' }}>
                     Status {sortField === 'status' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                   </th>
+                  <th style={{ padding: '14px 12px', width: '18%' }}>
+                    Currently With
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -339,6 +386,10 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
                           {statusText}
                         </span>
                       </td>
+                      <td style={{ fontSize: '12px', fontWeight: '600', color: t.assigned_admin_name ? '#38bdf8' : 'var(--text-main)' }}>
+                        {t.assigned_admin_name || t.assigned_engineer || 'IT Admin Desk'}
+                        {t.reassignment_comment && <div style={{ fontSize: '10.5px', color: '#38bdf8', marginTop: '2px' }}>💬 {t.reassignment_comment}</div>}
+                      </td>
                       <td style={{ padding: '10px 8px', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: '6px' }}>
                           <button
@@ -348,12 +399,20 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
                             View
                           </button>
                           {currentUser.role === 'admin' && (
-                            <button
-                              onClick={() => handleOpenResolveModal(t)}
-                              style={{ padding: '5px 10px', borderRadius: '6px', background: '#10b981', border: 'none', color: '#ffffff', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer' }}
-                            >
-                              Resolve
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleOpenResolveModal(t)}
+                                style={{ padding: '5px 10px', borderRadius: '6px', background: '#10b981', border: 'none', color: '#ffffff', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer' }}
+                              >
+                                Resolve
+                              </button>
+                              <button
+                                onClick={() => { setTransferTicket(t); if (adminList.length > 0) setSelectedAdminName(adminList[0].name); }}
+                                style={{ padding: '5px 10px', borderRadius: '6px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38bdf8', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer' }}
+                              >
+                                Transfer
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -498,6 +557,55 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
                   style={{ flex: 1, padding: '10px', background: '#10b981', border: 'none', color: '#ffffff', borderRadius: '6px', fontWeight: '700', cursor: 'pointer', fontSize: '12px' }}
                 >
                   {isSubmitting ? 'Resolving...' : 'Resolve Ticket'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Transfer / Reassign Admin Modal */}
+      {transferTicket && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '480px', color: 'var(--text-main)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px' }}>Transfer Incident #{transferTicket.id}</h3>
+              <button onClick={() => setTransferTicket(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '18px' }}>×</button>
+            </div>
+            <form onSubmit={handleTransferSubmit}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '600' }}>Select Target Admin / Engineer *</label>
+                <select
+                  value={selectedAdminName}
+                  onChange={(e) => setSelectedAdminName(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', outline: 'none' }}
+                  required
+                >
+                  {adminList.map(adm => (
+                    <option key={adm.id} value={adm.name}>
+                      {adm.name} ({adm.role.toUpperCase()} - {adm.department || 'IT'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '600' }}>Comments / Transfer Reason *</label>
+                <textarea
+                  rows="3"
+                  value={transferComment}
+                  onChange={(e) => setTransferComment(e.target.value)}
+                  placeholder="Reason for transferring this incident to another admin..."
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', outline: 'none', resize: 'vertical' }}
+                  required
+                ></textarea>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setTransferTicket(null)} style={{ padding: '8px 16px', borderRadius: '6px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button type="submit" style={{ padding: '8px 16px', borderRadius: '6px', background: '#38bdf8', border: 'none', color: '#0f172a', fontWeight: '700', cursor: 'pointer' }}>
+                  Transfer Incident
                 </button>
               </div>
             </form>

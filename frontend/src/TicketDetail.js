@@ -432,6 +432,26 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         </span>
       </div>
 
+      {/* Current Ticket Handler / Owner Ownership Banner */}
+      <div style={{ background: 'var(--bg-body)', border: 'var(--border-card)', borderRadius: '10px', padding: '12px 16px', marginTop: '14px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(56, 189, 248, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+            <UserIcon size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.4px' }}>CURRENTLY ASSIGNED TO</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: ticket.assigned_admin_name ? '#38bdf8' : 'var(--text-main)' }}>
+              {ticket.assigned_admin_name || ticket.assigned_engineer || (ticket.status === 'pending_manager_approval' ? (ticket.manager_name || 'Assigned Manager') : 'IT Admin Desk')}
+            </div>
+          </div>
+        </div>
+        {ticket.reassignment_comment && (
+          <div style={{ fontSize: '12px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.2)', maxWidth: '400px' }}>
+            💬 <strong>Reassignment Reason:</strong> {ticket.reassignment_comment}
+          </div>
+        )}
+      </div>
+
       {/* Linked Parent / Allocation Ticket Relationship Banner */}
       {ticket.parent_ticket_id && (
         <div style={{ background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: '8px', padding: '12px 16px', marginTop: '12px', marginBottom: '16px', color: '#38bdf8', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>

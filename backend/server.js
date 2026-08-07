@@ -172,6 +172,9 @@ async function initializeDB() {
         await pool.query(`ALTER TABLE tickets ALTER COLUMN type TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN category TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS image_url TEXT;`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_admin_id VARCHAR(50);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS assigned_admin_name VARCHAR(100);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS reassignment_comment TEXT;`);
 
         // Default Seed Users
         const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
@@ -1643,6 +1646,45 @@ app.delete('/api/inventory/:id', authenticateToken, requireRole(['admin']), asyn
     } catch (err) {
         console.error('Delete inventory error:', err);
         res.status(500).json({ error: err.message || 'Failed to delete inventory item' });
+    }
+});
+
+// Transfer / Reassign Ticket to another Admin or Engineer
+app.put('/api/tickets/:id/reassign-admin', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
+    const { id } = req.params;
+    const { target_admin_id, target_admin_name, comment } = req.body;
+
+    if (!target_admin_name || !target_admin_name.trim()) {
+        return res.status(400).json({ error: 'Target Admin / Engineer name is required' });
+    }
+
+    if (!comment || !comment.trim()) {
+        return res.status(400).json({ error: 'Comments/reasons for transferring ticket are required' });
+    }
+
+    try {
+        const result = await pool.query(`
+            UPDATE tickets
+            SET assigned_admin_id = $1,
+                assigned_admin_name = $2,
+                assigned_engineer = $2,
+                reassignment_comment = $3,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $4
+            RETURNING *
+        `, [target_admin_id || null, target_admin_name.trim(), comment.trim(), id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        res.json({
+            message: `Ticket successfully transferred to ${target_admin_name.trim()}`,
+            ticket: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Reassign ticket error:', err);
+        res.status(500).json({ error: err.message || 'Failed to reassign ticket' });
     }
 });
 
