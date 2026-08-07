@@ -1,5 +1,7 @@
 .create-ticket {
-  max-width: 680px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .create-ticket h2 {
