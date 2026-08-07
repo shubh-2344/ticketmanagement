@@ -183,7 +183,8 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
         /* DEFAULT GRID CARDS VIEW LAYOUT */
         <div className="tickets-grid">
           {tickets.map((ticket) => {
-            const statusInfo = getStatusBadge(ticket.status, ticket.type);
+            const isRejected = ticket.is_rejected || ticket.status === 'rejected' || (ticket.approval_comment && ticket.approval_comment.toLowerCase().includes('reject')) || (ticket.reassignment_comment && ticket.reassignment_comment.toLowerCase().includes('wrong'));
+            const statusInfo = getStatusBadge(ticket.status, ticket.type, isRejected);
 
             return (
               <div
@@ -206,16 +207,30 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                       {getCategoryIcon(ticket.category)}
                       {ticket.type === 'device-request' ? 'Device' : 'Issue'}
                     </span>
-                    <span
-                      className="badge status-pill"
-                      style={{
-                        background: statusInfo.bg,
-                        border: statusInfo.border,
-                        color: statusInfo.color
-                      }}
-                    >
-                      {statusInfo.text}
-                    </span>
+                    {isRejected ? (
+                      <span
+                        className="badge status-pill"
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.2)',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          color: '#fca5a5',
+                          fontWeight: '800'
+                        }}
+                      >
+                        REJECTED
+                      </span>
+                    ) : (
+                      <span
+                        className="badge status-pill"
+                        style={{
+                          background: statusInfo.bg,
+                          border: statusInfo.border,
+                          color: statusInfo.color
+                        }}
+                      >
+                        {statusInfo.text}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -237,10 +252,16 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                   </div>
                 </div>
 
-                {ticket.reassignment_comment && (
-                  <div style={{ fontSize: '11.5px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.2)', margin: '8px 0' }}>
-                    💬 Reassignment Note: {ticket.reassignment_comment}
+                {isRejected ? (
+                  <div style={{ fontSize: '11.5px', color: '#fca5a5', background: 'rgba(239, 68, 68, 0.1)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)', margin: '8px 0' }}>
+                    🚫 <strong>Rejection Comment:</strong> {ticket.rejection_comment || ticket.approval_comment || ticket.reassignment_comment || 'Request denied by Admin'}
                   </div>
+                ) : (
+                  ticket.reassignment_comment && (
+                    <div style={{ fontSize: '11.5px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.2)', margin: '8px 0' }}>
+                      💬 Reassignment Note: {ticket.reassignment_comment}
+                    </div>
+                  )
                 )}
 
                 {ticket.assigned_device_name && (
