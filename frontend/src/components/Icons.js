@@ -362,3 +362,51 @@ export const LinkIcon = (props) => (
     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
   </SvgIcon>
 );
+
+export const MonitorIcon = (props) => (
+  <SvgIcon {...props}>
+    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+    <line x1="8" y1="21" x2="16" y2="21" />
+    <line x1="12" y1="17" x2="12" y2="21" />
+  </SvgIcon>
+);
+
+export const HeadphonesIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+  </SvgIcon>
+);
+
+export const PhoneIcon = (props) => (
+  <SvgIcon {...props}>
+    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+    <line x1="12" y1="18" x2="12.01" y2="18" />
+  </SvgIcon>
+);
+
+export const CategoryDeviceIcon = ({ category, size = 18, color, style = {} }) => {
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('laptop') || cat.includes('notebook')) {
+    return <DevicesIcon size={size} style={{ color: color || '#38bdf8', ...style }} />;
+  }
+  if (cat.includes('desktop') || cat.includes('pc') || cat.includes('workstation')) {
+    return <HardwareIcon size={size} style={{ color: color || '#818cf8', ...style }} />;
+  }
+  if (cat.includes('monitor') || cat.includes('screen') || cat.includes('display')) {
+    return <MonitorIcon size={size} style={{ color: color || '#c084fc', ...style }} />;
+  }
+  if (cat.includes('keyboard') || cat.includes('mouse') || cat.includes('input')) {
+    return <HardwareIcon size={size} style={{ color: color || '#f472b6', ...style }} />;
+  }
+  if (cat.includes('headphone') || cat.includes('audio') || cat.includes('headset')) {
+    return <HeadphonesIcon size={size} style={{ color: color || '#fb7185', ...style }} />;
+  }
+  if (cat.includes('phone') || cat.includes('mobile') || cat.includes('cellular')) {
+    return <PhoneIcon size={size} style={{ color: color || '#4ade80', ...style }} />;
+  }
+  if (cat.includes('network') || cat.includes('wifi') || cat.includes('router')) {
+    return <NetworkIcon size={size} style={{ color: color || '#fbbf24', ...style }} />;
+  }
+  return <InventoryIcon size={size} style={{ color: color || '#94a3b8', ...style }} />;
+};
