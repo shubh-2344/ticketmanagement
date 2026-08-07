@@ -1,8 +1,6 @@
 .ticket-detail {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  box-sizing: border-box;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 .top-nav-bar {
