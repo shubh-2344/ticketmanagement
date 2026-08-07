@@ -169,11 +169,11 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       const overdueMs = now - target;
       const hours = Math.floor(overdueMs / (1000 * 60 * 60));
       const mins = Math.floor((overdueMs % (1000 * 60 * 60)) / (1000 * 60));
-      timeText = `🚨 OVERDUE BY: ${hours}h ${mins}m`;
+      timeText = `OVERDUE BY: ${hours}h ${mins}m`;
     } else {
       const hours = Math.floor(timeDiff / (1000 * 60 * 60));
       const mins = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-      timeText = `⏳ Time Remaining: ${hours}h ${mins}m`;
+      timeText = `Time Remaining: ${hours}h ${mins}m`;
     }
 
     let progressColor = '#10b981'; 
@@ -454,7 +454,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               <div className="detail-item">
                 <span className="label">Type:</span>
                 <span className="value">
-                  {ticket.type === 'device-request' ? '🖥️ Device Request' : '🔧 Issue Report'}
+                  {ticket.type === 'device-request' ? 'Device Request' : 'Issue Report'}
                 </span>
               </div>
               <div className="detail-item">
@@ -542,7 +542,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                   className="btn-toggle-device-edit"
                   onClick={() => setShowDeviceAssignForm(!showDeviceAssignForm)}
                 >
-                  {showDeviceAssignForm ? '✖ Cancel Form' : (ticket.assigned_device_name ? '✏️ Modify Resolution' : '🚀 Resolve Issue Now')}
+                  {showDeviceAssignForm ? 'Cancel Form' : (ticket.assigned_device_name ? 'Modify Resolution' : 'Resolve Issue Now')}
                 </button>
               )}
             </div>
@@ -597,7 +597,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 </div>
 
                 <button type="submit" className="btn-submit-fulfillment">
-                  {ticket.type === 'issue' ? '🚀 Save Resolution & Complete Stage 2' : '🚀 Save Device Assignment & Complete Stage 3'}
+                  {ticket.type === 'issue' ? 'Save Resolution & Complete Stage 2' : 'Save Device Assignment & Complete Stage 3'}
                 </button>
               </form>
             )}

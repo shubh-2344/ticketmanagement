@@ -69,7 +69,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
       const absDiff = Math.abs(diff);
       const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
       return { 
-        text: `⚠️ OVERDUE BY ${days} DAYS`, 
+        text: `OVERDUE BY ${days} DAYS`, 
         class: 'overdue-pulse',
         style: { color: '#ef4444', fontWeight: '800', textShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }
       };
@@ -141,7 +141,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
           onClick={() => fetchData()}
           style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
         >
-          🔄 Refresh Fleet Tracking
+          Refresh Fleet Tracking
         </button>
       </div>
 

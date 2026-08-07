@@ -192,7 +192,7 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
             }}
             style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
           >
-            🔄 Refresh Incidents
+            Refresh Incidents
           </button>
         </div>
       </div>

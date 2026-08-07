@@ -404,9 +404,6 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
         {showOtpScreen ? (
           <div className="otp-verification-section">
             <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <div style={{ fontSize: '38px', marginBottom: '6px' }}>
-                {isVerifiedSuccess ? '🎉' : '🔐'}
-              </div>
               <h3 style={{ color: 'var(--accent, #38bdf8)', margin: '0 0 6px 0', fontSize: '18px', fontWeight: '800' }}>
                 Email OTP Verification
               </h3>

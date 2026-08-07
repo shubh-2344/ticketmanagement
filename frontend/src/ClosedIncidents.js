@@ -161,7 +161,7 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
               onClick={onRefresh}
               style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
             >
-              🔄 Refresh
+              Refresh
             </button>
           )}
         </div>

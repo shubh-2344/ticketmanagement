@@ -45,7 +45,7 @@ function otpTemplate({ name, otp }) {
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
-          <h2 style="color: #38bdf8; margin: 0; font-size: 22px;">🔑 Verify Your Email Address</h2>
+          <h2 style="color: #38bdf8; margin: 0; font-size: 22px;">Verify Your Email Address</h2>
           <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">DevSecOps Ticket Management Portal</p>
         </div>
         <p style="font-size: 15px; color: #e2e8f0;">Hello <strong>${name}</strong>,</p>
@@ -60,7 +60,7 @@ function otpTemplate({ name, otp }) {
         </div>
 
         <p style="font-size: 13px; color: #f59e0b; background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; padding: 10px 14px; border-radius: 4px;">
-          ⏱️ This OTP code is valid for <strong>15 minutes</strong>. If you did not request this account, please ignore this email.
+          This OTP code is valid for <strong>15 minutes</strong>. If you did not request this account, please ignore this email.
         </p>
 
         <div style="${footerStyle}">
@@ -211,7 +211,7 @@ function ticketAssignedTemplate({ engineerName, ticket }) {
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
-          <h2 style="color: #c084fc; margin: 0;">🚀 Device Assigned / Ticket Scheduled</h2>
+          <h2 style="color: #c084fc; margin: 0;">Device Assigned / Ticket Scheduled</h2>
           <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Fulfillment Notification</p>
         </div>
         <p style="font-size: 15px; color: #e2e8f0;">Hello <strong>${engineerName || ticket.requester_name}</strong>,</p>
@@ -248,7 +248,7 @@ function ticketResolvedTemplate({ userName, ticket }) {
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
-          <h2 style="color: #10b981; margin: 0;">✨ Ticket Resolved</h2>
+          <h2 style="color: #10b981; margin: 0;">Ticket Resolved</h2>
           <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Issue Resolution Update</p>
         </div>
         <p style="font-size: 15px; color: #e2e8f0;">Hello <strong>${userName || 'User'}</strong>,</p>
@@ -270,7 +270,7 @@ function ticketClosedTemplate({ userName, ticket }) {
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
-          <h2 style="color: #94a3b8; margin: 0;">🔒 Ticket Closed</h2>
+          <h2 style="color: #94a3b8; margin: 0;">Ticket Closed</h2>
           <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Case Confirmation</p>
         </div>
         <p style="font-size: 15px; color: #e2e8f0;">Hello <strong>${userName || 'User'}</strong>,</p>
@@ -291,7 +291,7 @@ function ticketClosedTemplate({ userName, ticket }) {
 function slaWarningTemplate({ recipientName, ticket, isBreached, timeRemainingStr }) {
     const isBreach = !!isBreached;
     const accentColor = isBreach ? '#ef4444' : '#f59e0b';
-    const headerTitle = isBreach ? '🚨 CRITICAL SLA BREACH ALERT' : '⚠️ URGENT SLA EXPIRING WARNING';
+    const headerTitle = isBreach ? 'CRITICAL SLA BREACH ALERT' : 'URGENT SLA EXPIRING WARNING';
     const subTitle = isBreach ? 'Resolution SLA Breached' : 'Resolution Target Expiring Soon';
 
     return `

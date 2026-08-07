@@ -307,7 +307,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     }
 
     const confirmed = await window.showConfirm({
-      title: '⚡ Escalate Ticket',
+      title: 'Escalate Ticket',
       message: `Are you sure you want to escalate "${ticket.title}" to ${nextLevel} level (${nextEngineer})?`,
       confirmText: `Escalate to ${nextLevel}`,
       cancelText: 'Cancel',
@@ -332,7 +332,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
 
   const handleVerifyReturn = async (ticketId) => {
     const confirmed = await window.showConfirm({
-      title: '📦 Verify Device Return',
+      title: 'Verify Device Return',
       message: `Are you sure you want to verify physical device return for ticket #${formatTicketId(ticketId, 'device-request')}? Inventory count will be restocked.`,
       confirmText: 'Verify Return',
       cancelText: 'Cancel',
@@ -364,7 +364,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       const diff = exp - now;
       if (diff < 0) {
         const overdueDays = Math.floor(Math.abs(diff) / (1000 * 3600 * 24));
-        return { text: `⚠️ OVERDUE BY ${overdueDays || 1} DAYS`, bg: 'rgba(239, 68, 68, 0.18)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' };
+        return { text: `OVERDUE BY ${overdueDays || 1} DAYS`, bg: 'rgba(239, 68, 68, 0.18)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' };
       } else {
         const days = Math.floor(diff / (1000 * 3600 * 24));
         return { text: `Due in ${days} days`, bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' };
@@ -441,7 +441,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                       color: isBreached ? '#ef4444' : '#f59e0b',
                       border: `1px solid ${isBreached ? 'rgba(239, 68, 68, 0.5)' : 'rgba(245, 158, 11, 0.5)'}`
                     }}>
-                      {isBreached ? '🚨 CRITICAL BREACH' : '⚠️ EXPIRING SOON'}
+                      {isBreached ? 'CRITICAL BREACH' : 'EXPIRING SOON'}
                     </span>
                     <strong style={{ fontFamily: 'monospace', fontSize: '12px' }}>{formatTicketId(ticket.id, ticket.type)}</strong>
                     <span style={{ fontWeight: '700' }}>"{ticket.title}"</span>

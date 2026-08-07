@@ -288,7 +288,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
           {currentUser.name.charAt(0)}
         </div>
         <div>
-          <h2>⚙️ Admin Profile & System Settings</h2>
+          <h2>Admin Profile & System Settings</h2>
           <p>{currentUser.name} ({currentUser.email}) • <span className="role-tag-admin">SYSTEM ADMINISTRATOR</span></p>
         </div>
       </div>
@@ -334,7 +334,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
 
           {passwordMsg.text && (
             <div className={`status-msg-banner ${passwordMsg.isError ? 'error' : 'success'}`}>
-              {passwordMsg.isError ? '⚠️ ' : '✅ '}{passwordMsg.text}
+              {passwordMsg.text}
             </div>
           )}
 
@@ -370,7 +370,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
             </div>
 
             <button type="submit" className="btn-submit-admin">
-              🔒 Update Password
+              Update Password
             </button>
           </form>
         </div>
@@ -379,12 +379,12 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
       {/* TAB 2: CREATE USER / ADMIN */}
       {activeTab === 'create-user' && (
         <div className="prof-card">
-          <h3>➕ Create New User / Manager / Admin Account</h3>
+          <h3>Create New User / Manager / Admin Account</h3>
           <p className="card-subtext">Register a new system user with any assigned privilege level.</p>
 
           {createUserMsg.text && (
             <div className={`status-msg-banner ${createUserMsg.isError ? 'error' : 'success'}`}>
-              {createUserMsg.isError ? '⚠️ ' : '✅ '}{createUserMsg.text}
+              {createUserMsg.text}
             </div>
           )}
 
@@ -428,14 +428,14 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                 value={createUserData.role}
                 onChange={(e) => setCreateUserData({ ...createUserData, role: e.target.value })}
               >
-                <option value="employee">👤 User / Employee</option>
-                <option value="manager">👔 Manager</option>
-                <option value="admin">🛡️ System Administrator</option>
+                <option value="employee">User / Employee</option>
+                <option value="manager">Manager</option>
+                <option value="admin">System Administrator</option>
               </select>
             </div>
 
             <button type="submit" className="btn-submit-admin">
-              🚀 Create Account
+              Create Account
             </button>
           </form>
         </div>
@@ -444,23 +444,23 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
       {/* TAB 3: USER MANAGEMENT & RESET PASSWORDS */}
       {activeTab === 'manage-users' && (
         <div className="prof-card">
-          <h3>👥 Manage All Registered Users & Reset Passwords</h3>
+          <h3>Manage All Registered Users & Reset Passwords</h3>
           <p className="card-subtext">Full administrative control over user accounts, roles, and security credentials.</p>
 
           {/* Search Toolbar & User Stats */}
           <div className="user-table-toolbar">
             <input
               type="text"
-              placeholder="🔍 Search users by name, email, or role..."
+              placeholder="Search users by name, email, or role..."
               value={userSearchTerm}
               onChange={(e) => setUserSearchTerm(e.target.value)}
               className="user-search-input"
             />
             <div className="user-stats-bar">
-              <span className="user-stat-pill">👥 Total: {usersList.length}</span>
-              <span className="user-stat-pill">🛡️ Admins: {usersList.filter(u => u.role === 'admin').length}</span>
-              <span className="user-stat-pill">👔 Managers: {usersList.filter(u => u.role === 'manager').length}</span>
-              <span className="user-stat-pill">👤 Users: {usersList.filter(u => u.role === 'employee').length}</span>
+              <span className="user-stat-pill">Total: {usersList.length}</span>
+              <span className="user-stat-pill">Admins: {usersList.filter(u => u.role === 'admin').length}</span>
+              <span className="user-stat-pill">Managers: {usersList.filter(u => u.role === 'manager').length}</span>
+              <span className="user-stat-pill">Users: {usersList.filter(u => u.role === 'employee').length}</span>
             </div>
           </div>
 
@@ -571,7 +571,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
       {editingUser && (
         <div className="user-edit-overlay" onClick={() => setEditingUser(null)}>
           <div className="user-edit-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>✏️ Edit User Details</h3>
+            <h3>Edit User Details</h3>
             <form onSubmit={handleAdminUpdateUser} className="prof-form">
               <div className="form-group">
                 <label>Full Name *</label>
@@ -599,9 +599,9 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                   value={editingUser.role}
                   onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
                 >
-                  <option value="employee">👤 User / Employee</option>
-                  <option value="manager">👔 Manager</option>
-                  <option value="admin">🛡️ System Administrator</option>
+                  <option value="employee">User / Employee</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">System Administrator</option>
                 </select>
               </div>
 
@@ -610,7 +610,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
                   Cancel
                 </button>
                 <button type="submit" className="btn-confirm-submit primary">
-                  💾 Save Changes
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -621,7 +621,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
       {/* TAB: BRANDING & THEME CONFIGURATION */}
       {activeTab === 'branding' && (
         <div className="prof-card">
-          <h3>🎨 Global System Branding & Themes</h3>
+          <h3>Global System Branding & Themes</h3>
           <p className="card-subtext">Configure corporate colors, logos, and the global theme preset applied for all users.</p>
 
           <form onSubmit={handleBrandingSave} className="prof-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -721,7 +721,7 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
               <button type="submit" className="btn-submit-admin" style={{ flex: '1', padding: '12px', fontWeight: '700', borderRadius: '8px' }}>
-                💾 Save Global Branding Configurations
+                Save Global Branding Configurations
               </button>
               <button 
                 type="button" 

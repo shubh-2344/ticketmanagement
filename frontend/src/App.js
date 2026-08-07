@@ -28,7 +28,8 @@ import {
   LogoutIcon, 
   SparklesIcon,
   CheckIcon,
-  LogoIcon
+  LogoIcon,
+  LockIcon
 } from './components/Icons';
 
 function App() {
@@ -678,7 +679,7 @@ function App() {
                   <AdminInventory API_URL={API_URL} />
                 ) : (
                   <div className="access-denied-card">
-                    <div className="denied-icon">🔒</div>
+                    <div className="denied-icon"><LockIcon size={36} /></div>
                     <h2>Access Restricted</h2>
                     <p>Normal user accounts do not have administrator permissions to access Inventory Control.</p>
                     <button className="btn-return-home" onClick={() => setView('dashboard')}>
@@ -697,7 +698,7 @@ function App() {
                   />
                 ) : (
                   <div className="access-denied-card">
-                    <div className="denied-icon">🔒</div>
+                    <div className="denied-icon"><LockIcon size={36} /></div>
                     <h2>Access Restricted</h2>
                     <p>Normal user accounts do not have administrator permissions.</p>
                     <button className="btn-return-home" onClick={() => setView('dashboard')}>
@@ -716,7 +717,7 @@ function App() {
                   />
                 ) : (
                   <div className="access-denied-card">
-                    <div className="denied-icon">🔒</div>
+                    <div className="denied-icon"><LockIcon size={36} /></div>
                     <h2>Access Restricted</h2>
                     <p>Only administrators can access Admin Profile settings.</p>
                     <button className="btn-return-home" onClick={() => setView('dashboard')}>
@@ -738,7 +739,7 @@ function App() {
                   />
                 ) : (
                   <div className="access-denied-card">
-                    <div className="denied-icon">🔒</div>
+                    <div className="denied-icon"><LockIcon size={36} /></div>
                     <h2>Access Restricted</h2>
                     <p>Only administrators can access Analytics Insights.</p>
                     <button className="btn-return-home" onClick={() => setView('dashboard')}>
@@ -761,7 +762,7 @@ function App() {
                   />
                 ) : (
                   <div className="access-denied-card">
-                    <div className="denied-icon">🔒</div>
+                    <div className="denied-icon"><LockIcon size={36} /></div>
                     <h2>Access Restricted</h2>
                     <p>Only administrators can access the Closed Incidents archive.</p>
                     <button className="btn-return-home" onClick={() => setView('dashboard')}>
@@ -776,7 +777,7 @@ function App() {
                   <AssetLifecycleDashboard API_URL={API_URL} onSelectTicket={handleViewTicketById} />
                 ) : (
                   <div className="access-denied-card">
-                    <div className="denied-icon">🔒</div>
+                    <div className="denied-icon"><LockIcon size={36} /></div>
                     <h2>Access Restricted</h2>
                     <p>Only administrators can access the Asset Lifecycle Tracking Dashboard.</p>
                     <button className="btn-return-home" onClick={() => setView('dashboard')}>

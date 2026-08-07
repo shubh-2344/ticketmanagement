@@ -363,7 +363,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.4px', margin: '0 0 4px 0' }}>
-            {currentUser?.role === 'manager' ? '📊 Team Performance Insights' : '📈 Executive Enterprise Analytics'}
+            {currentUser?.role === 'manager' ? 'Team Performance Insights' : 'Executive Enterprise Analytics'}
           </h2>
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>
             Datadog & Grafana-grade smooth metrics, SLA resolution rates, and priority analytics.
@@ -374,7 +374,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
           onClick={resetFilters} 
           style={{ padding: '8px 14px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s ease' }}
         >
-          🔄 Reset Filters
+          Reset Filters
         </button>
       </div>
 
@@ -648,7 +648,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
               }}
             >
               <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', marginBottom: '4px' }}>
-                📅 {hoveredLinePoint.data.dateStr || hoveredLinePoint.data.label}
+                Date: {hoveredLinePoint.data.dateStr || hoveredLinePoint.data.label}
               </div>
               <div style={{ fontSize: '14px', fontWeight: '800', color: '#f8fafc' }}>
                 Total Tickets: <span style={{ color: '#38bdf8' }}>{hoveredLinePoint.data.total}</span>
@@ -668,7 +668,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
         {/* CHART 2: Tickets by Category */}
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-main)', letterSpacing: '-0.3px' }}>🏷️ Tickets by Category</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-main)', letterSpacing: '-0.3px' }}>Tickets by Category</h3>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>8 Categories</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -699,7 +699,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
         {/* CHART 3: MODERN ENTERPRISE DONUT CHART FOR TICKET PRIORITY (Critical, High, Medium, Low) */}
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-main)', letterSpacing: '-0.3px' }}>⚠️ Ticket Priority Distribution</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-main)', letterSpacing: '-0.3px' }}>Ticket Priority Distribution</h3>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>4 Priority Tiers</span>
           </div>
 
@@ -810,7 +810,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       {/* CHART ROW 3: TICKET STATUS DISTRIBUTION */}
       <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: 'var(--text-main)' }}>📋 Ticket Status Breakdown</h3>
+          <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: 'var(--text-main)' }}>Ticket Status Breakdown</h3>
           {filters.status !== 'all' && (
             <button
               onClick={() => handleFilterChange('status', 'all')}
@@ -856,7 +856,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
                   <div style={{ width: animate ? `${pct}%` : '0%', height: '100%', background: color, opacity: 0.85, borderRadius: '6px', transition: 'width 1s ease' }}></div>
                 </div>
                 <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '2px', textAlign: 'right' }}>
-                  {isSelected ? '✓ Filter Active (Click to clear)' : 'Click to filter tickets'}
+                  {isSelected ? 'Filter Active (Click to clear)' : 'Click to filter tickets'}
                 </div>
               </div>
             );
@@ -868,7 +868,7 @@ function AnalyticsDashboard({ tickets = [], currentUser, onSelectTicket, onViewA
       <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '700', margin: 0, color: 'var(--text-main)' }}>
-            🎫 {filters.status !== 'all' ? `${filters.status.replace('_', ' ').toUpperCase()} Tickets` : 'All Assigned Tickets'} ({filteredTickets.length})
+            {filters.status !== 'all' ? `${filters.status.replace('_', ' ').toUpperCase()} Tickets` : 'All Assigned Tickets'} ({filteredTickets.length})
           </h3>
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
             {currentUser?.role === 'manager' ? 'Displaying tickets assigned to your manager scope' : 'Displaying system tickets'}

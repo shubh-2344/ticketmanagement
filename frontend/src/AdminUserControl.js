@@ -55,14 +55,14 @@ function AdminUserControl({ API_URL, currentViewMode, onUpdateViewMode }) {
     <div className="admin-user-control">
       <div className="admin-section-header">
         <div>
-          <h2>👥 Admin User Control & System View Settings</h2>
+          <h2>Admin User Control & System View Settings</h2>
           <p>Manage registered user roles (User/Employee or Manager) and set global ticket view layouts for all users.</p>
         </div>
       </div>
 
       {/* Global Ticket View Settings Panel */}
       <div className="admin-card global-view-card">
-        <h3>🎨 Global Ticket View Configuration (Set for All Users)</h3>
+        <h3>Global Ticket View Configuration (Set for All Users)</h3>
         <p className="card-subtext">Choose how tickets are rendered on dashboards for all users across the system.</p>
         
         <div className="view-mode-options">

@@ -51,7 +51,7 @@ async function sendMailHelper({ to, subject, html }) {
  * 1. Send OTP Signup Verification Email
  */
 async function sendOtpEmail({ to, name, otp }) {
-    const subject = `🔑 Your 6-Digit Email Verification Code: ${otp}`;
+    const subject = `Email Verification Code: ${otp}`;
     const html = templates.otpTemplate({ name, otp });
     return await sendMailHelper({ to, subject, html });
 }
@@ -60,7 +60,7 @@ async function sendOtpEmail({ to, name, otp }) {
  * 2. Send Ticket Created Notification to Manager
  */
 async function sendTicketCreatedEmail({ to, managerName, ticket }) {
-    const subject = `🎫 [Action Required] New Ticket Pending Approval: ${ticket.title}`;
+    const subject = `[ACTION REQUIRED] New Ticket Pending Approval: ${ticket.title}`;
     const html = templates.ticketCreatedTemplate({ managerName, ticket });
     return await sendMailHelper({ to, subject, html });
 }
@@ -69,7 +69,7 @@ async function sendTicketCreatedEmail({ to, managerName, ticket }) {
  * 3. Send Ticket Approved Notification to Admin
  */
 async function sendTicketApprovedEmail({ to, adminName, ticket }) {
-    const subject = `Ticket Approved by Manager: ${ticket.title}`;
+    const subject = `[APPROVED] Ticket Approved by Manager: ${ticket.title}`;
     const html = templates.ticketApprovedTemplate({ adminName, ticket });
     return await sendMailHelper({ to, subject, html });
 }
@@ -78,7 +78,7 @@ async function sendTicketApprovedEmail({ to, adminName, ticket }) {
  * 4. Send Ticket Assigned Notification to Engineer / User
  */
 async function sendTicketAssignedEmail({ to, engineerName, ticket }) {
-    const subject = `🚀 Device / Resource Assigned for Ticket: ${ticket.title}`;
+    const subject = `[ASSIGNED] Resource Allocated for Ticket: ${ticket.title}`;
     const html = templates.ticketAssignedTemplate({ engineerName, ticket });
     return await sendMailHelper({ to, subject, html });
 }
@@ -87,7 +87,7 @@ async function sendTicketAssignedEmail({ to, engineerName, ticket }) {
  * 5. Send Ticket Resolved Notification to User
  */
 async function sendTicketResolvedEmail({ to, userName, ticket }) {
-    const subject = `✨ Ticket Escalated / Resolved: ${ticket.title}`;
+    const subject = `[RESOLVED] Ticket Escalated / Resolved: ${ticket.title}`;
     const html = templates.ticketResolvedTemplate({ userName, ticket });
     return await sendMailHelper({ to, subject, html });
 }
@@ -96,7 +96,7 @@ async function sendTicketResolvedEmail({ to, userName, ticket }) {
  * 6. Send Ticket Closed Confirmation to User
  */
 async function sendTicketClosedEmail({ to, userName, ticket }) {
-    const subject = `🔒 Ticket Closed Confirmation: ${ticket.title}`;
+    const subject = `[CLOSED] Ticket Closed Confirmation: ${ticket.title}`;
     const html = templates.ticketClosedTemplate({ userName, ticket });
     return await sendMailHelper({ to, subject, html });
 }
@@ -105,7 +105,7 @@ async function sendTicketClosedEmail({ to, userName, ticket }) {
  * 7. Send SLA Expiring or Breached Warning Email Notification
  */
 async function sendSlaWarningEmail({ to, recipientName, ticket, isBreached, timeRemainingStr }) {
-    const prefix = isBreached ? '🚨 [SLA BREACHED]' : '⚠️ [SLA WARNING]';
+    const prefix = isBreached ? '[SLA BREACHED]' : '[SLA WARNING]';
     const subject = `${prefix} Ticket Resolution Target ${isBreached ? 'Breached' : 'Expiring Soon'}: ${ticket.title}`;
     const html = templates.slaWarningTemplate({ recipientName, ticket, isBreached, timeRemainingStr });
     return await sendMailHelper({ to, subject, html });
