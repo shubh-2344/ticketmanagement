@@ -23,7 +23,35 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
 
   useEffect(() => {
     fetchLifecycles();
-  }, []);
+
+    window.handleOpenLifecycleTrackModal = (item) => {
+      if (!item) return;
+      if (item.lifecycle_id) {
+        setSelectedFlowItem(item);
+      } else if (item.id) {
+        axios.get(`${API_URL}/asset-lifecycles/ticket/${item.id}`)
+          .then(res => setSelectedFlowItem(res.data))
+          .catch(err => {
+            console.error('Error opening lifecycle track modal:', err);
+            setSelectedFlowItem({
+              lifecycle_id: 'AST-PENDING',
+              request_ticket_id: item.id,
+              request_title: item.title,
+              request_status: item.status,
+              user_name: item.requester_name,
+              user_email: item.requester_email,
+              asset_name: item.assigned_device_name || 'Awaiting Hardware Allocation',
+              lifecycle_status: item.status === 'approved' ? 'Assigned' : 'Pending Assignment',
+              assigned_at: item.status === 'approved' ? item.created_at : null
+            });
+          });
+      }
+    };
+
+    return () => {
+      delete window.handleOpenLifecycleTrackModal;
+    };
+  }, [API_URL]);
 
   const fetchLifecycles = async () => {
     setLoading(true);
@@ -393,7 +421,11 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
                     <h4 className="flow-title-text">{selectedFlowItem.request_title || 'Hardware Asset Request'}</h4>
                   </div>
                   <span className={`flow-status-pill status-${(selectedFlowItem.request_status || 'approved').toLowerCase()}`}>
-                    {selectedFlowItem.request_status ? selectedFlowItem.request_status.toUpperCase() : 'APPROVED'}
+                    {selectedFlowItem.request_status === 'pending_manager_approval' 
+                      ? 'PENDING MANAGER REVIEW' 
+                      : (selectedFlowItem.request_status === 'pending_admin_assignment' 
+                        ? 'PENDING ADMIN ASSIGNMENT' 
+                        : (selectedFlowItem.request_status ? selectedFlowItem.request_status.toUpperCase() : 'APPROVED'))}
                   </span>
                 </div>
                 <div className="card-details-grid">

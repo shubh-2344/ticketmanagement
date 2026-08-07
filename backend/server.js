@@ -2260,11 +2260,60 @@ app.get('/api/asset-lifecycles/ticket/:ticketId', authenticateToken, async (req,
             LIMIT 1
         `, [ticketId]);
 
-        if (resLc.rows.length === 0) {
-            return res.status(404).json({ error: 'No active lifecycle found for this ticket' });
+        if (resLc.rows.length > 0) {
+            return res.json(resLc.rows[0]);
         }
 
-        res.json(resLc.rows[0]);
+        // If no active lifecycle found yet, fallback to active ticket record if ticket exists
+        const ticketRes = await pool.query(`
+            SELECT 
+                id, title, description, type, category, priority, status,
+                requester_id, requester_name, requester_email,
+                assigned_device_name, expected_return_date, created_at, target_resolution_date, sla_hours,
+                parent_ticket_id
+            FROM tickets
+            WHERE id = $1
+        `, [ticketId]);
+
+        if (ticketRes.rows.length === 0) {
+            return res.status(404).json({ error: 'No active ticket or lifecycle found' });
+        }
+
+        const t = ticketRes.rows[0];
+
+        // Format a fallback pending lifecycle object
+        const fallbackLc = {
+            lifecycle_id: 'AST-PENDING',
+            request_ticket_id: t.type === 'device-request' ? t.id : (t.parent_ticket_id || t.id),
+            return_ticket_id: t.type === 'device-return' ? t.id : null,
+            inventory_id: null,
+            asset_name: t.assigned_device_name || 'Awaiting Allocation',
+            serial_number: null,
+            user_id: t.requester_id,
+            user_name: t.requester_name,
+            user_email: t.requester_email,
+            lifecycle_status: t.status === 'approved' ? 'Assigned' : 'Pending Assignment',
+            assigned_at: t.status === 'approved' ? t.created_at : null,
+            expected_return_date: t.expected_return_date,
+            returned_at: null,
+            created_at: t.created_at,
+            request_title: t.type === 'device-request' ? t.title : 'Device Allocation Request',
+            request_status: t.type === 'device-request' ? t.status : 'approved',
+            request_type: t.type,
+            request_created_at: t.created_at,
+            request_target_date: t.target_resolution_date,
+            request_sla_hours: t.sla_hours,
+            return_ticket_id_val: t.type === 'device-return' ? t.id : null,
+            return_title: t.type === 'device-return' ? t.title : null,
+            return_status: t.type === 'device-return' ? t.status : null,
+            return_created_at: t.type === 'device-return' ? t.created_at : null,
+            return_target_date: t.type === 'device-return' ? t.target_resolution_date : null,
+            return_sla_hours: t.type === 'device-return' ? t.sla_hours : null,
+            inventory_name: t.assigned_device_name || 'Hardware Device',
+            inventory_category: t.category || 'Hardware'
+        };
+
+        return res.json(fallbackLc);
     } catch (err) {
         console.error('Get lifecycle for ticket error:', err);
         res.status(500).json({ error: err.message || 'Failed to fetch lifecycle details' });

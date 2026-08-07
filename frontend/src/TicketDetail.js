@@ -330,8 +330,12 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     if (ticket.type !== 'device-request' && ticket.type !== 'device-return') return null;
 
     const lc = lifecycleData;
-    const lifecycleId = lc?.lifecycle_id || 'AST-2026-0001';
-    const status = lc?.lifecycle_status || (ticket.status === 'closed' && ticket.returned_at ? 'Returned' : (ticket.status === 'return_pending_verification' ? 'Return Pending' : 'Assigned'));
+    const lifecycleId = lc?.lifecycle_id || (ticket.status === 'approved' ? 'AST-2026-0001' : 'AST-PENDING');
+    const reqStatus = lc?.request_status || ticket.status || 'pending';
+    const isApprovedOrAssigned = reqStatus === 'approved' || reqStatus === 'closed' || !!lc?.assigned_at;
+    const status = lc?.lifecycle_status || (ticket.status === 'closed' && ticket.returned_at ? 'Returned' : (ticket.status === 'return_pending_verification' ? 'Return Pending' : (isApprovedOrAssigned ? 'Assigned' : 'Pending Assignment')));
+
+    const isManagerOrAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
 
     return (
       <section className="section asset-lifecycle-vertical-card" style={{
@@ -346,18 +350,44 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           <h2 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <LinkIcon size={18} style={{ color: '#38bdf8' }} /> Assigned Asset Lifecycle Track
           </h2>
-          <span style={{
-            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(168, 85, 247, 0.2))',
-            color: '#38bdf8',
-            border: '1px solid rgba(56, 189, 248, 0.5)',
-            padding: '4px 12px',
-            borderRadius: '8px',
-            fontFamily: 'monospace',
-            fontWeight: '800',
-            fontSize: '13px'
-          }}>
-            Lifecycle ID: {lifecycleId}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {isManagerOrAdmin && (
+              <span 
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  color: '#38bdf8',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onClick={() => {
+                  if (window.handleOpenLifecycleTrackModal) {
+                    window.handleOpenLifecycleTrackModal(lc || ticket);
+                  }
+                }}
+              >
+                👁️ View Lifecycle Screen
+              </span>
+            )}
+            <span style={{
+              background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(168, 85, 247, 0.2))',
+              color: '#38bdf8',
+              border: '1px solid rgba(56, 189, 248, 0.5)',
+              padding: '4px 12px',
+              borderRadius: '8px',
+              fontFamily: 'monospace',
+              fontWeight: '800',
+              fontSize: '13px'
+            }}>
+              Lifecycle ID: {lifecycleId}
+            </span>
+          </div>
         </div>
 
         {/* Vertical UI Flowchart with Arrows */}
@@ -374,8 +404,15 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 </span>
                 <span style={{ marginLeft: '10px', fontWeight: '700', color: '#fff' }}>{lc?.request_title || ticket.title}</span>
               </div>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '3px 8px', borderRadius: '6px' }}>
-                REQUEST APPROVED
+              <span style={{
+                fontSize: '11px',
+                fontWeight: '800',
+                color: isApprovedOrAssigned ? '#10b981' : (reqStatus === 'pending_manager_approval' ? '#f59e0b' : '#8b5cf6'),
+                background: isApprovedOrAssigned ? 'rgba(16, 185, 129, 0.15)' : (reqStatus === 'pending_manager_approval' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(139, 92, 246, 0.15)'),
+                padding: '3px 10px',
+                borderRadius: '6px'
+              }}>
+                {isApprovedOrAssigned ? 'REQUEST APPROVED' : (reqStatus === 'pending_manager_approval' ? 'PENDING MANAGER REVIEW' : 'PENDING ADMIN ASSIGNMENT')}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', flexWrap: 'wrap', gap: '8px' }}>
@@ -398,7 +435,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
               <div>
-                <strong style={{ fontSize: '14px', color: '#ffffff' }}>{lc?.asset_name || ticket.assigned_device_name || 'Hardware Asset'}</strong>
+                <strong style={{ fontSize: '14px', color: '#ffffff' }}>{lc?.asset_name || ticket.assigned_device_name || 'Awaiting Hardware Allocation'}</strong>
                 {lc?.serial_number && <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>S/N: {lc.serial_number}</span>}
               </div>
               <span style={{
@@ -406,14 +443,14 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 fontWeight: '800',
                 padding: '3px 10px',
                 borderRadius: '10px',
-                backgroundColor: status === 'Returned' ? 'rgba(16, 185, 129, 0.2)' : (status === 'Return Pending' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(59, 130, 246, 0.2)'),
-                color: status === 'Returned' ? '#10b981' : (status === 'Return Pending' ? '#f97316' : '#38bdf8')
+                backgroundColor: status === 'Returned' ? 'rgba(16, 185, 129, 0.2)' : (status === 'Return Pending' ? 'rgba(249, 115, 22, 0.2)' : (isApprovedOrAssigned ? 'rgba(59, 130, 246, 0.2)' : 'rgba(148, 163, 184, 0.2)')),
+                color: status === 'Returned' ? '#10b981' : (status === 'Return Pending' ? '#f97316' : (isApprovedOrAssigned ? '#38bdf8' : '#94a3b8'))
               }}>
                 {status.toUpperCase()}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', flexWrap: 'wrap', gap: '8px' }}>
-              <span>Assigned Date: {lc?.assigned_at ? new Date(lc.assigned_at).toLocaleDateString() : (ticket.assigned_at ? new Date(ticket.assigned_at).toLocaleDateString() : 'N/A')}</span>
+              <span>Assigned Date: {lc?.assigned_at ? new Date(lc.assigned_at).toLocaleDateString() : (ticket.assigned_at ? new Date(ticket.assigned_at).toLocaleDateString() : 'Awaiting Assignment')}</span>
               <span style={{ color: '#38bdf8' }}>Expected Return: {lc?.expected_return_date ? new Date(lc.expected_return_date).toLocaleDateString() : (ticket.expected_return_date ? new Date(ticket.expected_return_date).toLocaleDateString() : 'No expiry')}</span>
             </div>
           </div>
