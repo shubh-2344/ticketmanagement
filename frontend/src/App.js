@@ -313,11 +313,13 @@ function App() {
   const handleAdminDeleteTicket = async (ticketId) => {
     try {
       await axios.delete(`${API_URL}/tickets/${ticketId}`);
-      alert('Ticket deleted successfully by Admin.');
+      alert('Ticket deleted successfully.');
       setSelectedTicket(null);
       await fetchTickets(true);
-      if (view === 'detail') {
-        setView('tickets');
+      if (currentUser?.role === 'employee' || currentUser?.role === 'manager') {
+        setView('my-tickets');
+      } else {
+        setView('tickets-list');
       }
     } catch (error) {
       console.error('Admin delete ticket error:', error);
@@ -824,9 +826,23 @@ function App() {
                   API_URL={API_URL}
                   onBack={() => {
                     setSelectedTicket(null);
-                    setView('dashboard');
+                    if (currentUser?.role === 'employee' || currentUser?.role === 'manager') {
+                      setView('my-tickets');
+                    } else {
+                      setView('tickets-list');
+                    }
                   }}
                 />
+              )}
+
+              {view === 'detail' && !selectedTicket && (
+                <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: 'var(--text-main)' }}>Ticket No Longer Available</h3>
+                  <p style={{ margin: 0, fontSize: '13px' }}>The selected ticket record was removed or is unavailable.</p>
+                  <button onClick={() => setView(currentUser?.role === 'admin' ? 'dashboard' : 'my-tickets')} style={{ marginTop: '20px', padding: '8px 18px', borderRadius: '8px', background: 'var(--accent)', border: 'none', color: '#ffffff', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                    Return to Tickets
+                  </button>
+                </div>
               )}
             </div>
           )}
