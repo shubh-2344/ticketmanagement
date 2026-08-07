@@ -186,11 +186,13 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     }
 
     return (
-      <section className={`section sla-dashboard-card ${isOverdue ? 'overdue' : ''}`}>
-        <div className="sla-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.1rem', margin: 0, color: '#f8fafc' }}>SLA Resolution Progress</h2>
-          <span className="sla-target-badge" style={{ backgroundColor: progressColor, padding: '4px 8px', borderRadius: '6px', fontSize: '0.8rem', color: '#0f172a', fontWeight: 'bold' }}>
-            Target: {new Date(ticket.target_resolution_date).toLocaleString('en-US', {
+      <section className={`section sla-dashboard-card ${isOverdue ? 'overdue' : ''}`} style={{ background: 'var(--bg-card)', border: isOverdue ? '1px solid rgba(239, 68, 68, 0.4)' : 'var(--border-card)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
+        <div className="sla-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+          <h2 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BarChartIcon size={18} style={{ color: 'var(--accent)' }} /> SLA Resolution Progress & Risk Details
+          </h2>
+          <span className="sla-target-badge" style={{ backgroundColor: progressColor, padding: '5px 12px', borderRadius: '8px', fontSize: '0.85rem', color: '#ffffff', fontWeight: 'bold' }}>
+            Target: {new Date(ticket.target_resolution_date || (new Date(created).getTime() + 48 * 3600000)).toLocaleString('en-US', {
               month: 'short',
               day: 'numeric',
               hour: '2-digit',
@@ -198,8 +200,31 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             })}
           </span>
         </div>
-        <div className="sla-time-text" style={{ color: isOverdue ? '#fca5a5' : '#e2e8f0', fontWeight: 'bold', margin: '8px 0', fontSize: '0.95rem' }}>{timeText}</div>
-        <div className="sla-progress-track" style={{ background: '#334155', borderRadius: '8px', height: '10px', overflow: 'hidden', margin: '10px 0' }}>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', background: 'var(--bg-body)', padding: '14px', borderRadius: '10px', margin: '12px 0' }}>
+          <div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Time Remaining</span>
+            <strong style={{ fontSize: '15px', color: isOverdue ? '#ef4444' : '#10b981', fontFamily: 'monospace' }}>{timeText}</strong>
+          </div>
+          <div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>SLA Status</span>
+            <strong style={{ fontSize: '14px', color: isClosed ? '#64748b' : (isOverdue ? '#ef4444' : '#10b981') }}>
+              {isClosed ? 'Complete' : (isOverdue ? 'SLA Breached' : 'On Track (Normal)')}
+            </strong>
+          </div>
+          <div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Assigned Specialist</span>
+            <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{ticket.assigned_engineer || ticket.manager_name || 'IT Support Team'}</strong>
+          </div>
+          <div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Escalation Level</span>
+            <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)', display: 'inline-block' }}>
+              {ticket.escalation_level || 'Engineer Level 1'}
+            </span>
+          </div>
+        </div>
+
+        <div className="sla-progress-track" style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', height: '10px', overflow: 'hidden', margin: '10px 0' }}>
           <div 
             className="sla-progress-bar"
             style={{ 
@@ -210,9 +235,9 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             }}
           />
         </div>
-        <div className="sla-footer-meta" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#94a3b8' }}>
-          <span>Initial SLA Limit: {ticket.sla_hours || 48} Hours</span>
-          <span>Status: {isClosed ? 'Complete' : (isOverdue ? 'SLA Breached' : 'On Track')}</span>
+        <div className="sla-footer-meta" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+          <span>Initial SLA Limit: {ticket.sla_hours || (ticket.priority === 'high' ? 24 : 48)} Hours</span>
+          <span>Priority: {(ticket.priority || 'medium').toUpperCase()}</span>
         </div>
       </section>
     );

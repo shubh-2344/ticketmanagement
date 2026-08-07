@@ -65,7 +65,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
     if (item.ticket_status === 'return_pending_verification') {
       return { text: 'Return Pending Verification', class: 'status-tag pending' };
     }
-    
+
     if (!item.expected_return_date) {
       return { text: 'Active Allocation', class: 'status-tag active' };
     }
@@ -77,8 +77,8 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
     if (diff < 0) {
       const absDiff = Math.abs(diff);
       const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
-      return { 
-        text: `OVERDUE BY ${days} DAYS`, 
+      return {
+        text: `OVERDUE BY ${days} DAYS`,
         class: 'overdue-pulse',
         style: { color: '#ef4444', fontWeight: '800', textShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }
       };
@@ -202,7 +202,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
           <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FileTextIcon size={18} /> Device Allocation & Return Tracking
           </h3>
-          
+
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', width: '220px' }}>
               <input
@@ -221,20 +221,20 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                 }}
               />
             </div>
-            <button 
-              onClick={() => setFilterStatus('all')} 
+            <button
+              onClick={() => setFilterStatus('all')}
               style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'all' ? 'var(--accent)' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'all' ? '#ffffff' : 'var(--text-main)' }}
             >
               All Assignments
             </button>
-            <button 
-              onClick={() => setFilterStatus('overdue')} 
+            <button
+              onClick={() => setFilterStatus('overdue')}
               style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'overdue' ? '#ef4444' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'overdue' ? '#ffffff' : 'var(--text-main)' }}
             >
               Overdue Only
             </button>
-            <button 
-              onClick={() => setFilterStatus('pending_return')} 
+            <button
+              onClick={() => setFilterStatus('pending_return')}
               style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'pending_return' ? '#a855f7' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'pending_return' ? '#ffffff' : 'var(--text-main)' }}
             >
               Return Requests
@@ -254,7 +254,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                   <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Ticket ID</th>
                   <th style={{ width: '18%' }}>Device</th>
                   <th style={{ width: '18%' }}>Assigned User</th>
-                  <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Assigned Date</th>
+                  <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Asg-Date</th>
                   <th className="col-return-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Expected Return</th>
                   <th style={{ width: '11%', whiteSpace: 'nowrap' }}>Time Left</th>
                   <th style={{ width: '11%', whiteSpace: 'nowrap' }}>Status</th>
@@ -298,14 +298,14 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                       </td>
                       <td style={{ padding: '16px 8px', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'flex-end' }}>
-                          <button 
+                          <button
                             onClick={() => onSelectTicket(item.ticket_id)}
                             style={{ padding: '4px 10px', borderRadius: '4px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
                           >
                             <SearchIcon size={12} /> View Detail
                           </button>
                           {item.ticket_status === 'return_pending_verification' && (
-                            <button 
+                            <button
                               onClick={() => handleVerifyReturn(item.ticket_id)}
                               style={{ padding: '4px 10px', borderRadius: '4px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
                             >

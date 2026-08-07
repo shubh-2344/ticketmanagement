@@ -114,7 +114,7 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
     if (statusLower === 'approved') return 'In Progress';
     if (statusLower === 'closed') return 'Closed';
     if (statusLower === 'resolved') return 'Resolved';
-    return statusLower.toUpperCase();
+    StatusLower.toUpperCase();
   };
 
   const getStatusColor = (s) => {
@@ -167,7 +167,7 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
 
   return (
     <div className="open-incidents-page" style={{ color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      
+
       {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>

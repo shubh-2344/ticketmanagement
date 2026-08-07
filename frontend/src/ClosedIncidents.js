@@ -2,14 +2,14 @@ import React, { useState, useMemo } from 'react';
 import CountUp from './components/CountUp';
 import ViewToggle from './components/ViewToggle';
 import formatTicketId from './utils/formatTicketId';
-import { 
-  CheckIcon, 
-  ClockIcon, 
+import {
+  CheckIcon,
+  ClockIcon,
   SuccessIcon,
-  DevicesIcon, 
-  HardwareIcon, 
-  AccessIcon, 
-  SoftwareIcon 
+  DevicesIcon,
+  HardwareIcon,
+  AccessIcon,
+  SoftwareIcon
 } from './components/Icons';
 import './TicketList.css';
 
@@ -113,7 +113,7 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
     const statusLower = (s || '').toLowerCase();
     if (statusLower === 'closed') return 'Closed';
     if (statusLower === 'resolved') return 'Resolved';
-    return statusLower.toUpperCase();
+    StatusLower.toUpperCase();
   };
 
   const formatDate = (dateString) => {
@@ -139,7 +139,7 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
 
   return (
     <div className="closed-incidents-page" style={{ color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      
+
       {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>

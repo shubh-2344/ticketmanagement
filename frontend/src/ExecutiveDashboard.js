@@ -2,11 +2,11 @@ import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import CountUp from './components/CountUp';
 import formatTicketId from './utils/formatTicketId';
-import { 
-  SparklesIcon, 
-  ClockIcon, 
-  AlertIcon, 
-  DevicesIcon, 
+import {
+  SparklesIcon,
+  ClockIcon,
+  AlertIcon,
+  DevicesIcon,
   DashboardIcon,
   SuccessIcon,
   TrendingUpIcon,
@@ -73,10 +73,10 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     if (currentUser?.role === 'manager') {
       const mgrId = currentUser.id;
       const mgrDept = (currentUser.department || '').toLowerCase();
-      return tickets.filter(t => 
-        t.manager_id === mgrId || 
-        t.approver_id === mgrId || 
-        t.requester_id === mgrId || 
+      return tickets.filter(t =>
+        t.manager_id === mgrId ||
+        t.approver_id === mgrId ||
+        t.requester_id === mgrId ||
         (mgrDept && (t.department || '').toLowerCase() === mgrDept)
       );
     }
@@ -85,10 +85,10 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
 
   // Helper function to calculate SLA details dynamically
   const getTicketSLAInfo = (t, currentTime) => {
-    const target = t.target_resolution_date 
-      ? new Date(t.target_resolution_date).getTime() 
+    const target = t.target_resolution_date
+      ? new Date(t.target_resolution_date).getTime()
       : (new Date(t.created_at).getTime() + (t.priority === 'high' || t.priority === 'urgent' ? 24 : t.priority === 'low' ? 72 : 48) * 3600000);
-    
+
     const diff = target - currentTime;
     // Closed tickets are ONLY closed, resolved, or rejected. (Approved tickets remain active until completed!)
     const isClosed = t.status === 'closed' || t.status === 'resolved' || t.status === 'rejected';
@@ -153,7 +153,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     const total = scopedTickets.length;
     const open = scopedTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved' && t.status !== 'rejected').length;
     const closed = scopedTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
-    
+
     let slaBreached = 0;
     let slaAtRisk = 0;
 
@@ -165,13 +165,13 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       }
     });
 
-    const slaCompliance = closed > 0 
+    const slaCompliance = closed > 0
       ? Math.round((scopedTickets.filter(t => {
-          if (t.status !== 'closed' && t.status !== 'resolved') return false;
-          const target = t.target_resolution_date ? new Date(t.target_resolution_date).getTime() : 0;
-          const returned = t.returned_at ? new Date(t.returned_at).getTime() : Date.now();
-          return !target || returned <= target;
-        }).length / closed) * 100)
+        if (t.status !== 'closed' && t.status !== 'resolved') return false;
+        const target = t.target_resolution_date ? new Date(t.target_resolution_date).getTime() : 0;
+        const returned = t.returned_at ? new Date(t.returned_at).getTime() : Date.now();
+        return !target || returned <= target;
+      }).length / closed) * 100)
       : 100;
 
     const categories = { Laptop: 0, Monitor: 0, Software: 0, Access: 0, Other: 0 };
@@ -387,21 +387,21 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <TrendingUpIcon size={24} style={{ color: 'var(--accent)' }} /> {isManager ? 'Manager Team Dashboard' : 'Executive Command Center'}
           </h2>
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>
-            {isManager 
+            {isManager
               ? 'Personalized team ticket workload, pending approval queue, and SLA resolution metrics.'
               : 'System performance index, active SLA risks, and asset lifecycle oversight.'
             }
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
+          <button
             onClick={onViewAllTickets}
             style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--bg-card)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}
           >
             {isManager ? 'Team Tickets List' : 'All Tickets List'}
           </button>
           {currentUser?.role === 'admin' && (
-            <button 
+            <button
               onClick={onViewInventory}
               style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--accent)', border: 'none', color: '#ffffff', fontSize: '13px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 4px 12px var(--accent)33' }}
             >
@@ -421,7 +421,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
               </span>
               <span>SLA Warning Notifications Center ({slaWarningNotifications.length} Actionable)</span>
             </h3>
-            <button 
+            <button
               onClick={() => setDismissedAlerts(slaWarningNotifications.map(a => a.ticket.id))}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}
             >
@@ -543,7 +543,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
         {/* Category Breakdown */}
         <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 16px 0' }}>Ticket Breakdown by Category</h3>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {Object.entries(metrics.categories).map(([cat, count]) => {
               const percentage = metrics.total > 0 ? Math.round((count / metrics.total) * 100) : 0;
@@ -645,10 +645,10 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             </button>
           </div>
         </div>
-        
+
         {actionableTickets.length === 0 ? (
           <div style={{ padding: '28px 0', textAlign: 'center', color: '#10b981', fontSize: '14px', fontWeight: '600' }}>
-            {slaFilter === 'all' 
+            {slaFilter === 'all'
               ? 'Zero active SLA risk or breached tickets. System SLA healthy!'
               : `No tickets found matching "${slaFilter === 'expired' ? 'Expired (Breached)' : 'About to Expire'}" SLA filter.`
             }
@@ -658,15 +658,11 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Ticket ID</th>
-                  <th style={{ width: '22%' }}>Ticket Title</th>
-                  <th className="col-engineer" style={{ width: '15%' }}>Assigned Engineer</th>
-                  <th style={{ width: '9%' }}>Priority</th>
-                  <th style={{ width: '14%', whiteSpace: 'nowrap' }}>Time Remaining</th>
-                  <th style={{ width: '13%', whiteSpace: 'nowrap' }}>SLA Status</th>
-                  <th className="col-risk-level" style={{ width: '10%' }}>Risk Level</th>
-                  <th className="col-escalation" style={{ width: '12%' }}>Escalation</th>
-                  <th style={{ width: '10%', textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: '15%', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '45%' }}>Ticket Title</th>
+                  <th style={{ width: '12%' }}>Priority</th>
+                  <th style={{ width: '16%', whiteSpace: 'nowrap' }}>SLA Status</th>
+                  <th style={{ width: '12%', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -677,24 +673,20 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                   return (
                     <tr key={ticket.id} style={{ borderBottom: 'var(--border-card)', transition: 'background 0.2s ease' }}>
                       {/* Ticket ID */}
-                      <td style={{ padding: '12px 10px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      <td className="ticket-id-cell">
                         {formatTicketId(ticket.id, ticket.type)}
                       </td>
-                      {/* 1. Ticket Title */}
-                      <td 
-                        style={{ padding: '12px 10px', fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }}
+
+                      {/* Ticket Title */}
+                      <td
+                        style={{ padding: '12px 10px', fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer', wordBreak: 'break-word' }}
                         onClick={() => onSelectTicket(ticket.id)}
-                        title="Click to view details"
+                        title="Click to view full ticket details including Time Remaining"
                       >
                         {ticket.title}
                       </td>
 
-                      {/* 2. Assigned Engineer */}
-                      <td className="col-engineer" style={{ padding: '12px 10px', color: 'var(--text-main)', fontWeight: '500' }}>
-                        {sla.assignedEngineer}
-                      </td>
-
-                      {/* 3. Priority */}
+                      {/* Priority */}
                       <td style={{ padding: '12px 10px' }}>
                         <span style={{
                           padding: '3px 8px',
@@ -710,18 +702,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                         </span>
                       </td>
 
-                      {/* 4. Time Remaining (Real-time live ticker!) */}
-                      <td style={{ 
-                        padding: '12px 10px', 
-                        fontWeight: '800', 
-                        fontFamily: 'monospace',
-                        fontSize: '13px',
-                        color: sla.slaStatus === 'Breached' ? '#ef4444' : '#f59e0b' 
-                      }}>
-                        {sla.timeRemainingStr}
-                      </td>
-
-                      {/* 5. SLA Status (At Risk / Breached) */}
+                      {/* SLA Status (At Risk / Breached) */}
                       <td style={{ padding: '12px 10px' }}>
                         <span style={{
                           padding: '4px 10px',
@@ -730,76 +711,49 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                           fontWeight: '800',
                           background: sla.slaStatus === 'Breached' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
                           color: sla.slaStatus === 'Breached' ? '#ef4444' : '#f59e0b',
-                          border: `1px solid ${sla.slaStatus === 'Breached' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`
+                          border: `1px solid ${sla.slaStatus === 'Breached' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                          whiteSpace: 'nowrap'
                         }}>
                           {sla.slaStatus === 'Breached' ? 'BREACHED' : 'AT RISK'}
                         </span>
                       </td>
 
-                      {/* 6. Risk Level (Low / Medium / High) */}
-                      <td className="col-risk-level" style={{ padding: '12px 10px' }}>
-                        <span style={{
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: '800',
-                          background: sla.riskLevel === 'High' ? 'rgba(239, 68, 68, 0.15)' : sla.riskLevel === 'Medium' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                          color: sla.riskLevel === 'High' ? '#ef4444' : sla.riskLevel === 'Medium' ? '#f59e0b' : '#38bdf8'
-                        }}>
-                          {sla.riskLevel.toUpperCase()}
-                        </span>
-                      </td>
-
-                      {/* 7. Escalation Level */}
-                      <td className="col-escalation" style={{ padding: '12px 10px' }}>
-                        <span style={{
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: '700',
-                          background: 'rgba(168, 85, 247, 0.15)',
-                          color: '#c084fc',
-                          border: '1px solid rgba(168, 85, 247, 0.3)'
-                        }}>
-                          {sla.escalationLevel}
-                        </span>
-                      </td>
-
-                      {/* 8. Actions (View / Escalate) */}
+                      {/* Actions (View Details) */}
                       <td style={{ padding: '12px 10px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                          <button 
+                        <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          <button
                             onClick={() => onSelectTicket(ticket.id)}
                             style={{
-                              padding: '6px 12px',
+                              padding: '5px 12px',
                               borderRadius: '6px',
                               background: 'var(--bg-body)',
                               border: 'var(--border-card)',
                               color: 'var(--text-main)',
                               cursor: 'pointer',
                               fontSize: '12px',
-                              fontWeight: '600'
+                              fontWeight: '600',
+                              whiteSpace: 'nowrap'
                             }}
+                            title="View complete ticket information including Time Remaining"
                           >
                             View
                           </button>
 
-                          {/* Show Escalate action ONLY for High Risk or Breached tickets */}
                           {canEscalate && (
-                            <button 
+                            <button
                               onClick={() => handleEscalateTicket(ticket, sla.escalationLevel)}
                               style={{
-                                padding: '6px 12px',
+                                padding: '5px 10px',
                                 borderRadius: '6px',
-                                background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                                background: 'linear-gradient(135deg, #a855f7, #9333ea)',
                                 border: 'none',
                                 color: '#ffffff',
                                 cursor: 'pointer',
-                                fontSize: '12px',
+                                fontSize: '11.5px',
                                 fontWeight: '700',
-                                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                                whiteSpace: 'nowrap'
                               }}
-                              title={`Escalate along path: Engineer → Team Lead → Manager → Admin`}
+                              title={`Escalate to ${sla.escalationLevel === 'Engineer' ? 'Manager' : 'Administrator'}`}
                             >
                               Escalate
                             </button>
@@ -823,7 +777,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
               <DevicesIcon size={20} style={{ color: 'var(--accent)' }} /> Device Allocation & Return Tracking Report
             </h3>
             <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '12.5px' }}>
-              Monitor active hardware deployments, expected return dates, and restock status.
+              Monitor active hardware deployments,Exp-Return dates, and restock status.
             </p>
           </div>
 
@@ -927,11 +881,11 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
                   <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Ticket ID</th>
-                  <th style={{ width: '22%' }}>Assigned Employee</th>
-                  <th style={{ width: '20%' }}>Allocated Hardware Device</th>
-                  <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Assigned Date</th>
+                  <th style={{ width: '22%' }}>Employee</th>
+                  <th style={{ width: '20%' }}>Device</th>
+                  <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Asg-Date</th>
                   <th className="col-return-date" style={{ width: '12%', whiteSpace: 'nowrap' }}>Expected Return</th>
-                  <th style={{ width: '13%', whiteSpace: 'nowrap' }}>Return Status</th>
+                  <th style={{ width: '13%', whiteSpace: 'nowrap' }}>Status</th>
                   <th style={{ width: '10%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                 </tr>
               </thead>
