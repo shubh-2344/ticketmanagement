@@ -4,7 +4,7 @@ import formatTicketId from './utils/formatTicketId';
 import { KeyIcon, PlusIcon, UsersIcon, SettingsIcon, DownloadIcon, EditIcon, TrashIcon, RefreshIcon, XIcon, FileTextIcon, BarChartIcon, DevicesIcon } from './components/Icons';
 import './AdminProfile.css';
 
-function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
+function AdminProfile({ API_URL, currentUser, onProfileUpdated, uiDensity, onDensityChange }) {
   const [activeTab, setActiveTab] = useState('password');
 
   // Change Password State
@@ -626,23 +626,38 @@ function AdminProfile({ API_URL, currentUser, onProfileUpdated }) {
 
           <form onSubmit={handleBrandingSave} className="prof-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
-            <div className="form-group">
-              <label>Global Application Theme Preset</label>
-              <select
-                value={brandingData.global_theme}
-                onChange={(e) => setBrandingData({ ...brandingData, global_theme: e.target.value })}
-              >
-                <option value="">Enterprise Dark (Default)</option>
-                <option value="theme-enterprise-light">Enterprise Light (White Theme)</option>
-                <option value="theme-azure-blue">Azure Blue</option>
-                <option value="theme-midnight-navy">Midnight Navy</option>
-                <option value="theme-carbon-black">Carbon Black</option>
-                <option value="theme-glassmorphism">Glassmorphism</option>
-                <option value="theme-cyber-blue">Cyber Blue</option>
-                <option value="theme-material-enterprise">Material Enterprise</option>
-                <option value="theme-high-contrast">High-Contrast Accessibility Theme</option>
-              </select>
-              <span className="field-hint" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>The selected theme is applied globally for all logged-in portal users.</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="form-group">
+                <label>Global Application Theme Preset</label>
+                <select
+                  value={brandingData.global_theme}
+                  onChange={(e) => setBrandingData({ ...brandingData, global_theme: e.target.value })}
+                >
+                  <option value="">Enterprise Dark (Default)</option>
+                  <option value="theme-enterprise-light">Enterprise Light (White Theme)</option>
+                  <option value="theme-azure-blue">Azure Blue</option>
+                  <option value="theme-midnight-navy">Midnight Navy</option>
+                  <option value="theme-carbon-black">Carbon Black</option>
+                  <option value="theme-glassmorphism">Glassmorphism</option>
+                  <option value="theme-cyber-blue">Cyber Blue</option>
+                  <option value="theme-material-enterprise">Material Enterprise</option>
+                  <option value="theme-high-contrast">High-Contrast Accessibility Theme</option>
+                </select>
+                <span className="field-hint" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>The selected theme is applied globally for all logged-in portal users.</span>
+              </div>
+
+              <div className="form-group">
+                <label>Global UI Display Density (Font & Spacing)</label>
+                <select
+                  value={uiDensity || 'density-default'}
+                  onChange={(e) => onDensityChange && onDensityChange(e.target.value)}
+                >
+                  <option value="density-compact">Compact (Tighter Spacing & Font Size)</option>
+                  <option value="density-default">Default (Standard Balanced Spacing)</option>
+                  <option value="density-comfortable">Comfortable (Roomier Spacing & Font Size)</option>
+                </select>
+                <span className="field-hint" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Adjust table padding, font size, form fields, and spacing dynamically.</span>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>

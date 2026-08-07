@@ -64,6 +64,15 @@ function App() {
     localStorage.setItem('ticketmanagement_view_mode', newMode);
   };
 
+  const [globalDensity, setGlobalDensity] = useState(() => {
+    return localStorage.getItem('ticketmanagement_ui_density') || 'density-default';
+  });
+
+  const handleGlobalDensityChange = (newDensity) => {
+    setGlobalDensity(newDensity);
+    localStorage.setItem('ticketmanagement_ui_density', newDensity);
+  };
+
   const showConfirm = useCallback(({ title = 'Confirm Action', message = 'Are you sure you want to proceed?', confirmText = 'Confirm', cancelText = 'Cancel', confirmType = 'danger' }) => {
     return new Promise((resolve) => {
       setConfirmConfig({
@@ -389,7 +398,7 @@ function App() {
   const activeTheme = globalSettings?.global_theme || 'theme-enterprise-dark';
 
   return (
-    <div className={`app ai-theme ${activeTheme}`}>
+    <div className={`app ai-theme ${activeTheme} ${globalDensity}`}>
       <NetworkBackground opacity={0.07} />
 
       {/* Top-Left Reusable Toast Notification */}
@@ -714,6 +723,8 @@ function App() {
                     API_URL={API_URL}
                     currentUser={currentUser}
                     onProfileUpdated={fetchCurrentUser}
+                    uiDensity={globalDensity}
+                    onDensityChange={handleGlobalDensityChange}
                   />
                 ) : (
                   <div className="access-denied-card">

@@ -1436,3 +1436,100 @@ label,
   accent-color: var(--accent, #2563eb);
   cursor: pointer;
 }
+
+/* ==========================================================================
+   GLOBAL UI DISPLAY DENSITY SYSTEM (Compact, Default, Comfortable)
+   ========================================================================== */
+
+/* 1. COMPACT DENSITY (Maximized information density, tighter padding, smaller fonts) */
+.density-compact {
+  --table-padding-v: 6px;
+  --table-padding-h: 8px;
+  --table-font-size: 11.5px;
+  --table-header-font-size: 10.5px;
+  --input-padding-v: 6px;
+  --input-padding-h: 10px;
+  --input-font-size: 13px;
+  --label-font-size: 12px;
+  --card-padding: 16px;
+  --badge-padding: 3px 8px;
+  --badge-font-size: 10px;
+}
+
+/* 2. DEFAULT DENSITY (Standard enterprise balanced layout) */
+.density-default {
+  --table-padding-v: 10px;
+  --table-padding-h: 10px;
+  --table-font-size: 12.5px;
+  --table-header-font-size: 11px;
+  --input-padding-v: 10px;
+  --input-padding-h: 14px;
+  --input-font-size: 14px;
+  --label-font-size: 13px;
+  --card-padding: 24px;
+  --badge-padding: 4px 10px;
+  --badge-font-size: 11px;
+}
+
+/* 3. COMFORTABLE DENSITY (Roomier spacing, larger font sizes, enhanced legibility) */
+.density-comfortable {
+  --table-padding-v: 14px;
+  --table-padding-h: 14px;
+  --table-font-size: 14px;
+  --table-header-font-size: 12px;
+  --input-padding-v: 12px;
+  --input-padding-h: 16px;
+  --input-font-size: 15px;
+  --label-font-size: 14px;
+  --card-padding: 28px;
+  --badge-padding: 6px 12px;
+  --badge-font-size: 12px;
+}
+
+/* Apply Density Variable Overrides Across Components */
+
+.tickets-table-view th,
+.user-manage-table th,
+table th {
+  padding: var(--table-padding-v, 10px) var(--table-padding-h, 10px) !important;
+  font-size: var(--table-header-font-size, 11px) !important;
+}
+
+.tickets-table-view td,
+.user-manage-table td,
+table td {
+  padding: var(--table-padding-v, 10px) var(--table-padding-h, 10px) !important;
+  font-size: var(--table-font-size, 12.5px) !important;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="date"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+  padding: var(--input-padding-v, 10px) var(--input-padding-h, 14px) !important;
+  font-size: var(--input-font-size, 14px) !important;
+}
+
+label,
+.form-group label {
+  font-size: var(--label-font-size, 13px) !important;
+}
+
+.status-pill,
+.status-pill-table,
+.status-tag,
+.badge,
+.return-status-pill {
+  padding: var(--badge-padding, 4px 10px) !important;
+  font-size: var(--badge-font-size, 11px) !important;
+}
+
+.prof-card,
+.create-ticket .form {
+  padding: var(--card-padding, 24px) !important;
+}
