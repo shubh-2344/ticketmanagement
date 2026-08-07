@@ -101,11 +101,22 @@ async function sendTicketClosedEmail({ to, userName, ticket }) {
     return await sendMailHelper({ to, subject, html });
 }
 
+/**
+ * 7. Send SLA Expiring or Breached Warning Email Notification
+ */
+async function sendSlaWarningEmail({ to, recipientName, ticket, isBreached, timeRemainingStr }) {
+    const prefix = isBreached ? '🚨 [SLA BREACHED]' : '⚠️ [SLA WARNING]';
+    const subject = `${prefix} Ticket Resolution Target ${isBreached ? 'Breached' : 'Expiring Soon'}: ${ticket.title}`;
+    const html = templates.slaWarningTemplate({ recipientName, ticket, isBreached, timeRemainingStr });
+    return await sendMailHelper({ to, subject, html });
+}
+
 module.exports = {
     sendOtpEmail,
     sendTicketCreatedEmail,
     sendTicketApprovedEmail,
     sendTicketAssignedEmail,
     sendTicketResolvedEmail,
-    sendTicketClosedEmail
+    sendTicketClosedEmail,
+    sendSlaWarningEmail
 };

@@ -285,11 +285,55 @@ function ticketClosedTemplate({ userName, ticket }) {
   `;
 }
 
+/**
+ * 7. SLA Warning Alert Template (Sent when ticket is expiring soon or breached)
+ */
+function slaWarningTemplate({ recipientName, ticket, isBreached, timeRemainingStr }) {
+    const isBreach = !!isBreached;
+    const accentColor = isBreach ? '#ef4444' : '#f59e0b';
+    const headerTitle = isBreach ? '🚨 CRITICAL SLA BREACH ALERT' : '⚠️ URGENT SLA EXPIRING WARNING';
+    const subTitle = isBreach ? 'Resolution SLA Breached' : 'Resolution Target Expiring Soon';
+
+    return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="${headerStyle}">
+          <h2 style="color: ${accentColor}; margin: 0; font-size: 20px; font-weight: 800;">${headerTitle}</h2>
+          <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">${subTitle}</p>
+        </div>
+        <p style="font-size: 15px; color: #e2e8f0;">Hello <strong>${recipientName || 'Team Member'}</strong>,</p>
+        <p style="font-size: 14px; color: #cbd5e1;">
+          ${isBreach 
+            ? `Ticket <strong>"${ticket.title}"</strong> has <span style="color: #ef4444; font-weight: 800;">BREACHED its target resolution SLA</span>.` 
+            : `Ticket <strong>"${ticket.title}"</strong> is <span style="color: #f59e0b; font-weight: 800;">ABOUT TO EXPIRE</span> (${timeRemainingStr}).`
+          }
+        </p>
+
+        <div style="background: rgba(15, 23, 42, 0.6); border-left: 4px solid ${accentColor}; padding: 16px; border-radius: 6px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #cbd5e1;">
+            <tr><td style="padding: 4px 0; color: #94a3b8;">Ticket Title:</td><td style="font-weight: 700; color: #f8fafc;">${ticket.title}</td></tr>
+            <tr><td style="padding: 4px 0; color: #94a3b8;">Priority:</td><td style="font-weight: 700; color: ${accentColor};">${(ticket.priority || 'MEDIUM').toUpperCase()}</td></tr>
+            <tr><td style="padding: 4px 0; color: #94a3b8;">Status / SLA:</td><td style="font-weight: 700; color: #f8fafc;">${isBreach ? 'BREACHED' : 'AT RISK'} (${timeRemainingStr})</td></tr>
+            <tr><td style="padding: 4px 0; color: #94a3b8;">Assigned Engineer:</td><td style="color: #f8fafc;">${ticket.assigned_engineer || 'IT Operations Specialist'}</td></tr>
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #94a3b8;">Please log in to the Ticket Management Command Center to take immediate action or escalate this incident.</p>
+
+        <div style="${footerStyle}">
+          DevSecOps Ticket System SLA Warning Service
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 module.exports = {
     otpTemplate,
     ticketCreatedTemplate,
     ticketApprovedTemplate,
     ticketAssignedTemplate,
     ticketResolvedTemplate,
-    ticketClosedTemplate
+    ticketClosedTemplate,
+    slaWarningTemplate
 };

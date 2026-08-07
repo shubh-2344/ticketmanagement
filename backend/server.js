@@ -1684,8 +1684,8 @@ app.put('/api/tickets/:id/verify-return', authenticateToken, requireRole(['admin
     }
 });
 
-// Admin: Device Assignment & Return Tracking
-app.get('/api/admin/device-tracking', authenticateToken, requireRole(['admin']), async (req, res) => {
+// Admin & Manager: Device Assignment & Return Tracking
+app.get('/api/admin/device-tracking', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 

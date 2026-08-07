@@ -158,7 +158,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       percentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
     }
 
-    const isClosed = ticket.status === 'closed' || ticket.status === 'approved' || ticket.status === 'rejected';
+    const isClosed = ticket.status === 'closed' || ticket.status === 'resolved' || ticket.status === 'rejected';
     const isOverdue = now > target && !isClosed;
     const timeDiff = target - now;
 

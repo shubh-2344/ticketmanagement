@@ -12,14 +12,21 @@ import {
   TrendingUpIcon,
   ShieldIcon,
   UserIcon,
-  CheckIcon
+  CheckIcon,
+  XIcon,
+  SearchIcon
 } from './components/Icons';
 
 function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTickets, onViewInventory, API_URL, onRefresh }) {
   const [animate, setAnimate] = useState(false);
   const [now, setNow] = useState(Date.now());
-
   const [totalDevices, setTotalDevices] = useState(0);
+  const [dismissedAlerts, setDismissedAlerts] = useState([]);
+
+  // Device Tracking state
+  const [deviceTrackingList, setDeviceTrackingList] = useState([]);
+  const [deviceFilter, setDeviceFilter] = useState('all'); // 'all', 'overdue', 'pending_return', 'active'
+  const [deviceSearch, setDeviceSearch] = useState('');
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimate(true), 50);
@@ -40,7 +47,18 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     }
   }, [API_URL]);
 
-
+  // Fetch live device allocation & return tracking records
+  useEffect(() => {
+    if (API_URL && (currentUser?.role === 'admin' || currentUser?.role === 'manager')) {
+      axios.get(`${API_URL}/admin/device-tracking`)
+        .then(res => {
+          if (Array.isArray(res.data)) {
+            setDeviceTrackingList(res.data);
+          }
+        })
+        .catch(err => console.error('Error fetching device tracking in ExecutiveDashboard:', err));
+    }
+  }, [API_URL, currentUser]);
 
   // Real-time live countdown ticker updating every 1 second without page refresh
   useEffect(() => {
@@ -69,16 +87,19 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
   const getTicketSLAInfo = (t, currentTime) => {
     const target = t.target_resolution_date 
       ? new Date(t.target_resolution_date).getTime() 
-      : (new Date(t.created_at).getTime() + (t.priority === 'high' ? 24 : t.priority === 'low' ? 72 : 48) * 3600000);
+      : (new Date(t.created_at).getTime() + (t.priority === 'high' || t.priority === 'urgent' ? 24 : t.priority === 'low' ? 72 : 48) * 3600000);
     
     const diff = target - currentTime;
-    const isClosed = t.status === 'closed' || t.status === 'resolved' || t.status === 'approved';
+    // Closed tickets are ONLY closed, resolved, or rejected. (Approved tickets remain active until completed!)
+    const isClosed = t.status === 'closed' || t.status === 'resolved' || t.status === 'rejected';
 
     let slaStatus = 'Normal';
-    if (diff <= 0) {
-      slaStatus = 'Breached';
-    } else if (diff <= 12 * 3600 * 1000) {
-      slaStatus = 'At Risk';
+    if (!isClosed) {
+      if (diff <= 0) {
+        slaStatus = 'Breached';
+      } else if (diff <= 12 * 3600 * 1000) {
+        slaStatus = 'At Risk';
+      }
     }
 
     // Dynamic Risk Level Calculation
@@ -130,14 +151,14 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
   // KPI Metrics Calculation driven strictly by database records
   const metrics = useMemo(() => {
     const total = scopedTickets.length;
-    const open = scopedTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
+    const open = scopedTickets.filter(t => t.status !== 'closed' && t.status !== 'resolved' && t.status !== 'rejected').length;
     const closed = scopedTickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
     
     let slaBreached = 0;
     let slaAtRisk = 0;
 
     scopedTickets.forEach(t => {
-      if (t.status !== 'closed' && t.status !== 'resolved') {
+      if (t.status !== 'closed' && t.status !== 'resolved' && t.status !== 'rejected') {
         const info = getTicketSLAInfo(t, now);
         if (info.slaStatus === 'Breached') slaBreached++;
         else if (info.slaStatus === 'At Risk') slaAtRisk++;
@@ -206,6 +227,67 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       });
   }, [scopedTickets, now, slaFilter]);
 
+  // Live SLA Warning Notifications (expiring & breached tickets)
+  const slaWarningNotifications = useMemo(() => {
+    return scopedTickets
+      .map(t => ({ ticket: t, sla: getTicketSLAInfo(t, now) }))
+      .filter(({ ticket, sla }) => !sla.isClosed && (sla.slaStatus === 'Breached' || sla.slaStatus === 'At Risk'))
+      .filter(({ ticket }) => !dismissedAlerts.includes(ticket.id))
+      .sort((a, b) => a.sla.diff - b.sla.diff);
+  }, [scopedTickets, now, dismissedAlerts]);
+
+  // Comprehensive tracking list with fallback to scopedTickets
+  const trackingData = useMemo(() => {
+    let list = deviceTrackingList;
+    if (!list || list.length === 0) {
+      list = scopedTickets
+        .filter(t => t.assigned_device_name && t.assigned_device_name.trim() !== '')
+        .map(t => ({
+          ticket_id: t.id,
+          ticket_title: t.title,
+          ticket_type: t.type,
+          requester_name: t.requester_name,
+          requester_email: t.requester_email,
+          assigned_device_name: t.assigned_device_name,
+          assigned_at: t.assigned_at || t.created_at,
+          expected_return_date: t.expected_return_date,
+          ticket_status: t.status,
+          inventory_name: t.assigned_device_name,
+          inventory_category: t.category || 'Hardware'
+        }));
+    }
+    return list;
+  }, [deviceTrackingList, scopedTickets]);
+
+  const filteredTrackingData = useMemo(() => {
+    return trackingData.filter(item => {
+      const isOverdue = item.ticket_status !== 'closed' && item.expected_return_date && new Date(item.expected_return_date).getTime() < now;
+      const isPendingReturn = item.ticket_status === 'return_pending_verification';
+
+      if (deviceFilter === 'overdue' && !isOverdue) return false;
+      if (deviceFilter === 'pending_return' && !isPendingReturn) return false;
+      if (deviceFilter === 'active' && item.ticket_status === 'closed') return false;
+
+      if (deviceSearch.trim()) {
+        const q = deviceSearch.toLowerCase();
+        const titleMatch = (item.ticket_title || '').toLowerCase().includes(q);
+        const userMatch = (item.requester_name || '').toLowerCase().includes(q);
+        const deviceMatch = (item.assigned_device_name || '').toLowerCase().includes(q);
+        return titleMatch || userMatch || deviceMatch;
+      }
+      return true;
+    });
+  }, [trackingData, deviceFilter, deviceSearch, now]);
+
+  const deviceMetrics = useMemo(() => {
+    const totalAllocated = trackingData.filter(i => i.ticket_status !== 'closed').length;
+    const overdueCount = trackingData.filter(i => i.ticket_status !== 'closed' && i.expected_return_date && new Date(i.expected_return_date).getTime() < now).length;
+    const pendingReturnCount = trackingData.filter(i => i.ticket_status === 'return_pending_verification').length;
+    const returnedCount = trackingData.filter(i => i.ticket_status === 'closed').length;
+
+    return { totalAllocated, overdueCount, pendingReturnCount, returnedCount };
+  }, [trackingData, now]);
+
   // Escalation Handler cycling: Engineer -> Team Lead -> Manager -> Admin
   const handleEscalateTicket = async (ticket, currentLevel) => {
     let nextLevel = 'Team Lead';
@@ -229,7 +311,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       message: `Are you sure you want to escalate "${ticket.title}" to ${nextLevel} level (${nextEngineer})?`,
       confirmText: `Escalate to ${nextLevel}`,
       cancelText: 'Cancel',
-      confirmType: 'success' // Blue/green confirmation theme
+      confirmType: 'success'
     });
     if (!confirmed) return;
 
@@ -248,12 +330,55 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     }
   };
 
+  const handleVerifyReturn = async (ticketId) => {
+    const confirmed = await window.showConfirm({
+      title: '📦 Verify Device Return',
+      message: `Are you sure you want to verify physical device return for ticket #${formatTicketId(ticketId, 'device-request')}? Inventory count will be restocked.`,
+      confirmText: 'Verify Return',
+      cancelText: 'Cancel',
+      confirmType: 'success'
+    });
+    if (!confirmed) return;
+
+    try {
+      if (API_URL) {
+        await axios.put(`${API_URL}/tickets/${ticketId}/verify-return`);
+      }
+      alert('Device return verified! Hardware restocked to inventory.');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Verify return error:', err);
+      alert(err.response?.data?.error || 'Verification of device return failed');
+    }
+  };
+
+  const getReturnStatusInfo = (item) => {
+    if (item.ticket_status === 'closed') {
+      return { text: 'Returned & Restocked', bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' };
+    }
+    if (item.ticket_status === 'return_pending_verification') {
+      return { text: 'Return Pending Verification', bg: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' };
+    }
+    if (item.expected_return_date) {
+      const exp = new Date(item.expected_return_date).getTime();
+      const diff = exp - now;
+      if (diff < 0) {
+        const overdueDays = Math.floor(Math.abs(diff) / (1000 * 3600 * 24));
+        return { text: `⚠️ OVERDUE BY ${overdueDays || 1} DAYS`, bg: 'rgba(239, 68, 68, 0.18)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' };
+      } else {
+        const days = Math.floor(diff / (1000 * 3600 * 24));
+        return { text: `Due in ${days} days`, bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' };
+      }
+    }
+    return { text: 'Active Allocation', bg: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' };
+  };
+
   const isManager = currentUser?.role === 'manager';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', color: 'var(--text-main)' }}>
       {/* Top Welcome Title Banner */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h2 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <TrendingUpIcon size={24} style={{ color: 'var(--accent)' }} /> {isManager ? 'Manager Team Dashboard' : 'Executive Command Center'}
@@ -282,6 +407,82 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
           )}
         </div>
       </div>
+
+      {/* Real-time SLA Warning Notification Banner */}
+      {slaWarningNotifications.length > 0 && (
+        <div className="sla-warning-center">
+          <div className="sla-warning-header">
+            <h3 className="sla-warning-title">
+              <span className="sla-badge-pulse" style={{ display: 'inline-flex', padding: '4px', borderRadius: '50%', background: '#ef4444' }}>
+                <AlertIcon size={16} style={{ color: '#ffffff' }} />
+              </span>
+              <span>SLA Warning Notifications Center ({slaWarningNotifications.length} Actionable)</span>
+            </h3>
+            <button 
+              onClick={() => setDismissedAlerts(slaWarningNotifications.map(a => a.ticket.id))}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}
+            >
+              Dismiss All Warnings
+            </button>
+          </div>
+
+          <div className="sla-alert-grid">
+            {slaWarningNotifications.slice(0, 3).map(({ ticket, sla }) => {
+              const isBreached = sla.slaStatus === 'Breached';
+              return (
+                <div key={ticket.id} className={`sla-alert-card ${isBreached ? 'breached' : 'at-risk'}`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1' }}>
+                    <span style={{
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: '800',
+                      background: isBreached ? 'rgba(239, 68, 68, 0.25)' : 'rgba(245, 158, 11, 0.25)',
+                      color: isBreached ? '#ef4444' : '#f59e0b',
+                      border: `1px solid ${isBreached ? 'rgba(239, 68, 68, 0.5)' : 'rgba(245, 158, 11, 0.5)'}`
+                    }}>
+                      {isBreached ? '🚨 CRITICAL BREACH' : '⚠️ EXPIRING SOON'}
+                    </span>
+                    <strong style={{ fontFamily: 'monospace', fontSize: '12px' }}>{formatTicketId(ticket.id, ticket.type)}</strong>
+                    <span style={{ fontWeight: '700' }}>"{ticket.title}"</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                      — Assigned to: <strong style={{ color: 'var(--text-main)' }}>{sla.assignedEngineer}</strong>
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: '800', color: isBreached ? '#ef4444' : '#f59e0b', fontSize: '13px' }}>
+                      {sla.timeRemainingStr}
+                    </span>
+                    <button
+                      onClick={() => onSelectTicket(ticket.id)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: '6px',
+                        background: isBreached ? '#ef4444' : '#f59e0b',
+                        border: 'none',
+                        color: '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      View Ticket
+                    </button>
+                    <button
+                      onClick={() => setDismissedAlerts(prev => [...prev, ticket.id])}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                      title="Dismiss Warning"
+                    >
+                      <XIcon size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* KPI Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
@@ -444,7 +645,10 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
         
         {actionableTickets.length === 0 ? (
           <div style={{ padding: '28px 0', textAlign: 'center', color: '#10b981', fontSize: '14px', fontWeight: '600' }}>
-            Zero active SLA risk or breached tickets. System SLA healthy!
+            {slaFilter === 'all' 
+              ? 'Zero active SLA risk or breached tickets. System SLA healthy!'
+              : `No tickets found matching "${slaFilter === 'expired' ? 'Expired (Breached)' : 'About to Expire'}" SLA filter.`
+            }
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -595,6 +799,209 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                               title={`Escalate along path: Engineer → Team Lead → Manager → Admin`}
                             >
                               Escalate
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Device Allocation & Return Tracking Report Section */}
+      <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+          <div>
+            <h3 style={{ fontSize: '17px', fontWeight: '800', margin: '0 0 4px 0', letterSpacing: '-0.4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <DevicesIcon size={20} style={{ color: 'var(--accent)' }} /> Device Allocation & Return Tracking Report
+            </h3>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '12.5px' }}>
+              Monitor active hardware deployments, expected return dates, and restock status.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Search Input */}
+            <div style={{ position: 'relative', width: '220px' }}>
+              <input
+                type="text"
+                placeholder="Search device or user..."
+                value={deviceSearch}
+                onChange={(e) => setDeviceSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  background: 'var(--bg-body)',
+                  border: 'var(--border-card)',
+                  color: 'var(--text-main)',
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+
+            {/* Filter Buttons */}
+            <button
+              onClick={() => setDeviceFilter('all')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: deviceFilter === 'all' ? 'var(--accent)' : 'var(--bg-body)',
+                border: 'var(--border-card)',
+                color: deviceFilter === 'all' ? '#ffffff' : 'var(--text-main)'
+              }}
+            >
+              All Records ({trackingData.length})
+            </button>
+            <button
+              onClick={() => setDeviceFilter('overdue')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: deviceFilter === 'overdue' ? '#ef4444' : 'var(--bg-body)',
+                border: 'var(--border-card)',
+                color: deviceFilter === 'overdue' ? '#ffffff' : 'var(--text-main)'
+              }}
+            >
+              Overdue Returns ({deviceMetrics.overdueCount})
+            </button>
+            <button
+              onClick={() => setDeviceFilter('pending_return')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                background: deviceFilter === 'pending_return' ? '#38bdf8' : 'var(--bg-body)',
+                border: 'var(--border-card)',
+                color: deviceFilter === 'pending_return' ? '#ffffff' : 'var(--text-main)'
+              }}
+            >
+              Pending Verification ({deviceMetrics.pendingReturnCount})
+            </button>
+          </div>
+        </div>
+
+        {/* Device Metrics Summary Bar */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+          <div style={{ background: 'var(--bg-body)', border: 'var(--border-card)', borderRadius: '10px', padding: '14px 16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Active Allocations</div>
+            <div style={{ fontSize: '22px', fontWeight: '800', marginTop: '4px', color: '#c084fc' }}>{deviceMetrics.totalAllocated} Units</div>
+          </div>
+          <div style={{ background: 'var(--bg-body)', border: 'var(--border-card)', borderRadius: '10px', padding: '14px 16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Overdue Returns</div>
+            <div style={{ fontSize: '22px', fontWeight: '800', marginTop: '4px', color: deviceMetrics.overdueCount > 0 ? '#ef4444' : '#10b981' }}>{deviceMetrics.overdueCount} Units</div>
+          </div>
+          <div style={{ background: 'var(--bg-body)', border: 'var(--border-card)', borderRadius: '10px', padding: '14px 16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Pending Verification</div>
+            <div style={{ fontSize: '22px', fontWeight: '800', marginTop: '4px', color: '#38bdf8' }}>{deviceMetrics.pendingReturnCount} Units</div>
+          </div>
+          <div style={{ background: 'var(--bg-body)', border: 'var(--border-card)', borderRadius: '10px', padding: '14px 16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Restocked / Returned</div>
+            <div style={{ fontSize: '22px', fontWeight: '800', marginTop: '4px', color: '#10b981' }}>{deviceMetrics.returnedCount} Units</div>
+          </div>
+        </div>
+
+        {/* Tracking Table */}
+        {filteredTrackingData.length === 0 ? (
+          <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13.5px' }}>
+            No hardware allocation records found matching filter/search.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '12px' }}>
+                  <th style={{ padding: '12px 10px' }}>Ticket ID</th>
+                  <th style={{ padding: '12px 10px' }}>Assigned Employee</th>
+                  <th style={{ padding: '12px 10px' }}>Allocated Hardware Device</th>
+                  <th style={{ padding: '12px 10px' }}>Assigned Date</th>
+                  <th style={{ padding: '12px 10px' }}>Expected Return Date</th>
+                  <th style={{ padding: '12px 10px' }}>Return Status</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTrackingData.map((item) => {
+                  const statusInfo = getReturnStatusInfo(item);
+                  const canVerify = currentUser?.role === 'admin' && item.ticket_status === 'return_pending_verification';
+
+                  return (
+                    <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)' }}>
+                      <td style={{ padding: '12px 10px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {formatTicketId(item.ticket_id, item.ticket_type)}
+                      </td>
+                      <td style={{ padding: '12px 10px', fontWeight: '600' }}>
+                        {item.requester_name || 'N/A'}
+                        {item.requester_email && (
+                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400' }}>{item.requester_email}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px 10px', fontWeight: '700', color: 'var(--accent)' }}>
+                        {item.assigned_device_name || item.inventory_name || 'Assigned Hardware'}
+                      </td>
+                      <td style={{ padding: '12px 10px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                        {item.assigned_at ? new Date(item.assigned_at).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td style={{ padding: '12px 10px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                        {item.expected_return_date ? new Date(item.expected_return_date).toLocaleDateString() : 'Continuous'}
+                      </td>
+                      <td style={{ padding: '12px 10px' }}>
+                        <span style={{
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          background: statusInfo.bg,
+                          color: statusInfo.color,
+                          border: statusInfo.border
+                        }}>
+                          {statusInfo.text}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 10px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => onSelectTicket(item.ticket_id)}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              background: 'var(--bg-body)',
+                              border: 'var(--border-card)',
+                              color: 'var(--text-main)',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}
+                          >
+                            Details
+                          </button>
+                          {canVerify && (
+                            <button
+                              onClick={() => handleVerifyReturn(item.ticket_id)}
+                              style={{
+                                padding: '5px 10px',
+                                borderRadius: '6px',
+                                background: 'linear-gradient(135deg, #10b981, #059669)',
+                                border: 'none',
+                                color: '#ffffff',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                fontWeight: '700'
+                              }}
+                            >
+                              Verify Restock
                             </button>
                           )}
                         </div>
