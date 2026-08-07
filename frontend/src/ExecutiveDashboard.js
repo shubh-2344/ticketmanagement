@@ -654,19 +654,19 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             }
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+          <div style={{ width: '100%' }}>
+            <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '12px' }}>
-                  <th style={{ padding: '12px 10px' }}>Ticket ID</th>
-                  <th style={{ padding: '12px 10px' }}>Ticket Title</th>
-                  <th style={{ padding: '12px 10px' }}>Assigned Engineer</th>
-                  <th style={{ padding: '12px 10px' }}>Priority</th>
-                  <th style={{ padding: '12px 10px' }}>Time Remaining</th>
-                  <th style={{ padding: '12px 10px' }}>SLA Status</th>
-                  <th style={{ padding: '12px 10px' }}>Risk Level</th>
-                  <th style={{ padding: '12px 10px' }}>Escalation Level</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'right' }}>Actions</th>
+                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '22%' }}>Ticket Title</th>
+                  <th className="col-engineer" style={{ width: '15%' }}>Assigned Engineer</th>
+                  <th style={{ width: '9%' }}>Priority</th>
+                  <th style={{ width: '14%', whiteSpace: 'nowrap' }}>Time Remaining</th>
+                  <th style={{ width: '13%', whiteSpace: 'nowrap' }}>SLA Status</th>
+                  <th className="col-risk-level" style={{ width: '10%' }}>Risk Level</th>
+                  <th className="col-escalation" style={{ width: '12%' }}>Escalation</th>
+                  <th style={{ width: '10%', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -690,7 +690,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                       </td>
 
                       {/* 2. Assigned Engineer */}
-                      <td style={{ padding: '12px 10px', color: 'var(--text-main)', fontWeight: '500' }}>
+                      <td className="col-engineer" style={{ padding: '12px 10px', color: 'var(--text-main)', fontWeight: '500' }}>
                         {sla.assignedEngineer}
                       </td>
 
@@ -737,7 +737,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                       </td>
 
                       {/* 6. Risk Level (Low / Medium / High) */}
-                      <td style={{ padding: '12px 10px' }}>
+                      <td className="col-risk-level" style={{ padding: '12px 10px' }}>
                         <span style={{
                           padding: '3px 8px',
                           borderRadius: '6px',
@@ -751,7 +751,7 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                       </td>
 
                       {/* 7. Escalation Level */}
-                      <td style={{ padding: '12px 10px' }}>
+                      <td className="col-escalation" style={{ padding: '12px 10px' }}>
                         <span style={{
                           padding: '3px 8px',
                           borderRadius: '6px',
