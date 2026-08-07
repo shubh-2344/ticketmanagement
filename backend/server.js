@@ -163,6 +163,9 @@ async function initializeDB() {
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS serial_number VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS model_number VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS return_reason TEXT;`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS parent_ticket_id VARCHAR(100);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS original_allocation_id VARCHAR(100);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS last_reminder_sent TIMESTAMP;`);
 
         await pool.query(`ALTER TABLE tickets ALTER COLUMN status TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN priority TYPE VARCHAR(50);`);
@@ -1667,6 +1670,34 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
             return res.status(400).json({ error: 'Device can only be marked as returned for approved requests' });
         }
 
+        // Generate a new linked Return Request Ticket (RET-XXXXXX)
+        const returnTicketId = `RET-${Math.floor(100000 + Math.random() * 900000)}`;
+
+        await pool.query(`
+            INSERT INTO tickets (
+                id, title, description, type, category, priority, status,
+                requester_id, requester_name, requester_email,
+                assigned_device_name, parent_ticket_id, original_allocation_id, inventory_id, created_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP)
+        `, [
+            returnTicketId,
+            `Return Request for ${ticket.assigned_device_name}`,
+            `Initiated hardware return for ${ticket.assigned_device_name} (Linked Original Assignment: ${id})`,
+            'device-return',
+            'hardware',
+            'medium',
+            'return_pending_verification',
+            req.user.id || ticket.requester_id,
+            req.user.name || ticket.requester_name,
+            req.user.email || ticket.requester_email,
+            ticket.assigned_device_name,
+            id,
+            id,
+            ticket.inventory_id
+        ]);
+
+        // Update original allocation ticket status to PENDING_RETURN
         const result = await pool.query(`
             UPDATE tickets
             SET status = 'return_pending_verification',
@@ -1675,9 +1706,26 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
             RETURNING *
         `, [id]);
 
+        // Trigger email notification to user & admin
+        if (typeof sendHtmlEmail === 'function') {
+            const subject = `[Return Request Submitted] ${returnTicketId} for ${ticket.assigned_device_name}`;
+            const html = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b;">
+                    <h2 style="color: #38bdf8;">Return Request Created (${returnTicketId})</h2>
+                    <p>Hello <strong>${ticket.requester_name}</strong>,</p>
+                    <p>Your return request for device <strong>${ticket.assigned_device_name}</strong> has been logged under Return Ticket <strong>${returnTicketId}</strong> (Linked Parent Assignment: <strong>${id}</strong>).</p>
+                    <p>An Administrator will inspect and complete the physical return verification shortly.</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+                    <small style="color: #64748b;">DevSecOps IT Asset Management System</small>
+                </div>
+            `;
+            sendHtmlEmail(ticket.requester_email, subject, html);
+        }
+
         res.json({
-            message: 'Device marked as returned. Awaiting Administrator verification.',
-            ticket: result.rows[0]
+            message: `Return request ticket ${returnTicketId} generated successfully. Awaiting Administrator verification.`,
+            ticket: result.rows[0],
+            return_ticket_id: returnTicketId
         });
     } catch (err) {
         console.error('Return device error:', err);
@@ -1685,12 +1733,12 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
     }
 });
 
-// Admin verifies physical return of device
+// Admin verifies physical return of device & restocks inventory
 app.put('/api/tickets/:id/verify-return', authenticateToken, requireRole(['admin']), async (req, res) => {
     const { id } = req.params;
 
     try {
-        const ticketResult = await pool.query('SELECT inventory_id, status, assigned_device_name FROM tickets WHERE id = $1', [id]);
+        const ticketResult = await pool.query('SELECT inventory_id, status, assigned_device_name, requester_name, requester_email, parent_ticket_id FROM tickets WHERE id = $1', [id]);
         if (ticketResult.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });
         }
@@ -1701,7 +1749,7 @@ app.put('/api/tickets/:id/verify-return', authenticateToken, requireRole(['admin
             return res.status(400).json({ error: 'Ticket is not awaiting return verification' });
         }
 
-        // Complete return: update ticket status and return date
+        // Complete return on targeted ticket
         const result = await pool.query(`
             UPDATE tickets
             SET status = 'closed',
@@ -1709,6 +1757,20 @@ app.put('/api/tickets/:id/verify-return', authenticateToken, requireRole(['admin
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = $1
             RETURNING *
+        `, [id]);
+
+        // If ticket has parent_ticket_id or child return tickets, update them to closed as well
+        if (ticket.parent_ticket_id) {
+            await pool.query(`
+                UPDATE tickets
+                SET status = 'closed', returned_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                WHERE id = $1
+            `, [ticket.parent_ticket_id]);
+        }
+        await pool.query(`
+            UPDATE tickets
+            SET status = 'closed', returned_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+            WHERE parent_ticket_id = $1
         `, [id]);
 
         // Restock inventory item
@@ -1721,8 +1783,24 @@ app.put('/api/tickets/:id/verify-return', authenticateToken, requireRole(['admin
             `, [ticket.inventory_id]);
         }
 
+        // Trigger verification email notification
+        if (typeof sendHtmlEmail === 'function' && ticket.requester_email) {
+            const subject = `[Return Verified] Asset Restocked: ${ticket.assigned_device_name} (${id})`;
+            const html = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b;">
+                    <h2 style="color: #10b981;">Return Verified & Completed</h2>
+                    <p>Hello <strong>${ticket.requester_name}</strong>,</p>
+                    <p>Physical return of device <strong>${ticket.assigned_device_name}</strong> (Ticket ID: <strong>${id}</strong>) has been verified by Administrator and restocked to available inventory.</p>
+                    <p>Your hardware assignment for this device is now officially closed.</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+                    <small style="color: #64748b;">DevSecOps IT Asset Management System</small>
+                </div>
+            `;
+            sendHtmlEmail(ticket.requester_email, subject, html);
+        }
+
         res.json({
-            message: 'Device return verified successfully. Asset inventory restocked.',
+            message: 'Device return verified successfully. Asset inventory restocked to AVAILABLE.',
             ticket: result.rows[0]
         });
     } catch (err) {
@@ -1745,6 +1823,8 @@ app.get('/api/admin/device-tracking', authenticateToken, requireRole(['admin', '
                 t.assigned_at,
                 t.expected_return_date,
                 t.status as ticket_status,
+                t.parent_ticket_id,
+                t.original_allocation_id,
                 i.name as inventory_name,
                 i.category as inventory_category,
                 i.status as inventory_status

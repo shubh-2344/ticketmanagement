@@ -432,6 +432,19 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         </span>
       </div>
 
+      {/* Linked Parent / Allocation Ticket Relationship Banner */}
+      {ticket.parent_ticket_id && (
+        <div style={{ background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: '8px', padding: '12px 16px', marginTop: '12px', marginBottom: '16px', color: '#38bdf8', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '16px' }}>🔗</span>
+          <div>
+            <strong>Linked Parent Ticket:</strong> Initiated from original hardware allocation ticket{' '}
+            <strong style={{ textDecoration: 'underline' }}>
+              {formatTicketId(ticket.parent_ticket_id)}
+            </strong>
+          </div>
+        </div>
+      )}
+
       {/* Multi-Stage Workflow Timeline Indicator */}
       {ticket.type === 'issue' ? (
         <div className="workflow-timeline issue-timeline">
