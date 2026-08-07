@@ -744,7 +744,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         </div>
       )}
 
-      {/* Multi-Stage Workflow Timeline Indicator */}
+      {/* Multi-Stage Workflow Approval Progression Line */}
       {ticket.type === 'issue' ? (
         <div className="workflow-timeline issue-timeline">
           <div className={`timeline-step ${ticket.created_at ? 'completed' : ''}`}>
@@ -758,20 +758,77 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           </div>
         </div>
       ) : (
-        <div className="workflow-timeline">
-          <div className={`timeline-step ${ticket.created_at ? 'completed' : ''}`}>
-            <div className="step-num">1</div>
-            <div className="step-label">Submitted</div>
+        <div className="approval-flow-bar">
+          <div className="flow-header-row">
+            <h3 className="flow-header-title">APPROVAL & FULFILLMENT PROGRESSION FLOW</h3>
+            {ticket.status === 'pending_admin_assignment' && (
+              <span className="waiting-admin-pill">
+                ⏳ Waiting for Admin Action
+              </span>
+            )}
+            {ticket.status === 'pending_manager_approval' && (
+              <span className="waiting-manager-pill" style={{
+                background: 'rgba(245, 158, 11, 0.15)',
+                color: '#f59e0b',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '11.5px',
+                fontWeight: '800',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                ⏳ Waiting for Manager Approval
+              </span>
+            )}
           </div>
-          <div className="step-connector"></div>
-          <div className={`timeline-step ${ticket.approval_date ? (ticket.status === 'rejected' ? 'rejected' : 'completed') : 'active'}`}>
-            <div className="step-num">2</div>
-            <div className="step-label">Manager Review</div>
-          </div>
-          <div className="step-connector"></div>
-          <div className={`timeline-step ${ticket.assigned_at || ticket.status === 'approved' ? 'completed' : (ticket.status === 'pending_admin_assignment' ? 'active' : '')}`}>
-            <div className="step-num">3</div>
-            <div className="step-label">Admin Device Assignment</div>
+
+          <div className="flow-track-wrapper">
+            {/* Step 1: Submitted */}
+            <div className="flow-step-node">
+              <div className="flow-circle circle-green">✓</div>
+              <span className="flow-label label-green">Submitted</span>
+            </div>
+
+            {/* Line 1 -> 2: Solid Green */}
+            <div className={`flow-line ${ticket.approval_date || ticket.status !== 'pending_manager_approval' ? 'line-solid-green' : 'line-dotted-orange'}`}></div>
+
+            {/* Step 2: Manager Approved */}
+            <div className="flow-step-node">
+              <div className={`flow-circle ${ticket.approval_date || ticket.status !== 'pending_manager_approval' ? 'circle-green' : 'circle-orange'}`}>
+                {ticket.approval_date || ticket.status !== 'pending_manager_approval' ? '✓' : '2'}
+              </div>
+              <span className={`flow-label ${ticket.approval_date || ticket.status !== 'pending_manager_approval' ? 'label-green' : 'label-orange'}`}>
+                Manager Approved
+              </span>
+            </div>
+
+            {/* Line 2 -> 3: Solid Green if Manager Approved, Dotted Orange if pending Admin */}
+            <div className={`flow-line ${ticket.status === 'pending_admin_assignment' ? 'line-solid-green' : (ticket.status === 'approved' || ticket.status === 'closed' ? 'line-solid-green' : 'line-muted')}`}></div>
+
+            {/* Step 3: Waiting for Admin */}
+            <div className="flow-step-node">
+              <div className={`flow-circle ${ticket.status === 'pending_admin_assignment' ? 'circle-orange' : (ticket.status === 'approved' || ticket.status === 'closed' ? 'circle-green' : 'circle-muted')}`}>
+                {ticket.status === 'approved' || ticket.status === 'closed' ? '✓' : '3'}
+              </div>
+              <span className={`flow-label ${ticket.status === 'pending_admin_assignment' ? 'label-orange' : (ticket.status === 'approved' || ticket.status === 'closed' ? 'label-green' : 'label-muted')}`}>
+                Waiting for Admin
+              </span>
+            </div>
+
+            {/* Line 3 -> 4: Dotted Orange for pending Admin, Solid Blue for Admin Assigned */}
+            <div className={`flow-line ${ticket.status === 'pending_admin_assignment' ? 'line-dotted-orange' : (ticket.status === 'approved' || ticket.status === 'closed' ? 'line-solid-blue' : 'line-muted')}`}></div>
+
+            {/* Step 4: Admin Assigned */}
+            <div className="flow-step-node">
+              <div className={`flow-circle ${ticket.status === 'approved' || ticket.status === 'closed' ? 'circle-blue' : 'circle-muted'}`}>
+                {ticket.status === 'approved' || ticket.status === 'closed' ? '✓' : '4'}
+              </div>
+              <span className={`flow-label ${ticket.status === 'approved' || ticket.status === 'closed' ? 'label-blue' : 'label-muted'}`}>
+                Admin Assigned
+              </span>
+            </div>
           </div>
         </div>
       )}
