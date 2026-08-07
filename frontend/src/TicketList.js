@@ -69,7 +69,7 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
         </div>
       ) : viewMode === 'table' ? (
         /* TABLE VIEW LAYOUT */
-        <div className="table-responsive-container">
+        <div className="table-responsive-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <table className="tickets-table-view">
             <thead>
               <tr>
@@ -91,24 +91,24 @@ function TicketList({ tickets, currentUser, onViewTicket, viewMode = 'grid', onV
                     <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap', padding: '12px 14px' }}>
                       {formatTicketId(t.id, t.type)}
                     </td>
-                    <td style={{ padding: '12px 14px', minWidth: '170px' }}>
+                    <td style={{ padding: '12px 14px', maxWidth: '260px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                       <div className="table-title-cell">
-                        <strong style={{ display: 'block', marginBottom: '2px' }}>{t.title}</strong>
+                        <strong style={{ display: 'block', marginBottom: '2px', wordBreak: 'break-word' }}>{t.title}</strong>
                         <span className="mini-type-tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
                           {getCategoryIcon(t.category)}
                           {t.type === 'device-request' ? 'Device' : (t.type === 'device-return' ? 'Asset Return' : 'Issue')}
                         </span>
                       </div>
                     </td>
-                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>{t.requester_name}</td>
-                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>{(t.type === 'issue' || t.type === 'device-return') ? 'N/A - Admin' : (t.manager_name || 'Manager')}</td>
+                    <td style={{ padding: '12px 14px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{t.requester_name}</td>
+                    <td style={{ padding: '12px 14px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{(t.type === 'issue' || t.type === 'device-return') ? 'N/A - Direct Admin' : (t.manager_name || 'Manager')}</td>
                     <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}><span className={`priority-text ${t.priority}`}>{t.priority.toUpperCase()}</span></td>
                     <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>
                       <span className="status-pill-table" style={{ background: statusInfo.bg, border: statusInfo.border, color: statusInfo.color, padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
                         {statusInfo.text}
                       </span>
                     </td>
-                    <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}>{t.assigned_device_name || '-'}</td>
+                    <td style={{ padding: '12px 14px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{t.assigned_device_name || '-'}</td>
                     <td style={{ whiteSpace: 'nowrap', padding: '12px 14px' }}><small>{formatDate(t.created_at)}</small></td>
                   </tr>
                 );

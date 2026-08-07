@@ -945,13 +945,13 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                       <td style={{ padding: '12px 12px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                         {formatTicketId(item.ticket_id, item.ticket_type)}
                       </td>
-                      <td style={{ padding: '12px 12px', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '12px 12px', fontWeight: '600', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                         {item.requester_name || 'N/A'}
                         {item.requester_email && (
-                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400' }}>{item.requester_email}</span>
+                          <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400', wordBreak: 'break-all' }}>{item.requester_email}</span>
                         )}
                       </td>
-                      <td style={{ padding: '12px 12px', fontWeight: '700', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '12px 12px', fontWeight: '700', color: 'var(--accent)', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                         {item.assigned_device_name || item.inventory_name || 'Assigned Hardware'}
                       </td>
                       <td style={{ padding: '12px 12px', color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
