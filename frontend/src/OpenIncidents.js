@@ -339,6 +339,7 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
                           {statusText}
                         </span>
                       </td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: '6px' }}>
                           <button
                             onClick={() => onViewTicket(t)}
