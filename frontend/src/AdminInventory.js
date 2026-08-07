@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { InventoryIcon, PlusIcon, DevicesIcon, AlertIcon, SearchIcon, EditIcon, TrashIcon, XIcon } from './components/Icons';
+import { InventoryIcon, PlusIcon, DevicesIcon, AlertIcon, SearchIcon, EditIcon, TrashIcon, XIcon, UploadIcon } from './components/Icons';
 import './AdminInventory.css';
 
 function AdminInventory({ API_URL }) {
@@ -16,7 +16,8 @@ function AdminInventory({ API_URL }) {
     category: 'Laptop',
     quantity: 1,
     status: 'Available',
-    description: ''
+    description: '',
+    image_url: ''
   });
 
   const categories = [
@@ -59,6 +60,24 @@ function AdminInventory({ API_URL }) {
     }));
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Image size exceeds 2MB limit. Please select a smaller image.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          image_url: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleOpenAdd = () => {
     setEditingItem(null);
     setFormData({
@@ -66,7 +85,8 @@ function AdminInventory({ API_URL }) {
       category: 'Laptop',
       quantity: 1,
       status: 'Available',
-      description: ''
+      description: '',
+      image_url: ''
     });
     setShowAddModal(true);
   };
@@ -78,7 +98,8 @@ function AdminInventory({ API_URL }) {
       category: item.category,
       quantity: item.quantity,
       status: item.status,
-      description: item.description || ''
+      description: item.description || '',
+      image_url: item.image_url || ''
     });
     setShowAddModal(true);
   };
@@ -203,7 +224,18 @@ function AdminInventory({ API_URL }) {
             <tbody>
               {filteredInventory.map((item) => (
                 <tr key={item.id}>
-                  <td className="font-semibold">{item.name}</td>
+                  <td className="font-semibold">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {item.image_url ? (
+                        <img src={item.image_url} alt={item.name} style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }} />
+                      ) : (
+                        <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: 'var(--bg-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                          <DevicesIcon size={18} />
+                        </div>
+                      )}
+                      <span>{item.name}</span>
+                    </div>
+                  </td>
                   <td>
                     <span className="category-pill">{item.category}</span>
                   </td>
@@ -258,6 +290,48 @@ function AdminInventory({ API_URL }) {
                   placeholder="e.g. MacBook Pro 16 Inch"
                   required
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Device Image (URL or Upload)</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    name="image_url"
+                    value={formData.image_url}
+                    onChange={handleInputChange}
+                    placeholder="Paste image URL (https://...) or upload file"
+                    style={{ flex: 1 }}
+                  />
+                  <label htmlFor="inventory-file-upload" style={{ padding: '8px 12px', background: 'var(--bg-body)', border: 'var(--border-card)', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                    <UploadIcon size={14} /> Upload Image
+                  </label>
+                  <input
+                    id="inventory-file-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+                {formData.image_url && (
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg-body)', padding: '10px', borderRadius: '8px', border: 'var(--border-card)' }}>
+                    <img
+                      src={formData.image_url}
+                      alt="Preview"
+                      style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Image Live Preview</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                      style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="form-row">

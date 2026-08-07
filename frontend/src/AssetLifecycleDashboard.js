@@ -224,9 +224,11 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
       {metrics && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '18px' }}>
           <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Total In Stock</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <InventoryIcon size={14} style={{ color: '#4ade80' }} /> Available Devices
+            </div>
             <div style={{ fontSize: '32px', fontWeight: '800', marginTop: '6px', color: '#4ade80' }}>{metrics.statusCounts?.Available || 0} Units</div>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>Ready for deployment</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>Ready for immediate assignment</span>
           </div>
 
           <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '20px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
@@ -313,17 +315,17 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
           </div>
         ) : (
           <div className="table-responsive-container" style={{ width: '100%', maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}>
-            <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+            <table style={{ width: '100%', minWidth: '900px', tableLayout: 'auto', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                  <th style={{ width: '14%', minWidth: '110px', padding: '12px 10px', whiteSpace: 'nowrap' }}>TICKET ID</th>
-                  <th style={{ width: '18%', minWidth: '130px', padding: '12px 10px' }}>DEVICE</th>
-                  <th style={{ width: '20%', minWidth: '160px', padding: '12px 10px' }}>ASSIGNED USER</th>
-                  <th className="col-assigned-date" style={{ width: '10%', minWidth: '100px', padding: '12px 10px', whiteSpace: 'nowrap' }}>ASSIGN DATE</th>
-                  <th className="col-return-date" style={{ width: '13%', minWidth: '120px', padding: '12px 10px', whiteSpace: 'nowrap' }}>EXPECTED RETURN</th>
-                  <th style={{ width: '12%', minWidth: '120px', padding: '12px 10px', whiteSpace: 'nowrap' }}>TIME LEFT</th>
-                  <th style={{ width: '10%', minWidth: '110px', padding: '12px 10px', whiteSpace: 'nowrap' }}>STATUS</th>
-                  <th style={{ width: '5%', minWidth: '80px', padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>ACTIONS</th>
+                <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  <th style={{ padding: '12px 14px', whiteSpace: 'nowrap', width: '130px' }}>TICKET ID</th>
+                  <th style={{ padding: '12px 14px', minWidth: '150px' }}>DEVICE</th>
+                  <th style={{ padding: '12px 14px', minWidth: '180px' }}>ASSIGNED USER</th>
+                  <th className="col-assigned-date" style={{ padding: '12px 14px', whiteSpace: 'nowrap', width: '120px' }}>ASSIGN DATE</th>
+                  <th className="col-return-date" style={{ padding: '12px 14px', minWidth: '140px', lineHeight: '1.3' }}>EXPECTED RETURN</th>
+                  <th style={{ padding: '12px 14px', minWidth: '120px', lineHeight: '1.3' }}>TIME LEFT</th>
+                  <th style={{ padding: '12px 14px', whiteSpace: 'nowrap', width: '130px' }}>STATUS</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap', width: '90px' }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
@@ -331,20 +333,20 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                   const derived = deriveAllocationStatus(item);
                   return (
                     <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)', verticalAlign: 'middle' }}>
-                      <td className="ticket-id-cell">
+                      <td className="ticket-id-cell" style={{ padding: '12px 14px' }}>
                         {formatTicketId(item.ticket_id, item.ticket_type || 'device-request')}
                       </td>
-                      <td style={{ fontWeight: '600', wordBreak: 'break-word' }}>{item.assigned_device_name}</td>
-                      <td>
+                      <td style={{ padding: '12px 14px', fontWeight: '600', wordBreak: 'break-word' }}>{item.assigned_device_name}</td>
+                      <td style={{ padding: '12px 14px' }}>
                         <div style={{ fontWeight: '600', wordBreak: 'break-word' }}>{item.requester_name}</div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', wordBreak: 'break-all' }}>{item.requester_email}</div>
                       </td>
-                      <td className="col-assigned-date">{formatDate(item.assigned_at)}</td>
-                      <td className="col-return-date">{formatDate(item.expected_return_date)}</td>
-                      <td style={{ padding: '14px 10px', color: 'var(--text-muted)', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                      <td className="col-assigned-date" style={{ padding: '12px 14px' }}>{formatDate(item.assigned_at)}</td>
+                      <td className="col-return-date" style={{ padding: '12px 14px' }}>{formatDate(item.expected_return_date)}</td>
+                      <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
                         {derived.timeLeftText}
                       </td>
-                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                         <span style={{
                           padding: '5px 12px',
                           borderRadius: '12px',
@@ -359,7 +361,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                           {derived.statusText}
                         </span>
                       </td>
-                      <td style={{ padding: '16px 8px', textAlign: 'right' }}>
+                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'flex-end' }}>
                           <button
                             onClick={() => onSelectTicket(item.ticket_id)}

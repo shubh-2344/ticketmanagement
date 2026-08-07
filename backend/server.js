@@ -171,6 +171,7 @@ async function initializeDB() {
         await pool.query(`ALTER TABLE tickets ALTER COLUMN priority TYPE VARCHAR(50);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN type TYPE VARCHAR(100);`);
         await pool.query(`ALTER TABLE tickets ALTER COLUMN category TYPE VARCHAR(100);`);
+        await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS image_url TEXT;`);
 
         // Default Seed Users
         const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
@@ -1570,7 +1571,7 @@ app.get('/api/inventory', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/inventory', authenticateToken, requireRole(['admin']), async (req, res) => {
-    const { name, category, quantity, status, description } = req.body;
+    const { name, category, quantity, status, description, image_url } = req.body;
 
     if (!name || !category) {
         return res.status(400).json({ error: 'Item name and category are required' });
@@ -1582,10 +1583,10 @@ app.post('/api/inventory', authenticateToken, requireRole(['admin']), async (req
         const itemStatus = status || (qty > 0 ? 'Available' : 'Out of Stock');
 
         const result = await pool.query(`
-            INSERT INTO inventory (id, name, category, quantity, status, description)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO inventory (id, name, category, quantity, status, description, image_url)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
-        `, [id, name.trim(), category, qty, itemStatus, description || '']);
+        `, [id, name.trim(), category, qty, itemStatus, description || '', image_url || null]);
 
         res.status(201).json({
             message: 'Inventory item added successfully',
@@ -1599,7 +1600,7 @@ app.post('/api/inventory', authenticateToken, requireRole(['admin']), async (req
 
 app.put('/api/inventory/:id', authenticateToken, requireRole(['admin']), async (req, res) => {
     const { id } = req.params;
-    const { name, category, quantity, status, description } = req.body;
+    const { name, category, quantity, status, description, image_url } = req.body;
 
     try {
         const qty = parseInt(quantity, 10) || 0;
@@ -1612,10 +1613,11 @@ app.put('/api/inventory/:id', authenticateToken, requireRole(['admin']), async (
                 quantity = $3,
                 status = $4,
                 description = $5,
+                image_url = $6,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = $6
+            WHERE id = $7
             RETURNING *
-        `, [name.trim(), category, qty, itemStatus, description || '', id]);
+        `, [name.trim(), category, qty, itemStatus, description || '', image_url || null, id]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Inventory item not found' });
