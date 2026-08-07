@@ -9,7 +9,8 @@ import {
   SparklesIcon,
   CheckIcon,
   XIcon,
-  SettingsIcon
+  SettingsIcon,
+  BarChartIcon
 } from './components/Icons';
 
 function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBack, onAdminUpdate, onAdminDelete, onRefresh, API_URL }) {

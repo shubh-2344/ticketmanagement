@@ -113,7 +113,7 @@ function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, A
     const statusLower = (s || '').toLowerCase();
     if (statusLower === 'closed') return 'Closed';
     if (statusLower === 'resolved') return 'Resolved';
-    StatusLower.toUpperCase();
+    return (s || '').toUpperCase();
   };
 
   const formatDate = (dateString) => {

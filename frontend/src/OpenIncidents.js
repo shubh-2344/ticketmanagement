@@ -114,7 +114,7 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
     if (statusLower === 'approved') return 'In Progress';
     if (statusLower === 'closed') return 'Closed';
     if (statusLower === 'resolved') return 'Resolved';
-    StatusLower.toUpperCase();
+    return (s || '').toUpperCase();
   };
 
   const getStatusColor = (s) => {
