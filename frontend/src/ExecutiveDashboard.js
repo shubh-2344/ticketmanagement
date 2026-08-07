@@ -27,6 +27,33 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
   const [deviceTrackingList, setDeviceTrackingList] = useState([]);
   const [deviceFilter, setDeviceFilter] = useState('all'); // 'all', 'overdue', 'pending_return', 'active'
   const [deviceSearch, setDeviceSearch] = useState('');
+  const [managerTab, setManagerTab] = useState('awaiting'); // 'awaiting', 'approved'
+
+  const handleManagerReview = async (ticketId, action) => {
+    const isApprove = action === 'approve';
+    const confirmed = await window.showConfirm({
+      title: isApprove ? 'Approve Ticket Request' : 'Deny Ticket Request',
+      message: `Are you sure you want to ${isApprove ? 'approve' : 'deny'} this ticket request?`,
+      confirmText: isApprove ? 'Approve Request' : 'Deny Request',
+      cancelText: 'Cancel',
+      confirmType: isApprove ? 'success' : 'danger'
+    });
+    if (!confirmed) return;
+
+    try {
+      if (API_URL) {
+        await axios.put(`${API_URL}/tickets/${ticketId}/review`, {
+          action: isApprove ? 'approve' : 'reject',
+          comment: isApprove ? 'Approved by Manager' : 'Denied by Manager'
+        });
+      }
+      alert(`Ticket request successfully ${isApprove ? 'approved and sent to IT Admin' : 'denied'}!`);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Manager review error:', err);
+      alert(err.response?.data?.error || 'Failed to process ticket review');
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimate(true), 50);
@@ -435,6 +462,223 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
   };
 
   const isManager = currentUser?.role === 'manager';
+
+  if (isManager) {
+    const mgrId = currentUser.id;
+    const mgrEmail = (currentUser.email || '').toLowerCase();
+    const mgrDept = (currentUser.department || '').toLowerCase();
+
+    // 1. Tickets awaiting Manager Approval
+    const awaitingApprovalTickets = tickets.filter(t => {
+      const isPending = t.status === 'pending_manager_approval' || t.status === 'pending';
+      const isTargetMgr = t.manager_id === mgrId || t.approver_id === mgrId || (mgrDept && (t.department || '').toLowerCase() === mgrDept);
+      return isPending && isTargetMgr;
+    });
+
+    // 2. Tickets approved by Manager currently pending Admin Approval/Fulfillment
+    const approvedPendingAdminTickets = tickets.filter(t => {
+      const isAssignedToMgr = t.manager_id === mgrId || t.approver_id === mgrId || (mgrDept && (t.department || '').toLowerCase() === mgrDept);
+      const isApprovedPending = t.status === 'pending_admin_assignment' || t.status === 'approved' || t.status === 'in_progress';
+      return isAssignedToMgr && isApprovedPending;
+    });
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', color: 'var(--text-main)' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h2 style={{ fontSize: '22px', fontWeight: '800', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckIcon size={24} style={{ color: 'var(--accent)' }} /> Manager Approval & Tracking Dashboard
+            </h2>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>
+              Review pending team requests and track tickets approved by you currently pending IT Admin fulfillment.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              if (onViewAllTickets) onViewAllTickets();
+            }}
+            style={{ padding: '9px 18px', borderRadius: '8px', background: 'var(--accent)', border: 'none', color: '#ffffff', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px var(--accent)33' }}
+          >
+            Team Tickets Overview
+          </button>
+        </div>
+
+        {/* Summary Metric Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+          <div 
+            onClick={() => setManagerTab('awaiting')}
+            style={{ background: 'var(--bg-card)', border: managerTab === 'awaiting' ? '2px solid var(--accent)' : 'var(--border-card)', borderRadius: '12px', padding: '20px', cursor: 'pointer' }}
+          >
+            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Awaiting Your Approval</div>
+            <div style={{ fontSize: '28px', fontWeight: '800', marginTop: '6px', color: '#f59e0b' }}>{awaitingApprovalTickets.length}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Pending manager review & decision</div>
+          </div>
+          <div 
+            onClick={() => setManagerTab('approved')}
+            style={{ background: 'var(--bg-card)', border: managerTab === 'approved' ? '2px solid var(--accent)' : 'var(--border-card)', borderRadius: '12px', padding: '20px', cursor: 'pointer' }}
+          >
+            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Approved & Pending Admin</div>
+            <div style={{ fontSize: '28px', fontWeight: '800', marginTop: '6px', color: '#38bdf8' }}>{approvedPendingAdminTickets.length}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Approved by you, in IT queue for fulfillment</div>
+          </div>
+        </div>
+
+        {/* Tab Selection Bar */}
+        <div style={{ display: 'flex', gap: '10px', borderBottom: 'var(--border-card)', paddingBottom: '12px' }}>
+          <button
+            onClick={() => setManagerTab('awaiting')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              background: managerTab === 'awaiting' ? 'var(--accent)' : 'var(--bg-card)',
+              color: managerTab === 'awaiting' ? '#ffffff' : 'var(--text-main)',
+              border: 'var(--border-card)'
+            }}
+          >
+            (1) Awaiting Manager Approval ({awaitingApprovalTickets.length})
+          </button>
+          <button
+            onClick={() => setManagerTab('approved')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              background: managerTab === 'approved' ? 'var(--accent)' : 'var(--bg-card)',
+              color: managerTab === 'approved' ? '#ffffff' : 'var(--text-main)',
+              border: 'var(--border-card)'
+            }}
+          >
+            (2) Approved & Pending Admin Approval ({approvedPendingAdminTickets.length})
+          </button>
+        </div>
+
+        {/* Table Content Section */}
+        <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: '12px', padding: '24px' }}>
+          {managerTab === 'awaiting' ? (
+            awaitingApprovalTickets.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px 0', color: '#10b981', fontWeight: '600', fontSize: '14px' }}>
+                🎉 Great job! Zero tickets awaiting manager approval.
+              </div>
+            ) : (
+              <div className="table-responsive-container" style={{ width: '100%' }}>
+                <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      <th style={{ width: '16%', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                      <th style={{ width: '32%' }}>Title & Details</th>
+                      <th style={{ width: '22%' }}>Requester</th>
+                      <th style={{ width: '12%' }}>Priority</th>
+                      <th style={{ width: '18%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {awaitingApprovalTickets.map((t) => (
+                      <tr key={t.id} style={{ borderBottom: 'var(--border-card)' }}>
+                        <td className="ticket-id-cell">{formatTicketId(t.id, t.type)}</td>
+                        <td>
+                          <div style={{ fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }} onClick={() => onSelectTicket(t.id)}>
+                            {t.title}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>{t.category || 'General'}</div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: '600' }}>{t.requester_name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.requester_email}</div>
+                        </td>
+                        <td>
+                          <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', background: t.priority === 'high' ? 'rgba(239,68,68,0.15)' : 'rgba(56,189,248,0.15)', color: t.priority === 'high' ? '#ef4444' : '#38bdf8' }}>
+                            {(t.priority || 'medium').toUpperCase()}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={() => handleManagerReview(t.id, 'approve')}
+                              style={{ padding: '5px 12px', borderRadius: '6px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleManagerReview(t.id, 'reject')}
+                              style={{ padding: '5px 10px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                            >
+                              Deny
+                            </button>
+                            <button
+                              onClick={() => onSelectTicket(t.id)}
+                              style={{ padding: '5px 10px', borderRadius: '6px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '12px', cursor: 'pointer' }}
+                            >
+                              View
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : (
+            approvedPendingAdminTickets.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)', fontSize: '14px' }}>
+                No approved tickets currently pending Admin fulfillment.
+              </div>
+            ) : (
+              <div className="table-responsive-container" style={{ width: '100%' }}>
+                <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      <th style={{ width: '16%', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                      <th style={{ width: '32%' }}>Title & Details</th>
+                      <th style={{ width: '22%' }}>Requester</th>
+                      <th style={{ width: '18%', whiteSpace: 'nowrap' }}>Admin Queue Status</th>
+                      <th style={{ width: '12%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {approvedPendingAdminTickets.map((t) => (
+                      <tr key={t.id} style={{ borderBottom: 'var(--border-card)' }}>
+                        <td className="ticket-id-cell">{formatTicketId(t.id, t.type)}</td>
+                        <td>
+                          <div style={{ fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }} onClick={() => onSelectTicket(t.id)}>
+                            {t.title}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>{t.assigned_device_name || t.category || 'General'}</div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: '600' }}>{t.requester_name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.requester_email}</div>
+                        </td>
+                        <td>
+                          <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.4)', whiteSpace: 'nowrap' }}>
+                            PENDING IT ADMIN SETUP
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            onClick={() => onSelectTicket(t.id)}
+                            style={{ padding: '5px 12px', borderRadius: '6px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', color: 'var(--text-main)' }}>
