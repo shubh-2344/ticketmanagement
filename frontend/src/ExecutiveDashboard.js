@@ -770,20 +770,20 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
       </div>
 
       {/* Device Allocation & Return Tracking Report Section */}
-      <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
+      <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)', width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
           <div>
             <h3 style={{ fontSize: '17px', fontWeight: '800', margin: '0 0 4px 0', letterSpacing: '-0.4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <DevicesIcon size={20} style={{ color: 'var(--accent)' }} /> Device Allocation & Return Tracking Report
             </h3>
             <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '12.5px' }}>
-              Monitor active hardware deployments,Exp-Return dates, and restock status.
+              Monitor active hardware deployments, Exp-Return dates, and restock status.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Search Input */}
-            <div style={{ position: 'relative', width: '220px' }}>
+            <div style={{ position: 'relative', width: '220px', maxWidth: '100%' }}>
               <input
                 type="text"
                 placeholder="Search device or user..."
@@ -812,7 +812,8 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                 cursor: 'pointer',
                 background: deviceFilter === 'all' ? 'var(--accent)' : 'var(--bg-body)',
                 border: 'var(--border-card)',
-                color: deviceFilter === 'all' ? '#ffffff' : 'var(--text-main)'
+                color: deviceFilter === 'all' ? '#ffffff' : 'var(--text-main)',
+                whiteSpace: 'nowrap'
               }}
             >
               All Records ({trackingData.length})
@@ -827,7 +828,8 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                 cursor: 'pointer',
                 background: deviceFilter === 'overdue' ? '#ef4444' : 'var(--bg-body)',
                 border: 'var(--border-card)',
-                color: deviceFilter === 'overdue' ? '#ffffff' : 'var(--text-main)'
+                color: deviceFilter === 'overdue' ? '#ffffff' : 'var(--text-main)',
+                whiteSpace: 'nowrap'
               }}
             >
               Overdue Returns ({deviceMetrics.overdueCount})
@@ -842,7 +844,8 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                 cursor: 'pointer',
                 background: deviceFilter === 'pending_return' ? '#38bdf8' : 'var(--bg-body)',
                 border: 'var(--border-card)',
-                color: deviceFilter === 'pending_return' ? '#ffffff' : 'var(--text-main)'
+                color: deviceFilter === 'pending_return' ? '#ffffff' : 'var(--text-main)',
+                whiteSpace: 'nowrap'
               }}
             >
               Pending Verification ({deviceMetrics.pendingReturnCount})
@@ -876,16 +879,16 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             No hardware allocation records found matching filter/search.
           </div>
         ) : (
-          <div style={{ width: '100%' }}>
+          <div className="table-responsive-container" style={{ width: '100%', maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}>
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Ticket ID</th>
-                  <th style={{ width: '22%' }}>Employee</th>
-                  <th style={{ width: '20%' }}>Device</th>
+                  <th style={{ width: '14%', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '25%' }}>Employee</th>
+                  <th style={{ width: '23%' }}>Device</th>
                   <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Asg-Date</th>
-                  <th className="col-return-date" style={{ width: '12%', whiteSpace: 'nowrap' }}>Expected Return</th>
-                  <th style={{ width: '13%', whiteSpace: 'nowrap' }}>Status</th>
+                  <th className="col-return-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>EXP-Return</th>
+                  <th style={{ width: '16%', whiteSpace: 'nowrap' }}>Status</th>
                   <th style={{ width: '10%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                 </tr>
               </thead>

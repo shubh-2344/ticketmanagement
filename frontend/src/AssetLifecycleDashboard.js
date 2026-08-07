@@ -197,14 +197,14 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
       )}
 
       {/* Tracking Table Section */}
-      <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)' }}>
+      <div style={{ background: 'var(--bg-card)', border: 'var(--border-card)', borderRadius: 'var(--radius-card)', padding: '24px', boxShadow: 'var(--shadow)', backdropFilter: 'var(--backdrop)', width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FileTextIcon size={18} /> Device Allocation & Return Tracking
           </h3>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ position: 'relative', width: '220px' }}>
+            <div style={{ position: 'relative', width: '220px', maxWidth: '100%' }}>
               <input
                 type="text"
                 placeholder="Search device, user, serial..."
@@ -223,19 +223,19 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             </div>
             <button
               onClick={() => setFilterStatus('all')}
-              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'all' ? 'var(--accent)' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'all' ? '#ffffff' : 'var(--text-main)' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'all' ? 'var(--accent)' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'all' ? '#ffffff' : 'var(--text-main)', whiteSpace: 'nowrap' }}
             >
               All Assignments
             </button>
             <button
               onClick={() => setFilterStatus('overdue')}
-              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'overdue' ? '#ef4444' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'overdue' ? '#ffffff' : 'var(--text-main)' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'overdue' ? '#ef4444' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'overdue' ? '#ffffff' : 'var(--text-main)', whiteSpace: 'nowrap' }}
             >
               Overdue Only
             </button>
             <button
               onClick={() => setFilterStatus('pending_return')}
-              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'pending_return' ? '#a855f7' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'pending_return' ? '#ffffff' : 'var(--text-main)' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'pending_return' ? '#a855f7' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'pending_return' ? '#ffffff' : 'var(--text-main)', whiteSpace: 'nowrap' }}
             >
               Return Requests
             </button>
@@ -247,18 +247,18 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             <p>No active device allocations match this filter.</p>
           </div>
         ) : (
-          <div style={{ width: '100%' }}>
+          <div className="table-responsive-container" style={{ width: '100%', maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', boxSizing: 'border-box' }}>
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Ticket ID</th>
-                  <th style={{ width: '18%' }}>Device</th>
-                  <th style={{ width: '18%' }}>Assigned User</th>
-                  <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Asg-Date</th>
-                  <th className="col-return-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>EXP-Return</th>
-                  <th style={{ width: '11%', whiteSpace: 'nowrap' }}>Time Left</th>
-                  <th style={{ width: '11%', whiteSpace: 'nowrap' }}>Status</th>
-                  <th style={{ width: '8%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+                  <th style={{ width: '14%', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '22%' }}>Device</th>
+                  <th style={{ width: '22%' }}>Assigned User</th>
+                  <th className="col-assigned-date" style={{ width: '10%', whiteSpace: 'nowrap' }}>Asg-Date</th>
+                  <th className="col-return-date" style={{ width: '10%', whiteSpace: 'nowrap' }}>EXP-Return</th>
+                  <th style={{ width: '10%', whiteSpace: 'nowrap' }}>Time Left</th>
+                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ width: '10%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -302,7 +302,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                             onClick={() => onSelectTicket(item.ticket_id)}
                             style={{ padding: '4px 10px', borderRadius: '4px', background: 'var(--bg-body)', border: 'var(--border-card)', color: 'var(--text-main)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
                           >
-                            <SearchIcon size={12} /> View Detail
+                            <SearchIcon size={12} /> View
                           </button>
                           {item.ticket_status === 'return_pending_verification' && (
                             <button

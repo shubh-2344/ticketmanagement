@@ -1219,7 +1219,9 @@ html, body {
 .table-container {
   width: 100% !important;
   max-width: 100% !important;
-  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 .tickets-table-view,
