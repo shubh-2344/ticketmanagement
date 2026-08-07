@@ -355,25 +355,70 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
     }
   };
 
-  const getReturnStatusInfo = (item) => {
-    if (item.ticket_status === 'closed') {
-      return { text: 'Returned', bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' };
+  const deriveAllocationStatus = (item, currentTime = now) => {
+    const isReturned = item.is_returned || item.ticket_status === 'closed' || item.ticket_status === 'resolved';
+    const isPendingReturn = item.ticket_status === 'return_pending_verification';
+
+    if (isReturned) {
+      return {
+        statusKey: 'returned',
+        statusText: 'RETURNED',
+        bg: 'rgba(16, 185, 129, 0.15)',
+        color: '#10b981',
+        border: '1px solid rgba(16, 185, 129, 0.4)',
+        timeLeftText: '—',
+        isReturned: true
+      };
     }
-    if (item.ticket_status === 'return_pending_verification') {
-      return { text: 'Return Pending Verification', bg: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' };
+
+    if (isPendingReturn) {
+      return {
+        statusKey: 'pending_return',
+        statusText: 'RETURN PENDING',
+        bg: 'rgba(56, 189, 248, 0.15)',
+        color: '#38bdf8',
+        border: '1px solid rgba(56, 189, 248, 0.4)',
+        timeLeftText: 'Verification Pending',
+        isPendingReturn: true
+      };
     }
+
     if (item.expected_return_date) {
-      const exp = new Date(item.expected_return_date).getTime();
-      const diff = exp - now;
+      const expected = new Date(item.expected_return_date).getTime();
+      const diff = expected - currentTime;
+
       if (diff < 0) {
         const overdueDays = Math.floor(Math.abs(diff) / (1000 * 3600 * 24));
-        return { text: `OVERDUE BY ${overdueDays || 1} DAYS`, bg: 'rgba(239, 68, 68, 0.18)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' };
+        return {
+          statusKey: 'overdue',
+          statusText: 'OVERDUE',
+          bg: 'rgba(239, 68, 68, 0.18)',
+          color: '#ef4444',
+          border: '1px solid rgba(239, 68, 68, 0.4)',
+          timeLeftText: overdueDays > 0 ? `${overdueDays}d overdue` : 'Overdue today',
+          isOverdue: true
+        };
       } else {
         const days = Math.floor(diff / (1000 * 3600 * 24));
-        return { text: `Due in ${days} days`, bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' };
+        return {
+          statusKey: 'assigned',
+          statusText: 'ASSIGNED',
+          bg: 'rgba(16, 185, 129, 0.12)',
+          color: '#10b981',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          timeLeftText: days > 0 ? `${days}d left` : 'Due today'
+        };
       }
     }
-    return { text: 'Active Allocation', bg: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' };
+
+    return {
+      statusKey: 'assigned',
+      statusText: 'ASSIGNED',
+      bg: 'rgba(16, 185, 129, 0.12)',
+      color: '#10b981',
+      border: '1px solid rgba(16, 185, 129, 0.3)',
+      timeLeftText: '—'
+    };
   };
 
   const isManager = currentUser?.role === 'manager';
@@ -883,24 +928,25 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
             <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: 'var(--border-card)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                  <th style={{ width: '14%', whiteSpace: 'nowrap' }}>Ticket ID</th>
-                  <th style={{ width: '25%' }}>Employee</th>
-                  <th style={{ width: '23%' }}>Device</th>
-                  <th className="col-assigned-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>Asg-Date</th>
-                  <th className="col-return-date" style={{ width: '11%', whiteSpace: 'nowrap' }}>EXP-Return</th>
-                  <th style={{ width: '16%', whiteSpace: 'nowrap' }}>Status</th>
-                  <th style={{ width: '10%', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+                  <th style={{ width: '16%', whiteSpace: 'nowrap' }}>Ticket ID</th>
+                  <th style={{ width: '24%' }}>Device</th>
+                  <th style={{ width: '26%' }}>Assigned User</th>
+                  <th style={{ width: '14%', whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ width: '12%', whiteSpace: 'nowrap' }}>Time Left</th>
+                  <th style={{ width: '8%', textAlign: 'right', whiteSpace: 'nowrap' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredTrackingData.map((item) => {
-                  const statusInfo = getReturnStatusInfo(item);
-                  const canVerify = currentUser?.role === 'admin' && item.ticket_status === 'return_pending_verification';
+                {filteredTrackingData.slice(0, 5).map((item) => {
+                  const statusInfo = deriveAllocationStatus(item);
 
                   return (
                     <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)' }}>
                       <td className="ticket-id-cell">
                         {formatTicketId(item.ticket_id, item.ticket_type)}
+                      </td>
+                      <td style={{ fontWeight: '700', color: 'var(--accent)', wordBreak: 'break-word' }}>
+                        {item.assigned_device_name || item.inventory_name || 'Assigned Hardware'}
                       </td>
                       <td>
                         <div style={{ fontWeight: '600', wordBreak: 'break-word' }}>{item.requester_name || 'N/A'}</div>
@@ -908,18 +954,9 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400', wordBreak: 'break-all' }}>{item.requester_email}</div>
                         )}
                       </td>
-                      <td style={{ fontWeight: '700', color: 'var(--accent)', wordBreak: 'break-word' }}>
-                        {item.assigned_device_name || item.inventory_name || 'Assigned Hardware'}
-                      </td>
-                      <td className="col-assigned-date" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                        {item.assigned_at ? new Date(item.assigned_at).toLocaleDateString() : 'N/A'}
-                      </td>
-                      <td className="col-return-date" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                        {item.expected_return_date ? new Date(item.expected_return_date).toLocaleDateString() : 'Continuous'}
-                      </td>
                       <td style={{ padding: '12px 6px', whiteSpace: 'nowrap' }}>
                         <span style={{
-                          padding: '5px 10px',
+                          padding: '4px 10px',
                           borderRadius: '12px',
                           fontSize: '11px',
                           fontWeight: '800',
@@ -932,45 +969,30 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
                           whiteSpace: 'nowrap',
                           lineHeight: '1.2'
                         }}>
-                          {statusInfo.text}
+                          {statusInfo.statusText}
                         </span>
                       </td>
+                      <td style={{ padding: '12px 6px', color: 'var(--text-muted)', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                        {statusInfo.timeLeftText}
+                      </td>
                       <td style={{ padding: '12px 6px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={() => onSelectTicket(item.ticket_id)}
-                            style={{
-                              padding: '5px 12px',
-                              borderRadius: '6px',
-                              background: 'var(--bg-body)',
-                              border: 'var(--border-card)',
-                              color: 'var(--text-main)',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            Details
-                          </button>
-                          {canVerify && (
-                            <button
-                              onClick={() => handleVerifyReturn(item.ticket_id)}
-                              style={{
-                                padding: '5px 10px',
-                                borderRadius: '6px',
-                                background: 'linear-gradient(135deg, #10b981, #059669)',
-                                border: 'none',
-                                color: '#ffffff',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                fontWeight: '700'
-                              }}
-                            >
-                              Verify Restock
-                            </button>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => onSelectTicket(item.ticket_id)}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: '6px',
+                            background: 'var(--bg-body)',
+                            border: 'var(--border-card)',
+                            color: 'var(--text-main)',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            whiteSpace: 'nowrap'
+                          }}
+                          title="View full ticket details"
+                        >
+                          View
+                        </button>
                       </td>
                     </tr>
                   );

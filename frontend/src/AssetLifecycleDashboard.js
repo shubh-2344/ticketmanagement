@@ -58,38 +58,92 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
     }
   };
 
-  const getReturnStatusInfo = (item) => {
-    if (item.ticket_status === 'closed') {
-      return { text: 'Returned', class: 'status-tag closed' };
-    }
-    if (item.ticket_status === 'return_pending_verification') {
-      return { text: 'Return Pending Verification', class: 'status-tag pending' };
-    }
+  const deriveAllocationStatus = (item) => {
+    const isReturned = item.is_returned || item.ticket_status === 'closed' || item.ticket_status === 'resolved';
+    const isPendingReturn = item.ticket_status === 'return_pending_verification';
 
-    if (!item.expected_return_date) {
-      return { text: 'Active Allocation', class: 'status-tag active' };
-    }
-
-    const expected = new Date(item.expected_return_date).getTime();
-    const now = Date.now();
-    const diff = expected - now;
-
-    if (diff < 0) {
-      const absDiff = Math.abs(diff);
-      const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+    if (isReturned) {
       return {
-        text: `OVERDUE BY ${days} DAYS`,
-        class: 'overdue-pulse',
-        style: { color: '#ef4444', fontWeight: '800', textShadow: '0 0 10px rgba(239, 68, 68, 0.4)' }
+        statusKey: 'returned',
+        statusText: 'RETURNED',
+        style: {
+          backgroundColor: 'rgba(16, 185, 129, 0.15)',
+          color: '#10b981',
+          border: '1px solid rgba(16, 185, 129, 0.4)'
+        },
+        timeLeftText: '—',
+        isReturned: true,
+        isOverdue: false,
+        isPendingReturn: false
       };
-    } else {
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      if (days === 0) {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        return { text: `Due in ${hours} hours`, class: 'text-amber' };
-      }
-      return { text: `Due in ${days} days`, class: days < 3 ? 'text-amber' : 'text-slate-300' };
     }
+
+    if (isPendingReturn) {
+      return {
+        statusKey: 'pending_return',
+        statusText: 'RETURN PENDING',
+        style: {
+          backgroundColor: 'rgba(56, 189, 248, 0.15)',
+          color: '#38bdf8',
+          border: '1px solid rgba(56, 189, 248, 0.4)'
+        },
+        timeLeftText: 'Verification Pending',
+        isReturned: false,
+        isOverdue: false,
+        isPendingReturn: true
+      };
+    }
+
+    if (item.expected_return_date) {
+      const expected = new Date(item.expected_return_date).getTime();
+      const diff = expected - Date.now();
+
+      if (diff < 0) {
+        const overdueDays = Math.floor(Math.abs(diff) / (1000 * 3600 * 24));
+        return {
+          statusKey: 'overdue',
+          statusText: 'OVERDUE',
+          style: {
+            backgroundColor: 'rgba(239, 68, 68, 0.18)',
+            color: '#ef4444',
+            border: '1px solid rgba(239, 68, 68, 0.4)'
+          },
+          timeLeftText: overdueDays > 0 ? `${overdueDays}d overdue` : 'Overdue today',
+          isReturned: false,
+          isOverdue: true,
+          isPendingReturn: false
+        };
+      } else {
+        const days = Math.floor(diff / (1000 * 3600 * 24));
+        return {
+          statusKey: 'assigned',
+          statusText: 'ASSIGNED',
+          style: {
+            backgroundColor: 'rgba(16, 185, 129, 0.12)',
+            color: '#10b981',
+            border: '1px solid rgba(16, 185, 129, 0.3)'
+          },
+          timeLeftText: days > 0 ? `${days}d left` : 'Due today',
+          isReturned: false,
+          isOverdue: false,
+          isPendingReturn: false
+        };
+      }
+    }
+
+    return {
+      statusKey: 'assigned',
+      statusText: 'ASSIGNED',
+      style: {
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+        color: '#10b981',
+        border: '1px solid rgba(16, 185, 129, 0.3)'
+      },
+      timeLeftText: '—',
+      isReturned: false,
+      isOverdue: false,
+      isPendingReturn: false
+    };
   };
 
   const formatDate = (dateStr) => {
@@ -102,10 +156,15 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
   };
 
   const filteredList = trackingList.filter(item => {
-    if (filterStatus === 'overdue' && !(item.ticket_status !== 'closed' && item.expected_return_date && new Date(item.expected_return_date) < new Date())) {
+    const derived = deriveAllocationStatus(item);
+
+    if (filterStatus === 'overdue' && !derived.isOverdue) {
       return false;
     }
-    if (filterStatus === 'pending_return' && item.ticket_status !== 'return_pending_verification') {
+    if (filterStatus === 'pending_return' && !derived.isPendingReturn) {
+      return false;
+    }
+    if (filterStatus === 'returned' && !derived.isReturned) {
       return false;
     }
     if (searchTerm.trim()) {
@@ -225,7 +284,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
               onClick={() => setFilterStatus('all')}
               style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'all' ? 'var(--accent)' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'all' ? '#ffffff' : 'var(--text-main)', whiteSpace: 'nowrap' }}
             >
-              All Assignments
+              All Assignments ({trackingList.length})
             </button>
             <button
               onClick={() => setFilterStatus('overdue')}
@@ -235,9 +294,15 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
             </button>
             <button
               onClick={() => setFilterStatus('pending_return')}
-              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'pending_return' ? '#a855f7' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'pending_return' ? '#ffffff' : 'var(--text-main)', whiteSpace: 'nowrap' }}
+              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'pending_return' ? '#38bdf8' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'pending_return' ? '#ffffff' : 'var(--text-main)', whiteSpace: 'nowrap' }}
             >
               Return Requests
+            </button>
+            <button
+              onClick={() => setFilterStatus('returned')}
+              style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', background: filterStatus === 'returned' ? '#10b981' : 'var(--bg-body)', border: 'var(--border-card)', color: filterStatus === 'returned' ? '#ffffff' : 'var(--text-main)', whiteSpace: 'nowrap' }}
+            >
+              Returned
             </button>
           </div>
         </div>
@@ -263,7 +328,7 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
               </thead>
               <tbody>
                 {filteredList.map(item => {
-                  const remaining = getReturnStatusInfo(item);
+                  const derived = deriveAllocationStatus(item);
                   return (
                     <tr key={item.ticket_id} style={{ borderBottom: 'var(--border-card)', verticalAlign: 'middle' }}>
                       <td className="ticket-id-cell">
@@ -276,8 +341,8 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                       </td>
                       <td className="col-assigned-date">{formatDate(item.assigned_at)}</td>
                       <td className="col-return-date">{formatDate(item.expected_return_date)}</td>
-                      <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>
-                        <span className={remaining.class} style={{ ...remaining.style, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}>{remaining.text}</span>
+                      <td style={{ padding: '14px 10px', color: 'var(--text-muted)', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                        {derived.timeLeftText}
                       </td>
                       <td style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>
                         <span style={{
@@ -285,15 +350,13 @@ function AssetLifecycleDashboard({ API_URL, onSelectTicket }) {
                           borderRadius: '12px',
                           fontSize: '11px',
                           fontWeight: '800',
-                          backgroundColor: item.ticket_status === 'return_pending_verification' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                          color: item.ticket_status === 'return_pending_verification' ? '#c084fc' : '#34d399',
-                          border: item.ticket_status === 'return_pending_verification' ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)',
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          ...derived.style
                         }}>
-                          {item.ticket_status === 'return_pending_verification' ? 'RETURN REQUESTED' : 'ASSIGNED'}
+                          {derived.statusText}
                         </span>
                       </td>
                       <td style={{ padding: '16px 8px', textAlign: 'right' }}>
