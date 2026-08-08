@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import formatTicketId from './utils/formatTicketId';
 import './AssignedAssetTrack.css';
@@ -52,6 +53,17 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
       delete window.handleOpenLifecycleTrackModal;
     };
   }, [API_URL]);
+
+  useEffect(() => {
+    if (selectedFlowItem) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedFlowItem]);
 
   const fetchLifecycles = async () => {
     setLoading(true);
@@ -392,7 +404,7 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
       </div>
 
       {/* Interactive Vertical UI Flow Modal / Drawer */}
-      {selectedFlowItem && (
+      {selectedFlowItem && createPortal(
         <div className="flow-modal-backdrop" onClick={() => setSelectedFlowItem(null)}>
           <div className="flow-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="flow-modal-header">
@@ -571,7 +583,8 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
