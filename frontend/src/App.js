@@ -121,6 +121,25 @@ function App() {
     };
   }, [showToast, showConfirm]);
 
+  // Dynamic API URL resolution targeting backend API endpoint
+  const getApiUrl = () => {
+    const hostname = window.location.hostname || 'localhost';
+
+    // If accessing via domain or non-localhost (e.g. servicedesk.securelayer7.com via Caddy), use relative path /api
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return '/api';
+    }
+
+    if (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.length > 0) {
+      return process.env.REACT_APP_API_URL;
+    }
+
+    const protocol = window.location.protocol;
+    return `${protocol}//${hostname}:5000/api`;
+  };
+
+  const API_URL = getApiUrl();
+
   // Synchronize browser history and URL with React routing state
   useEffect(() => {
     if (!sessionStorage.getItem('ticketmanagement_history_count')) {
@@ -129,6 +148,21 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Ensure URL reflects current view on initial mount
+    const initialParams = new URLSearchParams(window.location.search);
+    if (!initialParams.get('view')) {
+      const defaultParams = new URLSearchParams();
+      defaultParams.set('view', view);
+      const newUrl = `${window.location.pathname}?${defaultParams.toString()}`;
+      if (window.history && typeof window.history.replaceState === 'function') {
+        window.history.replaceState({ view }, '', newUrl);
+      }
+    }
+  }, []);
+
+  // Synchronize browser history and URL with React routing state
+  useEffect(() => {
+    if (!window.history || typeof window.history.pushState !== 'function') return;
     const params = new URLSearchParams(window.location.search);
     const currentViewInUrl = params.get('view') || 'dashboard';
     const currentTicketIdInUrl = params.get('ticketId');
@@ -210,24 +244,7 @@ function App() {
     }
   }, [selectedTicketId, selectedTicket, tickets, API_URL]);
 
-  // Dynamic API URL resolution targeting backend API endpoint
-  const getApiUrl = () => {
-    const hostname = window.location.hostname || 'localhost';
 
-    // If accessing via domain or non-localhost (e.g. servicedesk.securelayer7.com via Caddy), use relative path /api
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return '/api';
-    }
-
-    if (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.length > 0) {
-      return process.env.REACT_APP_API_URL;
-    }
-
-    const protocol = window.location.protocol;
-    return `${protocol}//${hostname}:5000/api`;
-  };
-
-  const API_URL = getApiUrl();
 
   // Configure Axios global Authorization header
   useEffect(() => {
