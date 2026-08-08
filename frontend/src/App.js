@@ -35,6 +35,9 @@ import {
 
 function App() {
   const [view, setViewState] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view');
+    if (viewParam) return viewParam;
     return localStorage.getItem('ticketmanagement_active_view') || 'dashboard';
   });
 
@@ -49,6 +52,9 @@ function App() {
   const [globalSettings, setGlobalSettings] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedTicketId, setSelectedTicketId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ticketIdParam = params.get('ticketId');
+    if (ticketIdParam) return ticketIdParam;
     return localStorage.getItem('ticketmanagement_selected_ticket_id') || null;
   });
   const [selectedDeviceForRequest, setSelectedDeviceForRequest] = useState(null);
@@ -114,6 +120,95 @@ function App() {
       showToast(str, isError ? 'error' : 'success');
     };
   }, [showToast, showConfirm]);
+
+  // Synchronize browser history and URL with React routing state
+  useEffect(() => {
+    if (!sessionStorage.getItem('ticketmanagement_history_count')) {
+      sessionStorage.setItem('ticketmanagement_history_count', '1');
+    }
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const currentViewInUrl = params.get('view') || 'dashboard';
+    const currentTicketIdInUrl = params.get('ticketId');
+
+    const isSame = (currentViewInUrl === view) && 
+                   (view !== 'detail' || String(currentTicketIdInUrl) === String(selectedTicketId));
+
+    if (!isSame) {
+      const newParams = new URLSearchParams();
+      newParams.set('view', view);
+      if (view === 'detail' && selectedTicketId) {
+        newParams.set('ticketId', String(selectedTicketId));
+      }
+      
+      const newUrl = `${window.location.pathname}?${newParams.toString()}`;
+      window.history.pushState({ view, ticketId: selectedTicketId }, '', newUrl);
+      
+      const count = Number(sessionStorage.getItem('ticketmanagement_history_count') || 0);
+      sessionStorage.setItem('ticketmanagement_history_count', String(count + 1));
+    }
+  }, [view, selectedTicketId]);
+
+  useEffect(() => {
+    const handlePopState = (event) => {
+      const params = new URLSearchParams(window.location.search);
+      const viewParam = params.get('view') || 'dashboard';
+      const ticketIdParam = params.get('ticketId');
+
+      setViewState(viewParam);
+      localStorage.setItem('ticketmanagement_active_view', viewParam);
+
+      if (ticketIdParam) {
+        setSelectedTicketId(ticketIdParam);
+        localStorage.setItem('ticketmanagement_selected_ticket_id', String(ticketIdParam));
+        
+        const found = tickets.find(t => String(t.id) === String(ticketIdParam));
+        if (found) {
+          setSelectedTicket(found);
+        } else {
+          axios.get(`${API_URL}/tickets/${ticketIdParam}`)
+            .then(res => setSelectedTicket(res.data))
+            .catch(err => console.error('Error fetching popstate ticket:', err));
+        }
+      } else {
+        setSelectedTicketId(null);
+        setSelectedTicket(null);
+        localStorage.removeItem('ticketmanagement_selected_ticket_id');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [tickets, API_URL]);
+
+  // Keep track of last visited list/view as fallback
+  useEffect(() => {
+    if (view && view !== 'detail') {
+      localStorage.setItem('ticketmanagement_fallback_view', view);
+    }
+  }, [view]);
+
+  // Fetch ticket details if direct page entry or refresh occurs
+  useEffect(() => {
+    if (selectedTicketId && !selectedTicket && API_URL) {
+      const found = tickets.find(t => String(t.id) === String(selectedTicketId));
+      if (found) {
+        setSelectedTicket(found);
+      } else {
+        axios.get(`${API_URL}/tickets/${selectedTicketId}`)
+          .then(res => {
+            setSelectedTicket(res.data);
+          })
+          .catch(err => {
+            console.error('Error fetching initial ticket detail:', err);
+          });
+      }
+    }
+  }, [selectedTicketId, selectedTicket, tickets, API_URL]);
 
   // Dynamic API URL resolution targeting backend API endpoint
   const getApiUrl = () => {
@@ -246,11 +341,20 @@ function App() {
 
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('ticketmanagement_selected_ticket_id');
+    localStorage.removeItem('ticketmanagement_active_view');
+    localStorage.removeItem('ticketmanagement_fallback_view');
+    sessionStorage.removeItem('ticketmanagement_history_count');
+    
+    // Clear URL query parameters
+    window.history.replaceState({}, '', window.location.pathname);
+
     setToken('');
     setCurrentUser(null);
     setAuthLoading(false);
     setTickets([]);
     setSelectedTicket(null);
+    setSelectedTicketId(null);
     setSelectedDeviceForRequest(null);
   };
 
