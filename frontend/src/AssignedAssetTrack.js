@@ -310,7 +310,7 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
               Overdue ({data.metrics?.overdueReturns || 0})
             </button>
             <button
-              className={`tab-btn ${filterStatus === 'returned' ? 'active' : ''}`}
+              className={`tab-btn tab-returned ${filterStatus === 'returned' ? 'active' : ''}`}
               onClick={() => setFilterStatus('returned')}
             >
               Returned
