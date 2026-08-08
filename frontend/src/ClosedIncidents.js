@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import CountUp from './components/CountUp';
 import ViewToggle from './components/ViewToggle';
 import formatTicketId from './utils/formatTicketId';
@@ -14,15 +14,23 @@ import {
 import './TicketList.css';
 
 function ClosedIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API_URL, viewMode = 'grid', onViewModeChange }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('closedincidents_search') || '');
+  const [priorityFilter, setPriorityFilter] = useState(() => sessionStorage.getItem('closedincidents_priority') || 'all');
+  const [categoryFilter, setCategoryFilter] = useState(() => sessionStorage.getItem('closedincidents_category') || 'all');
+  const [currentPage, setCurrentPage] = useState(() => Number(sessionStorage.getItem('closedincidents_page')) || 1);
   const itemsPerPage = 10;
 
   // Sorting state
-  const [sortField, setSortField] = useState('id');
-  const [sortDir, setSortDir] = useState('desc');
+  const [sortField, setSortField] = useState(() => sessionStorage.getItem('closedincidents_sortfield') || 'id');
+  const [sortDir, setSortDir] = useState(() => sessionStorage.getItem('closedincidents_sortdir') || 'desc');
+
+  // Persist filter states to sessionStorage
+  useEffect(() => { sessionStorage.setItem('closedincidents_search', searchTerm); }, [searchTerm]);
+  useEffect(() => { sessionStorage.setItem('closedincidents_priority', priorityFilter); }, [priorityFilter]);
+  useEffect(() => { sessionStorage.setItem('closedincidents_category', categoryFilter); }, [categoryFilter]);
+  useEffect(() => { sessionStorage.setItem('closedincidents_page', String(currentPage)); }, [currentPage]);
+  useEffect(() => { sessionStorage.setItem('closedincidents_sortfield', sortField); }, [sortField]);
+  useEffect(() => { sessionStorage.setItem('closedincidents_sortdir', sortDir); }, [sortDir]);
 
   // Filter ONLY closed / resolved / rejected tickets
   const closedTickets = useMemo(() => {

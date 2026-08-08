@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import CountUp from './components/CountUp';
 import ViewToggle from './components/ViewToggle';
@@ -6,9 +6,9 @@ import formatTicketId from './utils/formatTicketId';
 import './TicketList.css';
 
 function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API_URL, viewMode = 'grid', onViewModeChange }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('openincidents_search') || '');
+  const [priorityFilter, setPriorityFilter] = useState(() => sessionStorage.getItem('openincidents_priority') || 'all');
+  const [categoryFilter, setCategoryFilter] = useState(() => sessionStorage.getItem('openincidents_category') || 'all');
   const [resolvingTicket, setResolvingTicket] = useState(null);
   const [resolutionSummary, setResolutionSummary] = useState('');
   const [resolutionNotes, setResolutionNotes] = useState('');
@@ -18,6 +18,11 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
   const [transferTicket, setTransferTicket] = useState(null);
   const [selectedAdminName, setSelectedAdminName] = useState('');
   const [transferComment, setTransferComment] = useState('');
+
+  // Persist filter states to sessionStorage
+  useEffect(() => { sessionStorage.setItem('openincidents_search', searchTerm); }, [searchTerm]);
+  useEffect(() => { sessionStorage.setItem('openincidents_priority', priorityFilter); }, [priorityFilter]);
+  useEffect(() => { sessionStorage.setItem('openincidents_category', categoryFilter); }, [categoryFilter]);
 
   React.useEffect(() => {
     if (API_URL) {

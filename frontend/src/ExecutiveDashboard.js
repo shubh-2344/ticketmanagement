@@ -25,9 +25,14 @@ function ExecutiveDashboard({ tickets, currentUser, onSelectTicket, onViewAllTic
 
   // Device Tracking state
   const [deviceTrackingList, setDeviceTrackingList] = useState([]);
-  const [deviceFilter, setDeviceFilter] = useState('all'); // 'all', 'overdue', 'pending_return', 'active'
-  const [deviceSearch, setDeviceSearch] = useState('');
-  const [managerTab, setManagerTab] = useState('awaiting'); // 'awaiting', 'approved'
+  const [deviceFilter, setDeviceFilter] = useState(() => sessionStorage.getItem('dashboard_devicefilter') || 'all');
+  const [deviceSearch, setDeviceSearch] = useState(() => sessionStorage.getItem('dashboard_devicesearch') || '');
+  const [managerTab, setManagerTab] = useState(() => sessionStorage.getItem('dashboard_managertab') || 'awaiting');
+
+  // Persist filter states to sessionStorage
+  useEffect(() => { sessionStorage.setItem('dashboard_devicefilter', deviceFilter); }, [deviceFilter]);
+  useEffect(() => { sessionStorage.setItem('dashboard_devicesearch', deviceSearch); }, [deviceSearch]);
+  useEffect(() => { sessionStorage.setItem('dashboard_managertab', managerTab); }, [managerTab]);
 
   const handleManagerReview = async (ticketId, action) => {
     const isApprove = action === 'approve';

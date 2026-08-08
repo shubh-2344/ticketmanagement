@@ -58,6 +58,9 @@ function App() {
     return localStorage.getItem('ticketmanagement_selected_ticket_id') || null;
   });
   const [selectedDeviceForRequest, setSelectedDeviceForRequest] = useState(null);
+  const [sourceView, setSourceView] = useState(() => {
+    return sessionStorage.getItem('ticketmanagement_source_view') || null;
+  });
   const [ticketViewMode, setTicketViewMode] = useState('grid');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -469,6 +472,11 @@ function App() {
   };
 
   const handleViewTicket = (ticket) => {
+    // Capture current view as source before navigating to detail
+    const currentSource = view;
+    setSourceView(currentSource);
+    sessionStorage.setItem('ticketmanagement_source_view', currentSource);
+
     setSelectedTicket(ticket);
     if (ticket && ticket.id) {
       setSelectedTicketId(ticket.id);
@@ -478,6 +486,11 @@ function App() {
   };
 
   const handleViewTicketById = (ticketId) => {
+    // Capture current view as source before navigating to detail
+    const currentSource = view;
+    setSourceView(currentSource);
+    sessionStorage.setItem('ticketmanagement_source_view', currentSource);
+
     setSelectedTicketId(ticketId);
     localStorage.setItem('ticketmanagement_selected_ticket_id', String(ticketId));
     const foundTicket = tickets.find(t => String(t.id) === String(ticketId));
@@ -1002,11 +1015,33 @@ function App() {
                   API_URL={API_URL}
                   onBack={() => {
                     setSelectedTicket(null);
-                    if (currentUser?.role === 'employee' || currentUser?.role === 'manager') {
-                      setView('my-tickets');
-                    } else {
-                      setView('tickets-list');
+                    setSelectedTicketId(null);
+                    localStorage.removeItem('ticketmanagement_selected_ticket_id');
+
+                    // Try browser history back if we have pushed states
+                    const historyCount = Number(sessionStorage.getItem('ticketmanagement_history_count') || 0);
+                    if (historyCount > 1) {
+                      window.history.back();
+                      return;
                     }
+
+                    // Fallback: navigate to the exact source page the user came from
+                    const savedSource = sourceView || sessionStorage.getItem('ticketmanagement_source_view');
+                    if (savedSource && savedSource !== 'detail') {
+                      setView(savedSource);
+                    } else {
+                      // Ultimate fallback based on role
+                      const fallback = localStorage.getItem('ticketmanagement_fallback_view');
+                      if (fallback && fallback !== 'detail') {
+                        setView(fallback);
+                      } else if (currentUser?.role === 'employee' || currentUser?.role === 'manager') {
+                        setView('my-tickets');
+                      } else {
+                        setView('dashboard');
+                      }
+                    }
+                    sessionStorage.removeItem('ticketmanagement_source_view');
+                    setSourceView(null);
                   }}
                 />
               )}

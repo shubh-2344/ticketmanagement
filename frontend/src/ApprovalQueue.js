@@ -6,7 +6,10 @@ import { ApprovalsIcon, AlertIcon, InventoryIcon, CheckIcon, XIcon, ArrowRightIc
 import './ApprovalQueue.css';
 
 function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL, viewMode = 'grid', onViewModeChange }) {
-  const [activeTab, setActiveTab] = useState(currentUser.role === 'admin' ? 'issue_queue' : 'manager_queue');
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = sessionStorage.getItem('approvalqueue_tab');
+    return saved || (currentUser.role === 'admin' ? 'issue_queue' : 'manager_queue');
+  });
   const [inventoryList, setInventoryList] = useState([]);
   const [adminList, setAdminList] = useState([]);
   const [reviewComment, setReviewComment] = useState({});
@@ -14,6 +17,9 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
   const [transferTicket, setTransferTicket] = useState(null);
   const [selectedAdminName, setSelectedAdminName] = useState('');
   const [transferComment, setTransferComment] = useState('');
+
+  // Persist active tab to sessionStorage
+  useEffect(() => { sessionStorage.setItem('approvalqueue_tab', activeTab); }, [activeTab]);
 
   useEffect(() => {
     if (API_URL) {

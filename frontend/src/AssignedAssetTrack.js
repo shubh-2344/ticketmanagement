@@ -18,9 +18,13 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
   const [data, setData] = useState({ metrics: null, lifecycles: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState(() => sessionStorage.getItem('assettrack_filter') || 'all');
+  const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('assettrack_search') || '');
   const [selectedFlowItem, setSelectedFlowItem] = useState(null);
+
+  // Persist filter states to sessionStorage
+  useEffect(() => { sessionStorage.setItem('assettrack_filter', filterStatus); }, [filterStatus]);
+  useEffect(() => { sessionStorage.setItem('assettrack_search', searchTerm); }, [searchTerm]);
 
   useEffect(() => {
     fetchLifecycles();
