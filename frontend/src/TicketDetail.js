@@ -757,6 +757,55 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             <div className="step-label">Admin Resolution</div>
           </div>
         </div>
+      ) : ticket.type === 'device-return' ? (
+        /* Return Ticket — 2-step verification flow */
+        <div className="approval-flow-bar">
+          <div className="flow-header-row">
+            <h3 className="flow-header-title">RETURN VERIFICATION FLOW</h3>
+            {ticket.status === 'return_pending_verification' && (
+              <span className="waiting-admin-pill">
+                ⏳ Pending Verification by Administrator
+              </span>
+            )}
+            {ticket.status === 'closed' && (
+              <span style={{
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#10b981',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '11.5px',
+                fontWeight: '800',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                ✓ Return Verified & Inventory Restocked
+              </span>
+            )}
+          </div>
+
+          <div className="flow-track-wrapper">
+            {/* Step 1: Return Submitted */}
+            <div className="flow-step-node">
+              <div className="flow-circle circle-green">✓</div>
+              <span className="flow-label label-green">Return Submitted</span>
+            </div>
+
+            {/* Line 1 → 2 */}
+            <div className={`flow-line ${ticket.status === 'closed' ? 'line-solid-green' : 'line-solid-green'}`}></div>
+
+            {/* Step 2: Verification Pending with Admin */}
+            <div className="flow-step-node">
+              <div className={`flow-circle ${ticket.status === 'closed' ? 'circle-green' : 'circle-orange'}`}>
+                {ticket.status === 'closed' ? '✓' : '2'}
+              </div>
+              <span className={`flow-label ${ticket.status === 'closed' ? 'label-green' : 'label-orange'}`}>
+                {ticket.status === 'closed' ? 'Verified by Admin' : 'Verification Pending with Administrator'}
+              </span>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="approval-flow-bar">
           <div className="flow-header-row">
