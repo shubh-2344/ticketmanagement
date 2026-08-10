@@ -701,25 +701,25 @@ function App() {
             <span>Create Ticket</span>
           </button>
 
-          {(currentUser.role === 'manager' || currentUser.role === 'admin') && (
-            <>
-              <button
-                className={`nav-button ${view === 'approvals' ? 'active' : ''}`}
-                onClick={() => setView('approvals')}
-              >
-                <span className="nav-icon"><ApprovalsIcon size={18} /></span>
-                <span>Approvals Queue</span>
-              </button>
 
-              <button
-                className={`nav-button ${view === 'open-incidents' ? 'active' : ''}`}
-                onClick={() => setView('open-incidents')}
-              >
-                <span className="nav-icon"><InventoryIcon size={18} /></span>
-                <span>Open Incidents</span>
-              </button>
-            </>
+          {(currentUser.role === 'manager' || currentUser.role === 'admin') && (
+            <button
+              className={`nav-button ${view === 'approvals' ? 'active' : ''}`}
+              onClick={() => setView('approvals')}
+            >
+              <span className="nav-icon"><ApprovalsIcon size={18} /></span>
+              <span>Approvals Queue</span>
+            </button>
           )}
+
+          <button
+            className={`nav-button ${view === 'open-incidents' ? 'active' : ''}`}
+            onClick={() => setView('open-incidents')}
+          >
+            <span className="nav-icon"><InventoryIcon size={18} /></span>
+            <span>Open Incidents</span>
+          </button>
+
 
           {/* ADMIN ONLY NAVIGATION GROUP */}
           {currentUser.role === 'admin' && (
@@ -858,7 +858,7 @@ function App() {
                 />
               )}
 
-              {view === 'open-incidents' && (currentUser.role === 'manager' || currentUser.role === 'admin') && (
+              {view === 'open-incidents' && (
                 <OpenIncidents
                   tickets={tickets}
                   currentUser={currentUser}
@@ -869,6 +869,7 @@ function App() {
                   onViewModeChange={handleGlobalViewModeChange}
                 />
               )}
+
 
               {view === 'assigned-asset-track' && (
                 (currentUser.role === 'admin' || currentUser.role === 'manager') ? (
