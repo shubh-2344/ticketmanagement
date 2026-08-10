@@ -402,7 +402,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#10b981', fontSize: '13px' }}>
                   {formatTicketId(lc?.request_ticket_id || (ticket.type === 'device-request' ? ticket.id : (ticket.parent_ticket_id || ticket.id)), 'device-request')}
                 </span>
-                <span style={{ marginLeft: '10px', fontWeight: '700', color: '#fff' }}>{lc?.request_title || ticket.title}</span>
+                <span style={{ marginLeft: '10px', fontWeight: '700', color: 'var(--text-main)' }}>{lc?.request_title || ticket.title}</span>
               </div>
               <span style={{
                 fontSize: '11px',
@@ -435,7 +435,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
               <div>
-                <strong style={{ fontSize: '14px', color: '#ffffff' }}>{lc?.asset_name || ticket.assigned_device_name || 'Awaiting Hardware Allocation'}</strong>
+                <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{lc?.asset_name || ticket.assigned_device_name || 'Awaiting Hardware Allocation'}</strong>
                 {lc?.serial_number && <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>S/N: {lc.serial_number}</span>}
               </div>
               <span style={{
@@ -474,7 +474,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                     <span style={{ fontFamily: 'monospace', fontWeight: '700', color: '#f97316', fontSize: '13px' }}>
                       {formatTicketId(lc?.return_ticket_id || (ticket.type === 'device-return' ? ticket.id : ''), 'device-return')}
                     </span>
-                    <span style={{ marginLeft: '10px', fontWeight: '700', color: '#fff' }}>{lc?.return_title || 'Return Request for Hardware'}</span>
+                    <span style={{ marginLeft: '10px', fontWeight: '700', color: 'var(--text-main)' }}>{lc?.return_title || 'Return Request for Hardware'}</span>
                   </div>
                   <span style={{ fontSize: '11px', fontWeight: '700', color: (lc?.return_status === 'closed' || ticket.status === 'closed') ? '#10b981' : '#f97316', background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: '6px' }}>
                     {(lc?.return_status || ticket.status || 'PENDING').toUpperCase()}
