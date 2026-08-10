@@ -240,15 +240,13 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       percentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
     }
 
-    // For device-request tickets: 'approved' with a device assigned means fulfilled — stop SLA
-    const isDeviceFulfilled = ticket.type === 'device-request' && ticket.status === 'approved' && !!ticket.assigned_device_name;
-    const isClosed = ticket.status === 'closed' || ticket.status === 'resolved' || ticket.status === 'rejected' || isDeviceFulfilled;
+    const isClosed = ticket.status === 'closed' || ticket.status === 'resolved' || ticket.status === 'rejected';
     const isOverdue = now > target && !isClosed;
     const timeDiff = target - now;
 
     let timeText = '';
     if (isClosed) {
-      timeText = isDeviceFulfilled ? 'Device Assigned – SLA Fulfilled' : 'Ticket Closed/Resolved - SLA Stopped';
+      timeText = 'Ticket Closed/Resolved - SLA Stopped';
     } else if (isOverdue) {
       const overdueMs = now - target;
       const hours = Math.floor(overdueMs / (1000 * 60 * 60));
@@ -293,7 +291,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           <div>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>SLA Status</span>
             <strong style={{ fontSize: '14px', color: isClosed ? '#64748b' : (isOverdue ? '#ef4444' : '#10b981') }}>
-              {isClosed ? (isDeviceFulfilled ? 'Device Fulfilled' : 'Complete') : (isOverdue ? 'SLA Breached' : 'On Track (Normal)')}
+              {isClosed ? 'Complete' : (isOverdue ? 'SLA Breached' : 'On Track (Normal)')}
             </strong>
           </div>
           <div>

@@ -1005,7 +1005,7 @@ app.get('/api/analytics/dashboard', authenticateToken, async (req, res) => {
                 const st = (t.status || '').toLowerCase();
                 if (status === 'open' && (st === 'closed' || st === 'resolved')) return false;
                 if (status === 'closed' && st !== 'closed' && st !== 'resolved') return false;
-                if (status === 'in_progress' && st !== 'approved' && st !== 'pending_admin_assignment') return false;
+                if (status === 'in_progress' && st !== 'pending_admin_assignment') return false;
             }
             return true;
         });
@@ -1014,7 +1014,7 @@ app.get('/api/analytics/dashboard', authenticateToken, async (req, res) => {
         const total = tickets.length;
         const open = tickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
         const closed = tickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
-        const inProgress = tickets.filter(t => t.status === 'approved' || t.status === 'pending_admin_assignment').length;
+        const inProgress = tickets.filter(t => t.status === 'pending_admin_assignment').length;
         const pending = tickets.filter(t => t.status === 'pending_manager_approval' || t.status === 'pending').length;
 
         // SLA calculation
@@ -1646,8 +1646,8 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
 
         const ticketCheck = await pool.query('SELECT type FROM tickets WHERE id = $1', [id]);
         const isIssue = ticketCheck.rows[0]?.type === 'issue';
-        // Active device allocations stay in 'approved' status (ASSIGNED). Issues are resolved and 'closed'.
-        const targetStatus = isIssue ? 'closed' : 'approved';
+        // Both device-request and issue tickets are closed once admin fulfills them.
+        const targetStatus = 'closed';
 
         const result = await pool.query(`
             UPDATE tickets
@@ -1957,8 +1957,8 @@ app.put('/api/tickets/:id/return-device', authenticateToken, async (req, res) =>
             return res.status(400).json({ error: 'No device has been assigned to this ticket' });
         }
 
-        if (ticket.status !== 'approved') {
-            return res.status(400).json({ error: 'Device can only be marked as returned for approved requests' });
+        if (ticket.status !== 'approved' && ticket.status !== 'closed') {
+            return res.status(400).json({ error: 'Device can only be marked as returned for fulfilled/closed requests' });
         }
 
         // Validate that an active asset_lifecycle record exists for this device assignment
@@ -2292,8 +2292,8 @@ app.get('/api/asset-lifecycles/ticket/:ticketId', authenticateToken, async (req,
             user_id: t.requester_id,
             user_name: t.requester_name,
             user_email: t.requester_email,
-            lifecycle_status: t.status === 'approved' ? 'Assigned' : 'Pending Assignment',
-            assigned_at: t.status === 'approved' ? t.created_at : null,
+            lifecycle_status: (t.status === 'approved' || (t.status === 'closed' && t.assigned_device_name)) ? 'Assigned' : 'Pending Assignment',
+            assigned_at: (t.status === 'approved' || (t.status === 'closed' && t.assigned_device_name)) ? t.assigned_at || t.created_at : null,
             expected_return_date: t.expected_return_date,
             returned_at: null,
             created_at: t.created_at,
@@ -2369,14 +2369,14 @@ app.get('/api/admin/asset-lifecycle', authenticateToken, requireRole(['admin']),
         const activeAssignments = await pool.query(`
             SELECT COUNT(*) FROM tickets 
             WHERE assigned_device_name IS NOT NULL 
-              AND status IN ('approved', 'return_pending_verification')
+              AND status IN ('approved', 'closed', 'return_pending_verification')
         `);
 
         // Overdue device returns
         const overdueAssignments = await pool.query(`
             SELECT COUNT(*) FROM tickets 
             WHERE assigned_device_name IS NOT NULL 
-              AND status IN ('approved', 'return_pending_verification')
+              AND status IN ('approved', 'closed', 'return_pending_verification')
               AND expected_return_date < CURRENT_TIMESTAMP
         `);
 
@@ -2384,7 +2384,7 @@ app.get('/api/admin/asset-lifecycle', authenticateToken, requireRole(['admin']),
         const upcomingAssignments = await pool.query(`
             SELECT COUNT(*) FROM tickets 
             WHERE assigned_device_name IS NOT NULL 
-              AND status IN ('approved', 'return_pending_verification')
+              AND status IN ('approved', 'closed', 'return_pending_verification')
               AND expected_return_date >= CURRENT_TIMESTAMP
               AND expected_return_date <= CURRENT_TIMESTAMP + INTERVAL '7 days'
         `);
