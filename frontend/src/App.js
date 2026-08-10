@@ -712,13 +712,15 @@ function App() {
             </button>
           )}
 
-          <button
-            className={`nav-button ${view === 'open-incidents' ? 'active' : ''}`}
-            onClick={() => setView('open-incidents')}
-          >
-            <span className="nav-icon"><InventoryIcon size={18} /></span>
-            <span>Open Incidents</span>
-          </button>
+          {currentUser.role === 'admin' && (
+            <button
+              className={`nav-button ${view === 'open-incidents' ? 'active' : ''}`}
+              onClick={() => setView('open-incidents')}
+            >
+              <span className="nav-icon"><InventoryIcon size={18} /></span>
+              <span>Open Incidents</span>
+            </button>
+          )}
 
 
           {/* ADMIN ONLY NAVIGATION GROUP */}
@@ -858,7 +860,7 @@ function App() {
                 />
               )}
 
-              {view === 'open-incidents' && (
+              {view === 'open-incidents' && currentUser.role === 'admin' && (
                 <OpenIncidents
                   tickets={tickets}
                   currentUser={currentUser}
