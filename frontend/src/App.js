@@ -119,7 +119,7 @@ function App() {
     window.alert = (message) => {
       if (!message) return;
       const str = String(message);
-      const isError = /fail|error|denied|reject|required|invalid|must|cannot|select|provide|fill/i.test(str);
+      const isError = /\bfail(ed|ure)?\b|\berror\b|\bdenied\b|\brejected?\b|\brequired\b|\binvalid\b|\bmust\b|\bcannot\b|\bplease select\b|\bplease provide\b|\bplease fill\b/i.test(str);
       showToast(str, isError ? 'error' : 'success');
     };
   }, [showToast, showConfirm]);
