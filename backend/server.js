@@ -201,13 +201,15 @@ async function initializeDB() {
 
         // Default Seed Users
         const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
+        const shubhamPasswordHash = await bcrypt.hash('Maharashtra@123', 10);
 
         const seedUsers = [
             ['user1', 'John Doe', 'john@company.com', defaultPasswordHash, 'employee', 'Engineering'],
             ['user2', 'Jane Smith', 'jane@company.com', defaultPasswordHash, 'manager', 'Product'],
             ['user3', 'Bob Wilson', 'bob@company.com', defaultPasswordHash, 'employee', 'Marketing'],
             ['mgr1', 'Manager One', 'manager@company.com', defaultPasswordHash, 'manager', 'Engineering'],
-            ['admin1', 'System Admin', 'admin@company.com', defaultPasswordHash, 'admin', 'IT Operations']
+            ['admin1', 'System Admin', 'admin@company.com', defaultPasswordHash, 'admin', 'IT Operations'],
+            ['admin_shubham', 'Shubham Takalikar', 'shubham.takalikar@securelayer7.net', shubhamPasswordHash, 'admin', 'IT Operations']
         ];
 
         for (const [id, name, email, passHash, role, dept] of seedUsers) {
@@ -215,7 +217,7 @@ async function initializeDB() {
                 INSERT INTO users (id, name, email, password_hash, role, department, is_verified)
                 VALUES ($1, $2, $3, $4, $5, $6, TRUE)
                 ON CONFLICT (email) DO UPDATE 
-                SET password_hash = $4, name = $2, role = $5, department = $6, is_verified = TRUE
+                SET name = EXCLUDED.name, role = EXCLUDED.role, department = EXCLUDED.department, is_verified = TRUE
             `, [id, name, email, passHash, role, dept]);
         }
 
