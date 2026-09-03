@@ -406,13 +406,17 @@ function App() {
 
   const handleApproveTicket = async (ticketId, comment) => {
     try {
-      await axios.put(`${API_URL}/tickets/${ticketId}/manager-review`, {
+      const res = await axios.put(`${API_URL}/tickets/${ticketId}/manager-review`, {
         action: 'approve',
         approval_comment: comment
       });
       alert('Ticket approved! Sent to Admin for device assignment.');
       await fetchTickets(true);
-      setSelectedTicket(prev => prev && prev.id === ticketId ? { ...prev, status: 'approved', approval_comment: comment } : prev);
+      if (res.data?.ticket) {
+        setSelectedTicket(res.data.ticket);
+      } else {
+        setSelectedTicket(prev => prev && prev.id === ticketId ? { ...prev, status: 'pending_admin_assignment', approval_comment: comment } : prev);
+      }
     } catch (error) {
       console.error('Error approving ticket:', error);
       alert(error.response?.data?.error || 'Failed to approve ticket');
@@ -421,16 +425,33 @@ function App() {
 
   const handleRejectTicket = async (ticketId, comment) => {
     try {
-      await axios.put(`${API_URL}/tickets/${ticketId}/manager-review`, {
+      const res = await axios.put(`${API_URL}/tickets/${ticketId}/manager-review`, {
         action: 'reject',
         approval_comment: comment
       });
       alert('Ticket denied.');
       await fetchTickets(true);
-      setSelectedTicket(prev => prev && prev.id === ticketId ? { ...prev, status: 'rejected', approval_comment: comment } : prev);
+      if (res.data?.ticket) {
+        setSelectedTicket(res.data.ticket);
+      } else {
+        setSelectedTicket(prev => prev && prev.id === ticketId ? { ...prev, status: 'rejected', is_rejected: true, rejection_comment: comment, approval_comment: comment } : prev);
+      }
     } catch (error) {
       console.error('Error rejecting ticket:', error);
       alert(error.response?.data?.error || 'Failed to reject ticket');
+    }
+  };
+
+  const handleRefreshSelectedTicket = async () => {
+    await fetchTickets(true);
+    const targetId = selectedTicketId || selectedTicket?.id;
+    if (targetId) {
+      try {
+        const res = await axios.get(`${API_URL}/tickets/${targetId}`);
+        setSelectedTicket(res.data);
+      } catch (err) {
+        console.error('Error refreshing selected ticket:', err);
+      }
     }
   };
 
@@ -1019,6 +1040,7 @@ function App() {
                   onClose={handleCloseTicket}
                   onAdminUpdate={handleAdminUpdateTicket}
                   onAdminDelete={handleAdminDeleteTicket}
+                  onRefresh={handleRefreshSelectedTicket}
                   API_URL={API_URL}
                   onBack={() => {
                     setSelectedTicket(null);

@@ -971,6 +971,25 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
     }
 });
 
+// GET single ticket by ID
+app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('SELECT * FROM tickets WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+        const ticket = result.rows[0];
+        if (req.user.role === 'employee' && ticket.requester_id !== req.user.id) {
+            return res.status(403).json({ error: 'Forbidden: You do not have access to view this ticket' });
+        }
+        res.json(ticket);
+    } catch (err) {
+        console.error('Get ticket by ID error:', err);
+        res.status(500).json({ error: err.message || 'Internal server error' });
+    }
+});
+
 // LIVE DASHBOARD ANALYTICS ENDPOINT
 app.get('/api/analytics/dashboard', authenticateToken, async (req, res) => {
     try {
@@ -1014,10 +1033,12 @@ app.get('/api/analytics/dashboard', authenticateToken, async (req, res) => {
 
         // Compute live metrics
         const total = tickets.length;
-        const open = tickets.filter(t => t.status !== 'closed' && t.status !== 'resolved').length;
-        const closed = tickets.filter(t => t.status === 'closed' || t.status === 'resolved').length;
+        const isTerminal = t => t.status === 'closed' || t.status === 'resolved' || t.status === 'rejected';
+        const open = tickets.filter(t => !isTerminal(t)).length;
+        const closed = tickets.filter(t => isTerminal(t)).length;
         const inProgress = tickets.filter(t => t.status === 'pending_admin_assignment').length;
         const pending = tickets.filter(t => t.status === 'pending_manager_approval' || t.status === 'pending').length;
+        const rejected = tickets.filter(t => t.status === 'rejected' || t.is_rejected).length;
 
         // SLA calculation
         let slaBreached = 0;
@@ -1027,7 +1048,7 @@ app.get('/api/analytics/dashboard', authenticateToken, async (req, res) => {
         let resolvedCountWithHours = 0;
 
         tickets.forEach(t => {
-            const isClosed = t.status === 'closed' || t.status === 'resolved';
+            const isClosed = t.status === 'closed' || t.status === 'resolved' || t.status === 'rejected';
             const created = new Date(t.created_at).getTime();
             const target = t.target_resolution_date
                 ? new Date(t.target_resolution_date).getTime()
@@ -1572,7 +1593,7 @@ app.put('/api/tickets/:id/manager-review', authenticateToken, requireRole(['mana
     }
 
     try {
-        const nextStatus = action === 'approve' ? 'pending_admin_assignment' : 'closed';
+        const nextStatus = action === 'approve' ? 'pending_admin_assignment' : 'rejected';
         const isRejected = action === 'reject';
 
         const result = await pool.query(`
@@ -1912,7 +1933,7 @@ app.put('/api/tickets/:id/admin-reject', authenticateToken, requireRole(['admin'
     try {
         const result = await pool.query(`
             UPDATE tickets
-            SET status = 'closed',
+            SET status = 'rejected',
                 is_rejected = TRUE,
                 rejection_comment = $1,
                 approval_comment = $1,

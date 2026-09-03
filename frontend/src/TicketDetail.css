@@ -255,6 +255,23 @@
   height: 2px;
 }
 
+.flow-circle.circle-red {
+  background: #ef4444;
+  color: #ffffff;
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+.flow-label.label-red { color: #f87171; font-weight: 800; }
+
+.flow-line.line-solid-red {
+  background: #ef4444;
+  height: 3px;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
+}
+
+
 .detail-container {
   display: grid;
   grid-template-columns: 1fr 320px;

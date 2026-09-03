@@ -163,6 +163,7 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
     if (statusLower === 'approved') return 'In Progress';
     if (statusLower === 'closed') return 'Closed';
     if (statusLower === 'resolved') return 'Resolved';
+    if (statusLower === 'rejected') return 'Rejected';
     return (s || '').toUpperCase();
   };
 
@@ -171,6 +172,7 @@ function OpenIncidents({ tickets = [], currentUser, onViewTicket, onRefresh, API
     if (statusLower === 'pending_manager_approval') return '#fbbf24';
     if (statusLower === 'pending_admin_assignment') return '#c084fc';
     if (statusLower === 'approved') return '#38bdf8';
+    if (statusLower === 'rejected') return '#ef4444';
     if (statusLower === 'closed' || statusLower === 'resolved') return '#4ade80';
     return '#38bdf8';
   };

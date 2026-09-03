@@ -240,7 +240,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
       percentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
     }
 
-    const isClosed = ticket.status === 'closed' || ticket.status === 'resolved' || ticket.status === 'rejected';
+    const isClosed = ticket.status === 'closed' || ticket.status === 'resolved' || ticket.status === 'rejected' || isTicketRejected;
     const isOverdue = now > target && !isClosed;
     const timeDiff = target - now;
 
@@ -328,11 +328,16 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
   const renderAssetLifecycleCard = () => {
     if (ticket.type === 'issue') return null;
     if (ticket.type !== 'device-request' && ticket.type !== 'device-return') return null;
+    // Don't show asset lifecycle card for rejected tickets — no asset was ever assigned
+    if (isTicketRejected) return null;
 
     const lc = lifecycleData;
-    const lifecycleId = lc?.lifecycle_id || (ticket.status === 'approved' ? 'AST-2026-0001' : 'AST-PENDING');
+    const lifecycleId = lc?.lifecycle_id || (ticket.assigned_device_name ? 'AST-PENDING' : 'AST-PENDING');
     const reqStatus = lc?.request_status || ticket.status || 'pending';
-    const isApprovedOrAssigned = reqStatus === 'approved' || reqStatus === 'closed' || !!lc?.assigned_at;
+    // isApprovedOrAssigned: only true if ticket was actually approved AND device was assigned (not rejected)
+    const isApprovedOrAssigned = !isTicketRejected && (
+      reqStatus === 'approved' || reqStatus === 'closed' || !!lc?.assigned_at || !!ticket.assigned_device_name
+    );
     const status = lc?.lifecycle_status || (ticket.status === 'closed' && ticket.returned_at ? 'Returned' : (ticket.status === 'return_pending_verification' ? 'Return Pending' : (isApprovedOrAssigned ? 'Assigned' : 'Pending Assignment')));
 
     const isManagerOrAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
@@ -412,7 +417,14 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
                 padding: '3px 10px',
                 borderRadius: '6px'
               }}>
-                {isApprovedOrAssigned ? 'REQUEST APPROVED' : (reqStatus === 'pending_manager_approval' ? 'PENDING MANAGER REVIEW' : 'PENDING ADMIN ASSIGNMENT')}
+                {isApprovedOrAssigned
+                  ? 'REQUEST APPROVED'
+                  : reqStatus === 'pending_manager_approval'
+                    ? 'PENDING MANAGER REVIEW'
+                    : reqStatus === 'pending_admin_assignment'
+                      ? 'PENDING ADMIN ASSIGNMENT'
+                      : 'PENDING'
+                }
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', flexWrap: 'wrap', gap: '8px' }}>
@@ -640,19 +652,26 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
         return { text: isIssue ? 'Resolved & Closed' : 'Device Assigned & Fulfilled', bg: '#10b981' };
       case 'closed':
         return { text: isIssue ? 'Resolved & Closed' : 'Fulfilled & Closed', bg: '#10b981' };
+      case 'return_pending_verification':
+        return { text: 'Return Pending Verification', bg: '#f97316' };
       default:
         return { text: status.toUpperCase().replace(/_/g, ' '), bg: '#3b82f6' };
     }
   };
 
-  const isTicketRejected = ticket.is_rejected || ticket.status === 'rejected' || !!(ticket.rejection_comment && ticket.rejection_comment.trim());
+  // A ticket is rejected if is_rejected flag is set, status is explicitly 'rejected',
+  // OR if the manager set status=closed AND left a rejection_comment (manager denial flow).
+  // NOTE: We do NOT treat a closed+assigned ticket as rejected.
+  const isTicketRejected = ticket.is_rejected === true ||
+    ticket.status === 'rejected' ||
+    (!ticket.assigned_device_name && !!(ticket.rejection_comment && ticket.rejection_comment.trim()));
   const statusInfo = getStatusBadge(ticket.status, ticket.type, isTicketRejected);
   const isManager = currentUser.role === 'manager';
   const isAdmin = currentUser.role === 'admin';
   const isRequester = currentUser.id === ticket.requester_id;
 
-  const canManagerReview = (isManager || isAdmin) && (ticket.status === 'pending_manager_approval' || ticket.status === 'pending');
-  const canClose = isRequester && (ticket.status === 'approved' || ticket.status === 'closed');
+  const canManagerReview = (isManager || isAdmin) && (ticket.status === 'pending_manager_approval' || ticket.status === 'pending') && !isTicketRejected;
+  const canClose = isRequester && ticket.status === 'approved' && !isTicketRejected;
   const isPendingAdminAssignment = ticket.status === 'pending_admin_assignment';
 
   return (
@@ -667,7 +686,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             <button className="btn-admin-edit" onClick={() => setShowTransferModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(56, 189, 248, 0.15)', borderColor: 'rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}>
               Transfer to Admin
             </button>
-            {ticket.status !== 'rejected' && ticket.status !== 'closed' && (
+            {ticket.status !== 'rejected' && ticket.status !== 'closed' && !isTicketRejected && (
               <button className="btn-admin-delete" onClick={() => setShowRejectModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#ef4444' }}>
                 <XIcon size={14} /> Reject Ticket
               </button>
@@ -709,18 +728,29 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             <UserIcon size={18} />
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.4px' }}>CURRENTLY ASSIGNED TO</div>
-            <div style={{ fontSize: '14px', fontWeight: '800', color: ticket.assigned_admin_name ? '#38bdf8' : 'var(--text-main)' }}>
-              {ticket.type === 'issue'
-                ? (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk')
-                : (ticket.status === 'pending_manager_approval' ? (ticket.manager_name || 'Assigned Manager') : (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk'))
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.4px' }}>
+              {isTicketRejected ? 'FINAL STATUS / HANDLER' : 'CURRENTLY ASSIGNED TO'}
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: isTicketRejected ? '#ef4444' : (ticket.assigned_admin_name ? '#38bdf8' : 'var(--text-main)') }}>
+              {isTicketRejected
+                ? (ticket.approver_name ? `Rejected by ${ticket.approver_name}` : (ticket.manager_name ? `Rejected by ${ticket.manager_name}` : 'Request Denied / Closed'))
+                : (ticket.type === 'issue'
+                    ? (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk')
+                    : (ticket.status === 'pending_manager_approval' ? (ticket.manager_name || 'Assigned Manager') : (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk'))
+                  )
               }
             </div>
           </div>
         </div>
         {isTicketRejected ? (
           <div style={{ fontSize: '12px', color: '#ef4444', background: 'rgba(239, 68, 68, 0.12)', padding: '8px 14px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.3)', maxWidth: '450px' }}>
-            🚫 <strong>Rejection Reason:</strong> {ticket.rejection_comment || ticket.approval_comment || 'Request denied by Admin'}
+            🚫 <strong>Rejection Reason:</strong> {
+              (ticket.rejection_comment && ticket.rejection_comment.trim() && ticket.rejection_comment.toUpperCase() !== 'NA' && ticket.rejection_comment.toUpperCase() !== 'N/A')
+                ? ticket.rejection_comment
+                : (ticket.approval_comment && ticket.approval_comment.trim() && ticket.approval_comment.toUpperCase() !== 'NA' && ticket.approval_comment.toUpperCase() !== 'N/A')
+                  ? ticket.approval_comment
+                  : 'Request denied by Manager / Admin'
+            }
           </div>
         ) : (
           ticket.reassignment_comment && (
@@ -806,6 +836,71 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
           </div>
         </div>
+      ) : isTicketRejected ? (
+        /* REJECTED FLOW: Show correct rejected state instead of fake progression */
+        <div className="approval-flow-bar">
+          <div className="flow-header-row">
+            <h3 className="flow-header-title">APPROVAL & FULFILLMENT PROGRESSION FLOW</h3>
+            <span style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              color: '#f87171',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              fontSize: '11.5px',
+              fontWeight: '800',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              ✕ Request Denied / Rejected
+            </span>
+          </div>
+
+          <div className="flow-track-wrapper">
+            {/* Step 1: Submitted */}
+            <div className="flow-step-node">
+              <div className="flow-circle circle-green">✓</div>
+              <span className="flow-label label-green">Submitted</span>
+            </div>
+
+            {/* Line 1 -> 2: Solid Red (rejected path) */}
+            <div className="flow-line line-solid-red"></div>
+
+            {/* Step 2: Manager Reviewed → REJECTED */}
+            <div className="flow-step-node">
+              <div className="flow-circle circle-red">✕</div>
+              <span className="flow-label label-red">
+                {ticket.approver_name ? `Rejected by ${ticket.approver_name}` : 'Manager Rejected'}
+              </span>
+            </div>
+
+            {/* Line 2 -> 3: Muted (flow stopped) */}
+            <div className="flow-line line-muted"></div>
+
+            {/* Step 3: Waiting for Admin — BLOCKED */}
+            <div className="flow-step-node">
+              <div className="flow-circle circle-muted">—</div>
+              <span className="flow-label label-muted">Waiting for Admin</span>
+            </div>
+
+            {/* Line 3 -> 4: Muted */}
+            <div className="flow-line line-muted"></div>
+
+            {/* Step 4: Admin Assigned — BLOCKED */}
+            <div className="flow-step-node">
+              <div className="flow-circle circle-muted">—</div>
+              <span className="flow-label label-muted">Admin Assigned</span>
+            </div>
+          </div>
+
+          {/* Rejection reason inline */}
+          {(ticket.rejection_comment || ticket.approval_comment) && (
+            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', fontSize: '12px', color: '#fca5a5' }}>
+              <strong>Rejection Reason:</strong> {ticket.rejection_comment || ticket.approval_comment}
+            </div>
+          )}
+        </div>
       ) : (
         <div className="approval-flow-bar">
           <div className="flow-header-row">
@@ -834,47 +929,72 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           </div>
 
           <div className="flow-track-wrapper">
-            {/* Step 1: Submitted */}
+            {/* Step 1: Submitted — always complete */}
             <div className="flow-step-node">
               <div className="flow-circle circle-green">✓</div>
               <span className="flow-label label-green">Submitted</span>
             </div>
 
-            {/* Line 1 -> 2: Solid Green */}
-            <div className={`flow-line ${ticket.approval_date || ticket.status !== 'pending_manager_approval' ? 'line-solid-green' : 'line-dotted-orange'}`}></div>
+            {/* Line 1 -> 2 */}
+            <div className={`flow-line ${
+              ticket.status === 'pending_manager_approval' ? 'line-dotted-orange' : 'line-solid-green'
+            }`}></div>
 
-            {/* Step 2: Manager Approved */}
+            {/* Step 2: Manager Approved — only green if actually approved (pending_admin_assignment, approved, or closed with assigned device) */}
             <div className="flow-step-node">
-              <div className={`flow-circle ${ticket.approval_date || ticket.status !== 'pending_manager_approval' ? 'circle-green' : 'circle-orange'}`}>
-                {ticket.approval_date || ticket.status !== 'pending_manager_approval' ? '✓' : '2'}
+              <div className={`flow-circle ${
+                ticket.status === 'pending_manager_approval' ? 'circle-orange' :
+                ticket.status === 'pending_admin_assignment' || ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name) ? 'circle-green' : 'circle-muted'
+              }`}>
+                {ticket.status === 'pending_manager_approval' ? '2' :
+                 ticket.status === 'pending_admin_assignment' || ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name) ? '✓' : '2'}
               </div>
-              <span className={`flow-label ${ticket.approval_date || ticket.status !== 'pending_manager_approval' ? 'label-green' : 'label-orange'}`}>
+              <span className={`flow-label ${
+                ticket.status === 'pending_manager_approval' ? 'label-orange' :
+                ticket.status === 'pending_admin_assignment' || ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name) ? 'label-green' : 'label-muted'
+              }`}>
                 Manager Approved
               </span>
             </div>
 
-            {/* Line 2 -> 3: Solid Green if Manager Approved, Dotted Orange if pending Admin */}
-            <div className={`flow-line ${ticket.status === 'pending_admin_assignment' ? 'line-solid-green' : (ticket.status === 'approved' || ticket.status === 'closed' ? 'line-solid-green' : 'line-muted')}`}></div>
+            {/* Line 2 -> 3 */}
+            <div className={`flow-line ${
+              ticket.status === 'pending_admin_assignment' ? 'line-solid-green' :
+              (ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name)) ? 'line-solid-green' : 'line-muted'
+            }`}></div>
 
             {/* Step 3: Waiting for Admin */}
             <div className="flow-step-node">
-              <div className={`flow-circle ${ticket.status === 'pending_admin_assignment' ? 'circle-orange' : (ticket.status === 'approved' || ticket.status === 'closed' ? 'circle-green' : 'circle-muted')}`}>
-                {ticket.status === 'approved' || ticket.status === 'closed' ? '✓' : '3'}
+              <div className={`flow-circle ${
+                ticket.status === 'pending_admin_assignment' ? 'circle-orange' :
+                (ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name)) ? 'circle-green' : 'circle-muted'
+              }`}>
+                {(ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name)) ? '✓' : '3'}
               </div>
-              <span className={`flow-label ${ticket.status === 'pending_admin_assignment' ? 'label-orange' : (ticket.status === 'approved' || ticket.status === 'closed' ? 'label-green' : 'label-muted')}`}>
+              <span className={`flow-label ${
+                ticket.status === 'pending_admin_assignment' ? 'label-orange' :
+                (ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name)) ? 'label-green' : 'label-muted'
+              }`}>
                 Waiting for Admin
               </span>
             </div>
 
-            {/* Line 3 -> 4: Dotted Orange for pending Admin, Solid Blue for Admin Assigned */}
-            <div className={`flow-line ${ticket.status === 'pending_admin_assignment' ? 'line-dotted-orange' : (ticket.status === 'approved' || ticket.status === 'closed' ? 'line-solid-blue' : 'line-muted')}`}></div>
+            {/* Line 3 -> 4 */}
+            <div className={`flow-line ${
+              ticket.status === 'pending_admin_assignment' ? 'line-dotted-orange' :
+              (ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name)) ? 'line-solid-blue' : 'line-muted'
+            }`}></div>
 
             {/* Step 4: Admin Assigned */}
             <div className="flow-step-node">
-              <div className={`flow-circle ${ticket.status === 'approved' || ticket.status === 'closed' ? 'circle-blue' : 'circle-muted'}`}>
-                {ticket.status === 'approved' || ticket.status === 'closed' ? '✓' : '4'}
+              <div className={`flow-circle ${
+                (ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name)) ? 'circle-blue' : 'circle-muted'
+              }`}>
+                {(ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name)) ? '✓' : '4'}
               </div>
-              <span className={`flow-label ${ticket.status === 'approved' || ticket.status === 'closed' ? 'label-blue' : 'label-muted'}`}>
+              <span className={`flow-label ${
+                (ticket.status === 'approved' || (ticket.status === 'closed' && ticket.assigned_device_name)) ? 'label-blue' : 'label-muted'
+              }`}>
                 Admin Assigned
               </span>
             </div>
@@ -1001,19 +1121,26 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           </section>
 
           {/* Rejection Details Banner (Visible if Rejected) */}
-          {ticket.status === 'rejected' && (
+          {isTicketRejected && (
             <section className="section rejection-info" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '20px' }}>
               <h2 style={{ color: '#ef4444', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <XIcon size={18} /> {ticket.type === 'issue' ? 'Incident Rejected by IT Admin' : 'Ticket Request Denied'}
               </h2>
               <div className="approval-comment" style={{ background: 'rgba(0,0,0,0.1)', padding: '12px', borderRadius: '6px', color: '#fca5a5' }}>
                 <p><strong>Reason / Comment:</strong></p>
-                <p>{ticket.approval_comment || ticket.reassignment_comment || 'No comment specified.'}</p>
+                <p>{
+                  (ticket.rejection_comment && ticket.rejection_comment.trim() && ticket.rejection_comment.toUpperCase() !== 'NA')
+                    ? ticket.rejection_comment
+                    : (ticket.approval_comment && ticket.approval_comment.trim() && ticket.approval_comment.toUpperCase() !== 'NA')
+                      ? ticket.approval_comment
+                      : 'Request denied by Manager / Admin'
+                }</p>
               </div>
             </section>
           )}
 
-          {/* STAGE 3: ADMIN DEVICE ASSIGNMENT & FULFILLMENT SECTION (Visible for All Users) */}
+          {/* STAGE 3: ADMIN DEVICE ASSIGNMENT & FULFILLMENT SECTION (Only for Non-Rejected Tickets) */}
+          {!isTicketRejected && (
           <section className="section admin-fulfilled-info">
             <div className="section-header-flex">
               <h2>{ticket.type === 'issue' ? 'STAGE 2: Admin Resolution & Fulfillment' : 'STAGE 3: Admin Device Assignment & Fulfillment'}</h2>
@@ -1110,6 +1237,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               )
             )}
           </section>
+          )}
         </div>
 
         <div className="sidebar">
