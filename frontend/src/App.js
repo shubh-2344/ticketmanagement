@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import axios from 'axios';
 import './App.css';
 import Auth from './Auth';
@@ -41,9 +41,13 @@ function App() {
     return localStorage.getItem('ticketmanagement_active_view') || 'dashboard';
   });
 
+  const [isPending, startTransition] = useTransition();
+
   const setView = (newView) => {
-    setViewState(newView);
-    localStorage.setItem('ticketmanagement_active_view', newView);
+    startTransition(() => {
+      setViewState(newView);
+      localStorage.setItem('ticketmanagement_active_view', newView);
+    });
   };
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
@@ -790,7 +794,7 @@ function App() {
               <div className="spinner"></div>Loading Intelligent Portal...
             </div>
           ) : (
-            <div key={view} className="fade-in-up">
+          <div key={view} className={`fade-in-up${isPending ? ' nav-transitioning' : ''}`}>
               {view === 'dashboard' && (
                 (currentUser.role === 'admin' || currentUser.role === 'manager') ? (
                   <ExecutiveDashboard 

@@ -83,6 +83,26 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
     }
   };
 
+  const clearAllLifecycles = async () => {
+    const confirmFn = window.showConfirm || ((opts) => Promise.resolve(window.confirm(opts.message)));
+    const confirmed = await confirmFn({
+      title: 'Clear All Asset Lifecycle Records',
+      message: 'This will permanently delete ALL asset lifecycle records. Only do this when all associated tickets have been deleted. This action cannot be undone.',
+      confirmText: 'Clear All Records',
+      cancelText: 'Cancel',
+      confirmType: 'danger'
+    });
+    if (!confirmed) return;
+    try {
+      const res = await axios.delete(`${API_URL}/admin/asset-lifecycles`);
+      alert(res.data?.message || 'All asset lifecycle records cleared successfully.');
+      fetchLifecycles();
+    } catch (err) {
+      console.error('Clear lifecycles error:', err);
+      alert(err.response?.data?.error || 'Failed to clear asset lifecycle records.');
+    }
+  };
+
   const handleVerifyReturn = async (ticketId) => {
     if (!ticketId) return;
     const confirmed = window.confirm('Verify physical device return and restore inventory count?');
@@ -241,9 +261,14 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
             Lifecycle monitoring for approved hardware requests and returns (AST-YYYY-XXXX tracking)
           </p>
         </div>
-        <button className="btn-refresh-track" onClick={fetchLifecycles}>
-          Refresh Asset Track
-        </button>
+        <div className="track-header-actions">
+          <button className="btn-refresh-track" onClick={fetchLifecycles}>
+            ↻ Refresh
+          </button>
+          <button className="btn-clear-track" onClick={clearAllLifecycles}>
+            🗑 Clear All Records
+          </button>
+        </div>
       </div>
 
       {/* Admin Insights KPI Cards */}

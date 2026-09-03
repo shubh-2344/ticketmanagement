@@ -2220,6 +2220,17 @@ app.get('/api/admin/asset-lifecycles', authenticateToken, requireRole(['admin', 
     }
 });
 
+// DELETE /api/admin/asset-lifecycles (Clear all asset lifecycle entries – use when associated tickets have been deleted)
+app.delete('/api/admin/asset-lifecycles', authenticateToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const result = await pool.query(`DELETE FROM asset_lifecycle`);
+        res.json({ message: `All asset lifecycle records cleared. (${result.rowCount} rows deleted)`, deleted: result.rowCount });
+    } catch (err) {
+        console.error('Clear asset lifecycles error:', err);
+        res.status(500).json({ error: err.message || 'Failed to clear asset lifecycle records' });
+    }
+});
+
 // GET /api/asset-lifecycles/ticket/:ticketId (Fetch Vertical Flow Data for specific ticket)
 app.get('/api/asset-lifecycles/ticket/:ticketId', authenticateToken, async (req, res) => {
     try {

@@ -256,6 +256,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow: 0 6px 20px rgba(56, 189, 248, 0.35);
   font-weight: 700;
+  transform: translateX(0);
 }
 
 .nav-icon {
@@ -308,18 +309,48 @@ body {
 
 /* Page transitions */
 .fade-in-up {
-  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInUp 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Transitioning state — subtle opacity while React prepares next view */
+.nav-transitioning {
+  opacity: 0.7;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+/* Smooth active indicator glide on nav buttons */
+.nav-button {
+  position: relative;
+}
+
+.nav-button::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 3px;
+  height: 60%;
+  background: #38bdf8;
+  border-radius: 0 3px 3px 0;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-button.active::after {
+  transform: translateY(-50%) scaleY(1);
 }
 
 /* Main Content Surface */
@@ -338,7 +369,8 @@ body {
   border: var(--border-main-content, var(--border-card));
   box-shadow: var(--shadow-main-content, var(--shadow));
   min-height: 550px;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, border-color 0.3s ease;
+  contain: layout;
 }
 
 /* Loading Spinner */
