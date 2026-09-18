@@ -7,7 +7,7 @@ const templates = require('./emailTemplates');
  * All email dispatch functions handle errors gracefully with detailed logging.
  */
 
-async function sendMailHelper({ to, subject, html }) {
+async function sendMailHelper({ to, subject, html, text }) {
     if (!to) {
         console.warn('[EMAIL WARNING] No recipient address provided for subject:', subject);
         return { success: false, error: 'Recipient address missing' };
@@ -30,19 +30,23 @@ async function sendMailHelper({ to, subject, html }) {
         return { success: false, error: 'SMTP credentials not configured in .env' };
     }
 
+    const cleanFromName = (defaultSender.name || 'DevSecOps Ticket System').replace(/^["']|["']$/g, '').trim();
+    const cleanFromEmail = (defaultSender.email || defaultSender.user || 'helpdesk@securelayer7.net').replace(/^["']|["']$/g, '').trim();
+
     try {
         const mailOptions = {
-            from: `"${defaultSender.name}" <${defaultSender.email}>`,
+            from: `"${cleanFromName}" <${cleanFromEmail}>`,
             to: recipients.join(', '),
             subject: subject,
+            text: text || subject,
             html: html
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log(`[EMAIL SUCCESS] Sent "${subject}" to <${to}> | MessageId: ${info.messageId}`);
+        console.log(`[EMAIL SUCCESS] Sent "${subject}" to <${recipients.join(', ')}> | MessageId: ${info.messageId}`);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error(`[EMAIL ERROR] Failed to send "${subject}" to <${to}>:`, error.message);
+        console.error(`[EMAIL ERROR] Failed to send "${subject}" to <${recipients.join(', ')}>:`, error.message);
         return { success: false, error: error.message };
     }
 }
@@ -53,8 +57,22 @@ async function sendMailHelper({ to, subject, html }) {
 async function sendOtpEmail({ to, name, otp }) {
     const subject = `Email Verification Code: ${otp}`;
     const html = templates.otpTemplate({ name, otp });
-    return await sendMailHelper({ to, subject, html });
+    const text = `Hello ${name || 'User'},\n\nThank you for signing up for DevSecOps Ticket Management System.\n\nYour 6-digit email verification code is: ${otp}\n\nThis verification code is valid for 15 minutes.\nIf you did not request this verification, please ignore this email.\n\nDevSecOps Ticket Management Portal`;
+
+    console.log(`[OTP DISPATCH] Sending verification OTP [${otp}] to <${to}>...`);
+    const result = await sendMailHelper({ to, subject, html, text });
+
+    if (!result.success) {
+        console.warn('\n' + '='.repeat(60));
+        console.warn(`[OTP BACKUP NOTIFICATION]`);
+        console.warn(`Failed to send email to <${to}> due to: ${result.error}`);
+        console.warn(`VERIFICATION CODE: [ ${otp} ]`);
+        console.warn('='.repeat(60) + '\n');
+    }
+
+    return result;
 }
+
 
 /**
  * 2. Send Ticket Created Notification to Manager

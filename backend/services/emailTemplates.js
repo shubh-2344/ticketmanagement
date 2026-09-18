@@ -42,32 +42,109 @@ const footerStyle = `
  */
 function otpTemplate({ name, otp }) {
     return `
-    <div style="${baseStyle}">
-      <div style="${cardStyle}">
-        <div style="${headerStyle}">
-          <h2 style="color: #38bdf8; margin: 0; font-size: 22px;">Verify Your Email Address</h2>
-          <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">DevSecOps Ticket Management Portal</p>
-        </div>
-        <p style="font-size: 15px; color: #e2e8f0;">Hello <strong>${name}</strong>,</p>
-        <p style="font-size: 14px; color: #cbd5e1; line-height: 1.6;">
-          Thank you for signing up! Please use the following 6-digit One-Time Password (OTP) to complete your email verification and activate your account.
-        </p>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Email Verification Code</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #0b1120; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
+      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0b1120; padding: 30px 15px;">
+        <tr>
+          <td align="center">
+            <!-- Main Card -->
+            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; background-color: #1e293b; border: 1px solid #334155; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+              
+              <!-- Brand Header Bar -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #0284c7, #6366f1); background-color: #0284c7; padding: 4px 0;"></td>
+              </tr>
 
-        <div style="text-align: center; margin: 30px 0;">
-          <div style="display: inline-block; background: linear-gradient(135deg, #0284c7, #6366f1); color: #ffffff; font-size: 36px; font-weight: 800; letter-spacing: 8px; padding: 16px 36px; border-radius: 10px; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);">
-            ${otp}
-          </div>
-        </div>
+              <!-- Header Content -->
+              <tr>
+                <td style="padding: 32px 32px 20px 32px; text-align: center; border-bottom: 1px solid #334155;">
+                  <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+                    <tr>
+                      <td style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 8px 14px; color: #38bdf8; font-weight: 700; font-size: 13px; letter-spacing: 1px;">
+                        TICKET &amp; ASSET MANAGEMENT PORTAL
+                      </td>
+                    </tr>
+                  </table>
+                  <h1 style="color: #ffffff; margin: 16px 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">
+                    Verify Your Email Address
+                  </h1>
+                  <p style="color: #94a3b8; font-size: 14px; margin: 0;">
+                    Complete your registration to access your workspace
+                  </p>
+                </td>
+              </tr>
 
-        <p style="font-size: 13px; color: #f59e0b; background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; padding: 10px 14px; border-radius: 4px;">
-          This OTP code is valid for <strong>15 minutes</strong>. If you did not request this account, please ignore this email.
-        </p>
+              <!-- Body Content -->
+              <tr>
+                <td style="padding: 28px 32px;">
+                  <p style="font-size: 16px; color: #e2e8f0; margin: 0 0 14px 0;">
+                    Hello <strong style="color: #38bdf8;">${name || 'User'}</strong>,
+                  </p>
+                  <p style="font-size: 14px; color: #cbd5e1; line-height: 1.6; margin: 0 0 24px 0;">
+                    Thank you for signing up with DevSecOps Ticket Management System. Please use the following 6-digit verification code to confirm your email and activate your account:
+                  </p>
 
-        <div style="${footerStyle}">
-          DevSecOps Ticket System • Secure Automated Notification
-        </div>
-      </div>
-    </div>
+                  <!-- OTP Display Box -->
+                  <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin: 26px 0;">
+                    <tr>
+                      <td align="center">
+                        <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                          <tr>
+                            <td style="background: linear-gradient(135deg, #0284c7, #4f46e5); background-color: #0284c7; padding: 16px 40px; border-radius: 12px; box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4); text-align: center;">
+                              <span style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #ffffff; display: block; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                                ${otp}
+                              </span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Expiration & Security Notice -->
+                  <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="width: 100%; background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; border-radius: 6px; margin: 20px 0;">
+                    <tr>
+                      <td style="padding: 12px 16px;">
+                        <p style="margin: 0; font-size: 13px; color: #f59e0b; font-weight: 600;">
+                          ⏰ Code expires in 15 minutes
+                        </p>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #cbd5e1; line-height: 1.4;">
+                          If you did not initiate this registration request, please disregard this message. Your email address remains secure.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin: 20px 0 0 0;">
+                    Once verified, you will be able to submit device requests, track issue tickets, and collaborate with your team.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 20px 32px; background-color: #0f172a; border-top: 1px solid #334155; text-align: center;">
+                  <p style="font-size: 12px; color: #64748b; margin: 0 0 4px 0;">
+                    DevSecOps Ticket &amp; Asset Management Portal &bull; Automated Security Notification
+                  </p>
+                  <p style="font-size: 11px; color: #475569; margin: 0;">
+                    This is an automated system email. Please do not reply directly to this message.
+                  </p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
   `;
 }
 

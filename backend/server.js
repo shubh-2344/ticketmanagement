@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { Pool } = require('pg');
 const emailService = require('./services/emailService');
+const { verifySmtpConnection } = require('./config/smtp');
 
 const app = express();
 
@@ -503,11 +504,18 @@ app.post('/api/auth/signup', async (req, res) => {
                 const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
                 await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
                 
-                emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp });
+                const mailResult = await emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp });
+                let message = 'Account exists but is unverified. A new 6-digit OTP code has been sent to your email.';
+                if (!mailResult.success) {
+                    message = `Account exists but unverified. Verification email delivery status: ${mailResult.error || 'SMTP delivery issue'}. Verification code: ${otp}`;
+                }
+
                 return res.status(200).json({
-                    message: 'Account exists but is unverified. A new 6-digit OTP code has been sent to your email.',
+                    message,
                     requireOtp: true,
-                    email: email.trim().toLowerCase()
+                    email: email.trim().toLowerCase(),
+                    emailSent: mailResult.success,
+                    devOtp: otp
                 });
             }
         }
@@ -522,13 +530,20 @@ app.post('/api/auth/signup', async (req, res) => {
             [userId, name.trim(), email.trim().toLowerCase(), hashedPassword, assignedRole, false, otp, otpExpiresAt]
         );
 
-        // Send OTP verification email asynchronously
-        emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp });
+        // Send OTP verification email
+        const mailResult = await emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp });
+
+        let message = 'Registration successful! Please enter the 6-digit OTP sent to your email to activate your account.';
+        if (!mailResult.success) {
+            message = `Registration created! Notice: Verification email delivery failed (${mailResult.error || 'SMTP delivery issue'}). For verification, your OTP code is: ${otp}`;
+        }
 
         res.status(201).json({
-            message: 'Registration successful! Please enter the 6-digit OTP sent to your email to activate your account.',
+            message,
             requireOtp: true,
-            email: email.trim().toLowerCase()
+            email: email.trim().toLowerCase(),
+            emailSent: mailResult.success,
+            devOtp: otp
         });
     } catch (err) {
         console.error('Signup error:', err);
@@ -657,9 +672,18 @@ app.post('/api/auth/resend-otp', async (req, res) => {
 
         await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
 
-        emailService.sendOtpEmail({ to: user.email, name: user.name, otp });
+        const mailResult = await emailService.sendOtpEmail({ to: user.email, name: user.name, otp });
 
-        res.json({ message: 'A new 6-digit OTP code has been sent to your email.' });
+        let message = 'A new 6-digit OTP code has been sent to your email.';
+        if (!mailResult.success) {
+            message = `New OTP generated! Notice: Email delivery failed (${mailResult.error || 'SMTP delivery issue'}). For verification, your OTP code is: ${otp}`;
+        }
+
+        res.json({
+            message,
+            emailSent: mailResult.success,
+            devOtp: otp
+        });
     } catch (err) {
         console.error('Resend OTP error:', err);
         res.status(500).json({ error: err.message || 'Failed to resend OTP' });
@@ -2563,6 +2587,27 @@ app.get('/api/ai/analyze-tickets', authenticateToken, requireRole(['admin']), as
     }
 });
 
+// SMTP Health & Diagnostics Endpoint
+app.get('/api/auth/test-smtp', async (req, res) => {
+    try {
+        const result = await verifySmtpConnection();
+        res.json({
+            ...result,
+            smtpHost: process.env.SMTP_HOST || 'Not configured',
+            smtpPort: process.env.SMTP_PORT || '587',
+            smtpUser: process.env.SMTP_USER || 'Not configured',
+            fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'Not configured'
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Ticket Management Server running securely on port ${PORT}`);
+    // Run asynchronous verification of SMTP settings
+    verifySmtpConnection().catch(err => {
+        console.error('[SMTP STARTUP VERIFICATION FAILED]:', err.message);
+    });
 });
+
