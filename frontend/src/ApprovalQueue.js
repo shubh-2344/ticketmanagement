@@ -17,9 +17,28 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
   const [transferTicket, setTransferTicket] = useState(null);
   const [selectedAdminName, setSelectedAdminName] = useState('');
   const [transferComment, setTransferComment] = useState('');
+  const [processedTicketIds, setProcessedTicketIds] = useState(new Set());
 
   // Persist active tab to sessionStorage
   useEffect(() => { sessionStorage.setItem('approvalqueue_tab', activeTab); }, [activeTab]);
+
+  // Clean up processedTicketIds if tickets from props are updated and already transitioned
+  useEffect(() => {
+    if (processedTicketIds.size > 0 && tickets) {
+      setProcessedTicketIds(prev => {
+        let changed = false;
+        const next = new Set(prev);
+        for (const id of prev) {
+          const t = tickets.find(ticket => ticket.id === id);
+          if (t && t.status !== 'pending_admin_assignment' && t.status !== 'pending_manager_approval') {
+            next.delete(id);
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }
+  }, [tickets]);
 
   useEffect(() => {
     if (API_URL) {
@@ -54,30 +73,34 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
         target_admin_name: selectedAdminName,
         comment: transferComment
       });
-      alert(`Ticket successfully transferred to ${selectedAdminName}!`);
       setTransferTicket(null);
       setTransferComment('');
-      if (onRefresh) onRefresh();
+      if (onRefresh) await onRefresh(true);
+      alert(`Ticket successfully transferred to ${selectedAdminName}!`);
     } catch (err) {
       console.error('Error transferring ticket:', err);
       alert(err.response?.data?.error || 'Transfer failed.');
     }
   };
 
-  // Queue Partitioning by Ticket Type
+  // Queue Partitioning by Ticket Type (optimistically excludes fulfilled/processed tickets)
   const managerQueue = tickets.filter(
-    (t) => (t.type === 'device-request' || !t.type) &&
+    (t) => !processedTicketIds.has(t.id) &&
+           (t.type === 'device-request' || !t.type) &&
            (t.status === 'pending_manager_approval' || t.status === 'pending') &&
            (currentUser.role === 'admin' || t.manager_id === currentUser.id || !t.manager_id)
   );
 
   const issueQueue = tickets.filter(
-    (t) => t.type === 'issue' &&
+    (t) => !processedTicketIds.has(t.id) &&
+           t.type === 'issue' &&
            (t.status === 'pending_admin_assignment' || t.status === 'open' || t.status === 'pending')
   );
 
   const adminQueue = tickets.filter(
-    (t) => t.type === 'device-request' && t.status === 'pending_admin_assignment'
+    (t) => !processedTicketIds.has(t.id) &&
+           t.type === 'device-request' &&
+           t.status === 'pending_admin_assignment'
   );
 
   const handleManagerReview = async (ticketId, action) => {
@@ -103,8 +126,9 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
         approval_comment: comment,
         manager_comment: comment
       });
+      setProcessedTicketIds(prev => new Set(prev).add(ticketId));
+      if (onRefresh) await onRefresh(true);
       alert(`Ticket successfully ${action === 'approve' ? 'approved' : 'denied'}!`);
-      if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Manager review error:', err);
       alert(err.response?.data?.error || 'Review failed.');
@@ -139,13 +163,24 @@ function ApprovalQueue({ tickets, currentUser, onViewTicket, onRefresh, API_URL,
     if (!confirmed) return;
 
     try {
-      await axios.put(`${API_URL}/tickets/${ticket.id}/admin-assign`, {
+      const payload = {
         inventory_id: data.inventory_id || null,
-        assigned_device_name: data.assigned_device_name,
-        assignment_description: data.assignment_description
+        assigned_device_name: (data.assigned_device_name || '').trim(),
+        assignment_description: (data.assignment_description || '').trim()
+      };
+
+      await axios.put(`${API_URL}/tickets/${ticket.id}/admin-assign`, payload);
+
+      // Immediately remove ticket from local admin queue so it disappears instantly
+      setProcessedTicketIds(prev => new Set(prev).add(ticket.id));
+      setAdminAssignment(prev => {
+        const next = { ...prev };
+        delete next[ticket.id];
+        return next;
       });
-      alert(isIssue ? 'Incident resolved successfully!' : 'Hardware asset assigned successfully!');
-      if (onRefresh) onRefresh();
+
+      if (onRefresh) await onRefresh(true);
+      alert(isIssue ? 'Incident resolved successfully!' : 'Hardware asset assigned and fulfillment completed successfully!');
     } catch (err) {
       console.error('Admin assignment error:', err);
       alert(err.response?.data?.error || 'Assignment failed.');

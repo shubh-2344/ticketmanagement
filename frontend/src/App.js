@@ -338,8 +338,10 @@ function App() {
     try {
       const response = await axios.get(`${API_URL}/tickets`);
       setTickets(response.data);
+      return response.data;
     } catch (error) {
       console.error('Error fetching tickets:', error);
+      return [];
     } finally {
       if (!silent) setLoading(false);
     }

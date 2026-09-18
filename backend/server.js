@@ -993,6 +993,7 @@ app.put('/api/users/:id/role', authenticateToken, requireRole(['admin']), async 
 // GET tickets
 app.get('/api/tickets', authenticateToken, async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         let query = 'SELECT * FROM tickets';
         let params = [];
 
@@ -1017,6 +1018,7 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
 // GET single ticket by ID
 app.get('/api/tickets/:id', authenticateToken, async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         const { id } = req.params;
         const result = await pool.query('SELECT * FROM tickets WHERE id = $1', [id]);
         if (result.rows.length === 0) {
@@ -1715,6 +1717,9 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
         }
 
         const ticketCheck = await pool.query('SELECT type FROM tickets WHERE id = $1', [id]);
+        if (ticketCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
         const isIssue = ticketCheck.rows[0]?.type === 'issue';
         // Both device-request and issue tickets are closed once admin fulfills them.
         const targetStatus = 'closed';
@@ -1722,7 +1727,7 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
         const result = await pool.query(`
             UPDATE tickets
             SET status = $5,
-                inventory_id = COALESCE($1, inventory_id),
+                inventory_id = COALESCE($1::uuid, inventory_id),
                 assigned_device_name = $2,
                 assignment_description = $3,
                 assigned_at = CURRENT_TIMESTAMP,
@@ -1747,7 +1752,7 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
                         INSERT INTO asset_lifecycle (
                             lifecycle_id, request_ticket_id, inventory_id, asset_name,
                             user_id, user_name, user_email, status, assigned_at, expected_return_date
-                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Assigned', CURRENT_TIMESTAMP, $8)
+                        ) VALUES ($1, $2, $3::uuid, $4, $5, $6, $7, 'Assigned', CURRENT_TIMESTAMP, $8)
                     `, [
                         lifecycleId,
                         id,
@@ -1761,7 +1766,7 @@ app.put('/api/tickets/:id/admin-assign', authenticateToken, requireRole(['admin'
                 } else {
                     await pool.query(`
                         UPDATE asset_lifecycle
-                        SET inventory_id = COALESCE($1, inventory_id),
+                        SET inventory_id = COALESCE($1::uuid, inventory_id),
                             asset_name = $2,
                             status = 'Assigned',
                             updated_at = CURRENT_TIMESTAMP
