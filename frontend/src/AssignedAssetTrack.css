@@ -439,6 +439,26 @@
   color: #0f172a;
 }
 
+.btn-clear-single {
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  line-height: 1;
+}
+
+.btn-clear-single:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  transform: scale(1.08);
+}
+
+
 /* Empty State */
 .empty-track-state {
   text-align: center;

@@ -103,6 +103,28 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
     }
   };
 
+  const clearSingleLifecycle = async (lifecycleId) => {
+    const confirmFn = window.showConfirm || ((opts) => Promise.resolve(window.confirm(opts.message)));
+    const confirmed = await confirmFn({
+      title: 'Delete Lifecycle Record',
+      message: `Permanently delete lifecycle record ${lifecycleId}? This does not delete the associated tickets.`,
+      confirmText: 'Delete Record',
+      cancelText: 'Cancel',
+      confirmType: 'danger'
+    });
+    if (!confirmed) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/admin/asset-lifecycles/${lifecycleId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchLifecycles();
+    } catch (err) {
+      console.error('Delete lifecycle error:', err);
+      alert(err.response?.data?.error || 'Failed to delete lifecycle record.');
+    }
+  };
+
   const handleVerifyReturn = async (ticketId) => {
     if (!ticketId) return;
     const confirmed = window.confirm('Verify physical device return and restore inventory count?');
@@ -364,6 +386,7 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
                   <th>RETURN TICKET</th>
                   <th>STATUS</th>
                   <th style={{ textAlign: 'right' }}>VERTICAL FLOW</th>
+                  <th style={{ textAlign: 'center' }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
@@ -421,6 +444,15 @@ function AssignedAssetTrack({ API_URL, onSelectTicket }) {
                           onClick={() => setSelectedFlowItem(item)}
                         >
                           View Flow ↓
+                        </button>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          className="btn-clear-single"
+                          title={`Delete lifecycle record ${item.lifecycle_id}`}
+                          onClick={() => clearSingleLifecycle(item.lifecycle_id)}
+                        >
+                          🗑
                         </button>
                       </td>
                     </tr>

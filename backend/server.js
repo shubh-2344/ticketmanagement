@@ -2273,6 +2273,22 @@ app.delete('/api/admin/asset-lifecycles', authenticateToken, requireRole(['admin
     }
 });
 
+// DELETE /api/admin/asset-lifecycles/:lifecycleId (Clear a single asset lifecycle record)
+app.delete('/api/admin/asset-lifecycles/:lifecycleId', authenticateToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const { lifecycleId } = req.params;
+        const result = await pool.query(`DELETE FROM asset_lifecycle WHERE lifecycle_id = $1`, [lifecycleId]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: `Lifecycle record ${lifecycleId} not found.` });
+        }
+        res.json({ message: `Asset lifecycle record ${lifecycleId} deleted successfully.` });
+    } catch (err) {
+        console.error('Delete single lifecycle error:', err);
+        res.status(500).json({ error: err.message || 'Failed to delete lifecycle record' });
+    }
+});
+
+
 // GET /api/asset-lifecycles/ticket/:ticketId (Fetch Vertical Flow Data for specific ticket)
 app.get('/api/asset-lifecycles/ticket/:ticketId', authenticateToken, async (req, res) => {
     try {
