@@ -71,14 +71,17 @@ function CreateTicket({ onSubmit, API_URL, initialDevice, currentUser }) {
     try {
       if (API_URL) {
         const response = await axios.get(`${API_URL}/managers`);
-        setManagerList(response.data);
-        if (response.data.length > 0) {
-          setFormData((prev) => ({
+        const list = response.data || [];
+        setManagerList(list);
+        setFormData((prev) => {
+          const stillValid = list.some((m) => m.id === prev.manager_id);
+          if (stillValid) return prev;
+          return {
             ...prev,
-            manager_id: response.data[0].id,
-            manager_name: response.data[0].name
-          }));
-        }
+            manager_id: list.length > 0 ? list[0].id : '',
+            manager_name: list.length > 0 ? list[0].name : ''
+          };
+        });
       }
     } catch (err) {
       console.error('Error loading managers:', err);
@@ -278,11 +281,15 @@ function CreateTicket({ onSubmit, API_URL, initialDevice, currentUser }) {
               required
               className="manager-select-highlight"
             >
-              {managerList.map((mgr) => (
-                <option key={mgr.id} value={mgr.id}>
-                  {mgr.name} ({mgr.role.toUpperCase()} - {mgr.email})
-                </option>
-              ))}
+              {managerList.length === 0 ? (
+                <option value="">-- No Managers Available --</option>
+              ) : (
+                managerList.map((mgr) => (
+                  <option key={mgr.id} value={mgr.id}>
+                    {mgr.name} ({mgr.role.toUpperCase()} - {mgr.email})
+                  </option>
+                ))
+              )}
             </select>
             <span className="field-hint">The assigned manager will review and approve/deny this request first.</span>
           </div>

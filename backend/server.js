@@ -199,8 +199,12 @@ async function initializeDB() {
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS reassignment_comment TEXT;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS is_rejected BOOLEAN DEFAULT FALSE;`);
         await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS rejection_comment TEXT;`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS rejected_by_id VARCHAR(50);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS rejected_by_name VARCHAR(100);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS rejected_by_role VARCHAR(50);`);
+        await pool.query(`ALTER TABLE tickets ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP;`);
 
-        // Default Seed Users
+        // Default Seed Users (Only insert if users table is empty so deleted users/managers are never resurrected)
         const defaultPasswordHash = await bcrypt.hash('Password123!', 10);
         const shubhamPasswordHash = await bcrypt.hash('Maharashtra@123', 10);
 
@@ -213,13 +217,25 @@ async function initializeDB() {
             ['admin_shubham', 'Shubham Takalikar', 'shubham.takalikar@securelayer7.net', shubhamPasswordHash, 'admin', 'IT Operations']
         ];
 
-        for (const [id, name, email, passHash, role, dept] of seedUsers) {
-            await pool.query(`
-                INSERT INTO users (id, name, email, password_hash, role, department, is_verified)
-                VALUES ($1, $2, $3, $4, $5, $6, TRUE)
-                ON CONFLICT (email) DO UPDATE 
-                SET name = EXCLUDED.name, role = EXCLUDED.role, department = EXCLUDED.department, is_verified = TRUE
-            `, [id, name, email, passHash, role, dept]);
+        const userCountRes = await pool.query('SELECT COUNT(*) FROM users');
+        if (parseInt(userCountRes.rows[0].count, 10) === 0) {
+            for (const [id, name, email, passHash, role, dept] of seedUsers) {
+                await pool.query(`
+                    INSERT INTO users (id, name, email, password_hash, role, department, is_verified)
+                    VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+                    ON CONFLICT (email) DO NOTHING
+                `, [id, name, email, passHash, role, dept]);
+            }
+        } else {
+            // Guarantee at least one admin account exists if all admins were removed
+            const adminCheck = await pool.query("SELECT id FROM users WHERE role = 'admin'");
+            if (adminCheck.rows.length === 0) {
+                await pool.query(`
+                    INSERT INTO users (id, name, email, password_hash, role, department, is_verified)
+                    VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+                    ON CONFLICT (email) DO NOTHING
+                `, ['admin_shubham', 'Shubham Takalikar', 'shubham.takalikar@securelayer7.net', shubhamPasswordHash, 'admin', 'IT Operations']);
+            }
         }
 
         // Seed Sample Inventory Items if empty
@@ -835,6 +851,12 @@ app.delete('/api/admin/users/:id', authenticateToken, requireRole(['admin']), as
     }
 
     try {
+        // Clean up references and associations so foreign key constraints never block deletion
+        await pool.query('DELETE FROM asset_lifecycle WHERE user_id = $1', [id]);
+        await pool.query('UPDATE tickets SET manager_id = NULL, manager_name = NULL WHERE manager_id = $1', [id]);
+        await pool.query('UPDATE tickets SET approver_id = NULL WHERE approver_id = $1', [id]);
+        await pool.query('UPDATE tickets SET assigned_admin_id = NULL, assigned_admin_name = NULL WHERE assigned_admin_id = $1', [id]);
+
         const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id, name', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
@@ -884,10 +906,10 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     }
 });
 
-// Get Managers Endpoint
+// Get Managers Endpoint (Only verified active managers and admins)
 app.get('/api/managers', authenticateToken, async (req, res) => {
     try {
-        const result = await pool.query("SELECT id, name, email, role FROM users WHERE role = 'manager' OR role = 'admin' ORDER BY name ASC");
+        const result = await pool.query("SELECT id, name, email, role FROM users WHERE (role = 'manager' OR role = 'admin') AND (is_verified = TRUE OR is_verified IS NULL) ORDER BY name ASC");
         res.json(result.rows);
     } catch (err) {
         console.error('Get managers error:', err);
@@ -1623,14 +1645,18 @@ app.put('/api/tickets/:id/manager-review', authenticateToken, requireRole(['mana
                 is_rejected = $2,
                 approver_id = $3,
                 approver_name = $4,
-                approval_comment = $5,
-                rejection_comment = CASE WHEN $2 = TRUE THEN $5 ELSE rejection_comment END,
+                approval_comment = CASE WHEN $2 = FALSE THEN $5 ELSE approval_comment END,
+                rejection_comment = CASE WHEN $2 = TRUE THEN $5 ELSE NULL END,
+                rejected_by_id = CASE WHEN $2 = TRUE THEN $3 ELSE NULL END,
+                rejected_by_name = CASE WHEN $2 = TRUE THEN $4 ELSE NULL END,
+                rejected_by_role = CASE WHEN $2 = TRUE THEN $7 ELSE NULL END,
+                rejected_at = CASE WHEN $2 = TRUE THEN CURRENT_TIMESTAMP ELSE NULL END,
                 reassignment_comment = CASE WHEN $2 = TRUE THEN NULL ELSE reassignment_comment END,
                 approval_date = CURRENT_TIMESTAMP,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = $6
             RETURNING *
-        `, [nextStatus, isRejected, req.user.id, req.user.name, comment || null, id]);
+        `, [nextStatus, isRejected, req.user.id, req.user.name, comment || null, id, req.user.role || 'manager']);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });
@@ -1956,13 +1982,16 @@ app.put('/api/tickets/:id/admin-reject', authenticateToken, requireRole(['admin'
             UPDATE tickets
             SET status = 'rejected',
                 is_rejected = TRUE,
-                rejection_comment = $1,
-                approval_comment = $1,
+                rejected_by_id = $1,
+                rejected_by_name = $2,
+                rejected_by_role = $3,
+                rejected_at = CURRENT_TIMESTAMP,
+                rejection_comment = $4,
                 reassignment_comment = NULL,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = $2
+            WHERE id = $5
             RETURNING *
-        `, [rejection_comment.trim(), id]);
+        `, [req.user.id, req.user.name, req.user.role || 'admin', rejection_comment.trim(), id]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket not found' });

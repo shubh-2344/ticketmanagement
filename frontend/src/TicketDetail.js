@@ -666,6 +666,61 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
     ticket.status === 'rejected' ||
     (!ticket.assigned_device_name && !!(ticket.rejection_comment && ticket.rejection_comment.trim()));
   const statusInfo = getStatusBadge(ticket.status, ticket.type, isTicketRejected);
+
+  // Helper to determine accurate rejection details (who rejected, role, notes)
+  const getRejectionInfo = (t) => {
+    if (!isTicketRejected) return null;
+
+    // 1. Explicitly recorded rejected_by_name from backend
+    if (t.rejected_by_name) {
+      const isAdm = t.rejected_by_role === 'admin' || t.type === 'issue';
+      return {
+        by: `${isAdm ? 'IT Admin' : 'Manager'} (${t.rejected_by_name})`,
+        name: t.rejected_by_name,
+        role: t.rejected_by_role || (isAdm ? 'admin' : 'manager'),
+        isAdmin: isAdm,
+        comment: t.rejection_comment || t.approval_comment
+      };
+    }
+
+    // 2. Incident/Issue tickets have no manager workflow — always handled by IT Admin
+    if (t.type === 'issue') {
+      const adminName = t.assigned_admin_name || t.assigned_engineer || 'IT Admin';
+      return {
+        by: `IT Admin (${adminName})`,
+        name: adminName,
+        role: 'admin',
+        isAdmin: true,
+        comment: t.rejection_comment || t.approval_comment
+      };
+    }
+
+    // 3. Asset request tickets: If manager approved it previously (approval_date was set and approver_name exists),
+    // and ticket is rejected, it was rejected by IT Admin during Stage 3 fulfillment!
+    const wasApprovedByManager = !!(t.approval_date && t.approver_name);
+    if (wasApprovedByManager) {
+      const adminName = t.assigned_admin_name || 'IT Admin';
+      return {
+        by: `IT Admin (${adminName})`,
+        name: adminName,
+        role: 'admin',
+        isAdmin: true,
+        comment: t.rejection_comment || 'Request denied by Administrator'
+      };
+    }
+
+    // 4. Default: rejected by Manager during Stage 2 review
+    const mgrName = t.approver_name || t.manager_name || 'Manager';
+    return {
+      by: `Manager (${mgrName})`,
+      name: mgrName,
+      role: 'manager',
+      isAdmin: false,
+      comment: t.rejection_comment || t.approval_comment
+    };
+  };
+
+  const rejectionInfo = getRejectionInfo(ticket);
   const isManager = currentUser.role === 'manager';
   const isAdmin = currentUser.role === 'admin';
   const isRequester = currentUser.id === ticket.requester_id;
@@ -733,7 +788,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             </div>
             <div style={{ fontSize: '14px', fontWeight: '800', color: isTicketRejected ? '#ef4444' : (ticket.assigned_admin_name ? '#38bdf8' : 'var(--text-main)') }}>
               {isTicketRejected
-                ? (ticket.approver_name ? `Rejected by ${ticket.approver_name}` : (ticket.manager_name ? `Rejected by ${ticket.manager_name}` : 'Request Denied / Closed'))
+                ? `Rejected by ${rejectionInfo ? rejectionInfo.by : 'Administrator'}`
                 : (ticket.type === 'issue'
                     ? (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk')
                     : (ticket.status === 'pending_manager_approval' ? (ticket.manager_name || 'Assigned Manager') : (ticket.assigned_admin_name || ticket.assigned_engineer || 'IT Admin Desk'))
@@ -743,14 +798,21 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           </div>
         </div>
         {isTicketRejected ? (
-          <div style={{ fontSize: '12px', color: '#ef4444', background: 'rgba(239, 68, 68, 0.12)', padding: '8px 14px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.3)', maxWidth: '450px' }}>
-            🚫 <strong>Rejection Reason:</strong> {
-              (ticket.rejection_comment && ticket.rejection_comment.trim() && ticket.rejection_comment.toUpperCase() !== 'NA' && ticket.rejection_comment.toUpperCase() !== 'N/A')
-                ? ticket.rejection_comment
-                : (ticket.approval_comment && ticket.approval_comment.trim() && ticket.approval_comment.toUpperCase() !== 'NA' && ticket.approval_comment.toUpperCase() !== 'N/A')
-                  ? ticket.approval_comment
-                  : 'Request denied by Manager / Admin'
-            }
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxWidth: '450px' }}>
+            <div style={{ fontSize: '12px', color: '#ef4444', background: 'rgba(239, 68, 68, 0.12)', padding: '8px 14px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+              🚫 <strong>Rejection Reason ({rejectionInfo?.isAdmin ? 'Admin' : 'Manager'}):</strong> {
+                (ticket.rejection_comment && ticket.rejection_comment.trim() && ticket.rejection_comment.toUpperCase() !== 'NA' && ticket.rejection_comment.toUpperCase() !== 'N/A')
+                  ? ticket.rejection_comment
+                  : (ticket.approval_comment && ticket.approval_comment.trim() && ticket.approval_comment.toUpperCase() !== 'NA' && ticket.approval_comment.toUpperCase() !== 'N/A')
+                    ? ticket.approval_comment
+                    : 'Request denied by Administrator'
+              }
+            </div>
+            {rejectionInfo?.isAdmin && ticket.approver_name && (
+              <div style={{ fontSize: '11px', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                ✓ Prior Manager Approval: <strong>{ticket.approver_name}</strong>
+              </div>
+            )}
           </div>
         ) : (
           ticket.reassignment_comment && (
@@ -782,9 +844,9 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
             <div className="step-label">Submitted</div>
           </div>
           <div className="step-connector"></div>
-          <div className={`timeline-step ${ticket.status === 'approved' || ticket.status === 'closed' ? 'completed' : 'active'}`}>
-            <div className="step-num">2</div>
-            <div className="step-label">Admin Resolution</div>
+          <div className={`timeline-step ${ticket.status === 'approved' || ticket.status === 'closed' ? 'completed' : (isTicketRejected ? 'rejected' : 'active')}`}>
+            <div className="step-num">{isTicketRejected ? '✕' : '2'}</div>
+            <div className="step-label">{isTicketRejected ? `Rejected by ${rejectionInfo?.name || 'Admin'}` : 'Admin Resolution'}</div>
           </div>
         </div>
       ) : ticket.type === 'device-return' ? (
@@ -837,7 +899,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           </div>
         </div>
       ) : isTicketRejected ? (
-        /* REJECTED FLOW: Show correct rejected state instead of fake progression */
+        /* REJECTED FLOW: Show correct rejected state based on whether Manager or Admin rejected */
         <div className="approval-flow-bar">
           <div className="flow-header-row">
             <h3 className="flow-header-title">APPROVAL & FULFILLMENT PROGRESSION FLOW</h3>
@@ -853,7 +915,7 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               alignItems: 'center',
               gap: '6px'
             }}>
-              ✕ Request Denied / Rejected
+              ✕ {rejectionInfo?.isAdmin ? 'Rejected by IT Admin' : 'Rejected by Manager'}
             </span>
           </div>
 
@@ -864,42 +926,86 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
               <span className="flow-label label-green">Submitted</span>
             </div>
 
-            {/* Line 1 -> 2: Solid Red (rejected path) */}
-            <div className="flow-line line-solid-red"></div>
+            {rejectionInfo?.isAdmin ? (
+              /* SCENARIO A: Manager APPROVED, Admin REJECTED */
+              <>
+                {/* Line 1 -> 2: Solid Green (Manager review was approved) */}
+                <div className="flow-line line-solid-green"></div>
 
-            {/* Step 2: Manager Reviewed → REJECTED */}
-            <div className="flow-step-node">
-              <div className="flow-circle circle-red">✕</div>
-              <span className="flow-label label-red">
-                {ticket.approver_name ? `Rejected by ${ticket.approver_name}` : 'Manager Rejected'}
-              </span>
-            </div>
+                {/* Step 2: Manager Approved */}
+                <div className="flow-step-node">
+                  <div className="flow-circle circle-green">✓</div>
+                  <span className="flow-label label-green">
+                    Manager Approved ({ticket.approver_name || ticket.manager_name || 'Manager'})
+                  </span>
+                </div>
 
-            {/* Line 2 -> 3: Muted (flow stopped) */}
-            <div className="flow-line line-muted"></div>
+                {/* Line 2 -> 3: Solid Red (Admin rejected here) */}
+                <div className="flow-line line-solid-red"></div>
 
-            {/* Step 3: Waiting for Admin — BLOCKED */}
-            <div className="flow-step-node">
-              <div className="flow-circle circle-muted">—</div>
-              <span className="flow-label label-muted">Waiting for Admin</span>
-            </div>
+                {/* Step 3: Admin Review → REJECTED */}
+                <div className="flow-step-node">
+                  <div className="flow-circle circle-red">✕</div>
+                  <span className="flow-label label-red">
+                    Rejected by Admin ({rejectionInfo?.name || 'Admin'})
+                  </span>
+                </div>
 
-            {/* Line 3 -> 4: Muted */}
-            <div className="flow-line line-muted"></div>
+                {/* Line 3 -> 4: Muted (flow stopped) */}
+                <div className="flow-line line-muted"></div>
 
-            {/* Step 4: Admin Assigned — BLOCKED */}
-            <div className="flow-step-node">
-              <div className="flow-circle circle-muted">—</div>
-              <span className="flow-label label-muted">Admin Assigned</span>
-            </div>
+                {/* Step 4: Admin Assigned — BLOCKED */}
+                <div className="flow-step-node">
+                  <div className="flow-circle circle-muted">—</div>
+                  <span className="flow-label label-muted">Admin Assigned</span>
+                </div>
+              </>
+            ) : (
+              /* SCENARIO B: Manager REJECTED at Step 2 */
+              <>
+                {/* Line 1 -> 2: Solid Red (rejected path) */}
+                <div className="flow-line line-solid-red"></div>
+
+                {/* Step 2: Manager Reviewed → REJECTED */}
+                <div className="flow-step-node">
+                  <div className="flow-circle circle-red">✕</div>
+                  <span className="flow-label label-red">
+                    Rejected by Manager ({rejectionInfo?.name || ticket.approver_name || ticket.manager_name || 'Manager'})
+                  </span>
+                </div>
+
+                {/* Line 2 -> 3: Muted (flow stopped) */}
+                <div className="flow-line line-muted"></div>
+
+                {/* Step 3: Waiting for Admin — BLOCKED */}
+                <div className="flow-step-node">
+                  <div className="flow-circle circle-muted">—</div>
+                  <span className="flow-label label-muted">Waiting for Admin</span>
+                </div>
+
+                {/* Line 3 -> 4: Muted */}
+                <div className="flow-line line-muted"></div>
+
+                {/* Step 4: Admin Assigned — BLOCKED */}
+                <div className="flow-step-node">
+                  <div className="flow-circle circle-muted">—</div>
+                  <span className="flow-label label-muted">Admin Assigned</span>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Rejection reason inline */}
-          {(ticket.rejection_comment || ticket.approval_comment) && (
-            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', fontSize: '12px', color: '#fca5a5' }}>
-              <strong>Rejection Reason:</strong> {ticket.rejection_comment || ticket.approval_comment}
+          {/* Rejection reason & manager approval note inline */}
+          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ padding: '10px 14px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', fontSize: '12px', color: '#fca5a5' }}>
+              <strong>Rejection Reason ({rejectionInfo?.isAdmin ? 'Admin' : 'Manager'}):</strong> {rejectionInfo?.comment || 'Request denied'}
             </div>
-          )}
+            {rejectionInfo?.isAdmin && ticket.approver_name && ticket.approval_comment && (
+              <div style={{ padding: '8px 14px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '8px', fontSize: '12px', color: '#6ee7b7' }}>
+                <strong>Prior Manager Approval ({ticket.approver_name}):</strong> "{ticket.approval_comment}"
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="approval-flow-bar">
@@ -1124,17 +1230,17 @@ function TicketDetail({ ticket, currentUser, onApprove, onReject, onClose, onBac
           {isTicketRejected && (
             <section className="section rejection-info" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '20px' }}>
               <h2 style={{ color: '#ef4444', marginTop: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <XIcon size={18} /> {ticket.type === 'issue' ? 'Incident Rejected by IT Admin' : 'Ticket Request Denied'}
+                <XIcon size={18} /> {ticket.type === 'issue' ? 'Incident Rejected by IT Admin' : (rejectionInfo?.isAdmin ? 'Ticket Request Denied by IT Admin' : 'Ticket Request Denied by Manager')}
               </h2>
               <div className="approval-comment" style={{ background: 'rgba(0,0,0,0.1)', padding: '12px', borderRadius: '6px', color: '#fca5a5' }}>
-                <p><strong>Reason / Comment:</strong></p>
-                <p>{
-                  (ticket.rejection_comment && ticket.rejection_comment.trim() && ticket.rejection_comment.toUpperCase() !== 'NA')
-                    ? ticket.rejection_comment
-                    : (ticket.approval_comment && ticket.approval_comment.trim() && ticket.approval_comment.toUpperCase() !== 'NA')
-                      ? ticket.approval_comment
-                      : 'Request denied by Manager / Admin'
-                }</p>
+                <p><strong>Rejected By:</strong> {rejectionInfo ? rejectionInfo.by : 'Administrator'}</p>
+                <p><strong>Reason / Comment:</strong> {rejectionInfo?.comment || 'Request denied'}</p>
+                {rejectionInfo?.isAdmin && ticket.approver_name && (
+                  <p style={{ marginTop: '8px', color: '#6ee7b7', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' }}>
+                    ✓ <strong>Prior Manager Approval:</strong> Approved by {ticket.approver_name} {ticket.approval_date ? `on ${formatDate(ticket.approval_date)}` : ''}
+                    {ticket.approval_comment ? ` — "${ticket.approval_comment}"` : ''}
+                  </p>
+                )}
               </div>
             </section>
           )}
