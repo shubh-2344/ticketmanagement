@@ -30,7 +30,7 @@ async function sendMailHelper({ to, subject, html, text }) {
         return { success: false, error: 'SMTP credentials not configured in .env' };
     }
 
-    const cleanFromName = (defaultSender.name || 'DevSecOps Ticket System').replace(/^["']|["']$/g, '').trim();
+    const cleanFromName = (defaultSender.name || 'Ticket & Inventory Management System').replace(/^["']|["']$/g, '').trim();
     const cleanFromEmail = (defaultSender.email || defaultSender.user || 'helpdesk@securelayer7.net').replace(/^["']|["']$/g, '').trim();
 
     try {
@@ -55,9 +55,9 @@ async function sendMailHelper({ to, subject, html, text }) {
  * 1. Send OTP Signup Verification Email
  */
 async function sendOtpEmail({ to, name, otp }) {
-    const subject = `Email Verification Code: ${otp}`;
+    const subject = `Verify your email address`;
     const html = templates.otpTemplate({ name, otp });
-    const text = `Hello ${name || 'User'},\n\nThank you for signing up for DevSecOps Ticket Management System.\n\nYour 6-digit email verification code is: ${otp}\n\nThis verification code is valid for 15 minutes.\nIf you did not request this verification, please ignore this email.\n\nDevSecOps Ticket Management Portal`;
+    const text = `Hello ${name || 'User'},\n\nThank you for registering with Ticket & Inventory Management System.\n\nYour verification code is: ${otp}\n\nThis code will expire in 10 minutes.\nIf you did not request this verification, you can safely ignore this email.\n\nRegards,\nTicket & Inventory Management System Support Team`;
 
     console.log(`[OTP DISPATCH] Sending verification email to <${to}>...`);
     const result = await sendMailHelper({ to, subject, html, text });

@@ -39,65 +39,79 @@ const footerStyle = `
 
 /**
  * 1. OTP Email Verification Template
+ * Professional corporate design — white background, no emojis, Outlook/Gmail/mobile compatible.
  */
 function otpTemplate({ name, otp }) {
     return `
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Email Verification Code</title>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <title>Verify your email address</title>
+      <!--[if mso]>
+      <noscript>
+        <xml>
+          <o:OfficeDocumentSettings>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+          </o:OfficeDocumentSettings>
+        </xml>
+      </noscript>
+      <![endif]-->
     </head>
-    <body style="margin: 0; padding: 0; background-color: #0b1120; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
-      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0b1120; padding: 30px 15px;">
+    <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: Arial, Helvetica, sans-serif;">
+
+      <!-- Outer wrapper -->
+      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0"
+             style="background-color: #f4f4f5; padding: 40px 16px;">
         <tr>
           <td align="center">
-            <!-- Main Card -->
-            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; background-color: #1e293b; border: 1px solid #334155; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-              
-              <!-- Brand Header Bar -->
+
+            <!-- Card -->
+            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0"
+                   style="max-width: 560px; background-color: #ffffff; border: 1px solid #e2e2e2; border-radius: 4px;">
+
+              <!-- Top accent bar -->
               <tr>
-                <td style="background: linear-gradient(135deg, #0284c7, #6366f1); background-color: #0284c7; padding: 4px 0;"></td>
+                <td style="background-color: #1a73e8; height: 4px; font-size: 0; line-height: 0;">&nbsp;</td>
               </tr>
 
-              <!-- Header Content -->
+              <!-- Header -->
               <tr>
-                <td style="padding: 32px 32px 20px 32px; text-align: center; border-bottom: 1px solid #334155;">
-                  <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
-                    <tr>
-                      <td style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 8px 14px; color: #38bdf8; font-weight: 700; font-size: 13px; letter-spacing: 1px;">
-                        TICKET &amp; ASSET MANAGEMENT PORTAL
-                      </td>
-                    </tr>
-                  </table>
-                  <h1 style="color: #ffffff; margin: 16px 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">
-                    Verify Your Email Address
-                  </h1>
-                  <p style="color: #94a3b8; font-size: 14px; margin: 0;">
-                    Complete your registration to access your workspace
+                <td style="padding: 32px 40px 24px 40px; border-bottom: 1px solid #e8e8e8; text-align: left;">
+                  <p style="margin: 0; font-size: 13px; font-weight: 700; color: #1a1a1a;
+                             letter-spacing: 0.5px; text-transform: uppercase;">
+                    Ticket &amp; Inventory Management System
                   </p>
                 </td>
               </tr>
 
-              <!-- Body Content -->
+              <!-- Body -->
               <tr>
-                <td style="padding: 28px 32px;">
-                  <p style="font-size: 16px; color: #e2e8f0; margin: 0 0 14px 0;">
-                    Hello <strong style="color: #38bdf8;">${name || 'User'}</strong>,
-                  </p>
-                  <p style="font-size: 14px; color: #cbd5e1; line-height: 1.6; margin: 0 0 24px 0;">
-                    Thank you for signing up with DevSecOps Ticket Management System. Please use the following 6-digit verification code to confirm your email and activate your account:
+                <td style="padding: 32px 40px;">
+
+                  <p style="margin: 0 0 20px 0; font-size: 15px; color: #1a1a1a; line-height: 1.5;">
+                    Hello ${name || 'User'},
                   </p>
 
-                  <!-- OTP Display Box -->
-                  <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin: 26px 0;">
+                  <p style="margin: 0 0 28px 0; font-size: 15px; color: #444444; line-height: 1.6;">
+                    Thank you for registering with Ticket &amp; Inventory Management System.
+                    Please use the verification code below to verify your email address and activate your account.
+                  </p>
+
+                  <!-- OTP Box -->
+                  <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="width: 100%; margin: 0 0 28px 0;">
                     <tr>
                       <td align="center">
                         <table role="presentation" border="0" cellspacing="0" cellpadding="0">
                           <tr>
-                            <td style="background: linear-gradient(135deg, #0284c7, #4f46e5); background-color: #0284c7; padding: 16px 40px; border-radius: 12px; box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4); text-align: center;">
-                              <span style="font-family: 'Courier New', Courier, monospace; font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #ffffff; display: block; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                            <td style="background-color: #f8f9fa; border: 2px solid #d1d5db;
+                                       border-radius: 4px; padding: 18px 48px; text-align: center;">
+                              <span style="font-family: 'Courier New', Courier, monospace;
+                                           font-size: 36px; font-weight: 700;
+                                           letter-spacing: 12px; color: #1a1a1a;
+                                           display: block; line-height: 1;">
                                 ${otp}
                               </span>
                             </td>
@@ -107,46 +121,45 @@ function otpTemplate({ name, otp }) {
                     </tr>
                   </table>
 
-                  <!-- Expiration & Security Notice -->
-                  <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="width: 100%; background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; border-radius: 6px; margin: 20px 0;">
-                    <tr>
-                      <td style="padding: 12px 16px;">
-                        <p style="margin: 0; font-size: 13px; color: #f59e0b; font-weight: 600;">
-                          ⏰ Code expires in 15 minutes
-                        </p>
-                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #cbd5e1; line-height: 1.4;">
-                          If you did not initiate this registration request, please disregard this message. Your email address remains secure.
-                        </p>
-                      </td>
-                    </tr>
-                  </table>
-
-                  <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin: 20px 0 0 0;">
-                    Once verified, you will be able to submit device requests, track issue tickets, and collaborate with your team.
+                  <p style="margin: 0 0 16px 0; font-size: 14px; color: #444444; line-height: 1.6;">
+                    This verification code will expire in <strong>10 minutes</strong>.
                   </p>
+
+                  <p style="margin: 0 0 32px 0; font-size: 14px; color: #666666; line-height: 1.6;">
+                    If you did not request this verification, you can safely ignore this email.
+                  </p>
+
+                  <p style="margin: 0; font-size: 14px; color: #444444; line-height: 1.7;">
+                    Regards,<br>
+                    <strong>Ticket &amp; Inventory Management System</strong><br>
+                    Support Team
+                  </p>
+
                 </td>
               </tr>
 
               <!-- Footer -->
               <tr>
-                <td style="padding: 20px 32px; background-color: #0f172a; border-top: 1px solid #334155; text-align: center;">
-                  <p style="font-size: 12px; color: #64748b; margin: 0 0 4px 0;">
-                    DevSecOps Ticket &amp; Asset Management Portal &bull; Automated Security Notification
-                  </p>
-                  <p style="font-size: 11px; color: #475569; margin: 0;">
-                    This is an automated system email. Please do not reply directly to this message.
+                <td style="padding: 20px 40px; background-color: #fafafa;
+                           border-top: 1px solid #e8e8e8; text-align: center;">
+                  <p style="margin: 0; font-size: 12px; color: #999999; line-height: 1.5;">
+                    This is an automated message. Please do not reply to this email.
                   </p>
                 </td>
               </tr>
 
             </table>
+            <!-- /Card -->
+
           </td>
         </tr>
       </table>
+
     </body>
     </html>
   `;
 }
+
 
 function formatTicketIdHelper(id, type) {
   if (!id && id !== 0) return 'TKT-000000';
