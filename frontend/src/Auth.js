@@ -73,7 +73,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
     try {
       const response = await axios.post(endpoint, payload);
       if (isLogin) {
-        // Direct Login without OTP verification
+        // Direct Login — only reached if user is verified
         const { token, user } = response.data;
         onAuthSuccess(token, user);
       } else if (response.data.requireOtp) {
@@ -89,7 +89,17 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
       }
     } catch (err) {
       console.error('Auth error:', err);
-      setError(err.response?.data?.error || 'Authentication failed. Please check your credentials.');
+      const errData = err.response?.data;
+      // If login blocked because email not verified → redirect to OTP screen
+      if (errData?.requireOtp && errData?.email) {
+        setShowOtpScreen(true);
+        setOtpEmail(errData.email);
+        setOtpDigits(['', '', '', '', '', '']);
+        setTimerSeconds(300);
+        setOtpSuccessMessage('Your email address is not verified yet. Please enter the verification code sent to your inbox.');
+      } else {
+        setError(errData?.error || 'Authentication failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }

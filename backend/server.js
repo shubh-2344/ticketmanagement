@@ -501,7 +501,7 @@ app.post('/api/auth/signup', async (req, res) => {
             } else {
                 // If account exists but is unverified, generate fresh OTP and resend
                 const otp = Math.floor(100000 + Math.random() * 900000).toString();
-                const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+                const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
                 await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
                 
                 // Dispatch OTP email asynchronously in the background so API responds instantly
@@ -520,7 +520,7 @@ app.post('/api/auth/signup', async (req, res) => {
         const userId = 'usr_' + uuidv4().substring(0, 8);
         const hashedPassword = await bcrypt.hash(password, 10);
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         await pool.query(
             'INSERT INTO users(id, name, email, password_hash, role, is_verified, otp_code, otp_expires_at) VALUES($1, $2, $3, $4, $5, $6, $7, $8)',
@@ -561,6 +561,15 @@ app.post('/api/auth/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        // Block login until email is verified
+        if (!user.is_verified) {
+            return res.status(403).json({
+                error: 'Your email address has not been verified yet. Please check your inbox for the verification code.',
+                requireOtp: true,
+                email: user.email
+            });
         }
 
         const token = jwt.sign(
@@ -660,7 +669,7 @@ app.post('/api/auth/resend-otp', async (req, res) => {
         }
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
 
