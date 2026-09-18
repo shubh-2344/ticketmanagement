@@ -2,109 +2,55 @@ require('dotenv').config();
 const nodemailer = require('nodemailer');
 
 /**
- * DEDICATED SMTP CONFIGURATION MODULE
- * Optimized for Microsoft Office 365 / Exchange Online.
- * Enforces TLS 1.2, authMethod: LOGIN, connection pooling, and credential handling.
+ * SMTP CONFIGURATION — Microsoft Office 365 / Exchange Online
+ * Uses TLS 1.2 + authMethod LOGIN as required by smtp.office365.com:587
  */
-const rawHost = (process.env.SMTP_HOST || 'smtp.office365.com').trim();
-const rawPort = parseInt(process.env.SMTP_PORT || '587', 10);
-const rawUser = (process.env.SMTP_USER || '').trim();
-const rawPass = (process.env.SMTP_PASS || '').trim();
-const rawFromName = (process.env.SMTP_FROM_NAME || 'DevSecOps Ticket System').replace(/^["']|["']$/g, '').trim();
-const rawFromEmail = (process.env.SMTP_FROM_EMAIL || rawUser || 'helpdesk@securelayer7.net').replace(/^["']|["']$/g, '').trim();
+const SMTP_HOST     = (process.env.SMTP_HOST     || 'smtp.office365.com').trim();
+const SMTP_PORT     = parseInt(process.env.SMTP_PORT || '587', 10);
+const SMTP_USER     = (process.env.SMTP_USER     || '').trim();
+const SMTP_PASS     = (process.env.SMTP_PASS     || '').trim();
+const FROM_NAME     = (process.env.SMTP_FROM_NAME  || 'DevSecOps Ticket System').replace(/^["']|["']$/g, '').trim();
+const FROM_EMAIL    = (process.env.SMTP_FROM_EMAIL || SMTP_USER).replace(/^["']|["']$/g, '').trim();
 
-// Try URL decoding if password contains percent-encoded characters like %54 -> 'T'
-let decodedPass = rawPass;
-try {
-    decodedPass = decodeURIComponent(rawPass);
-} catch (e) {
-    decodedPass = rawPass;
-}
-
-const isOffice365 = rawHost.toLowerCase().includes('office365') || rawHost.toLowerCase().includes('outlook');
-
-function buildSmtpConfig(host, pass) {
-    return {
-        host: host,
-        port: rawPort,
-        secure: process.env.SMTP_SECURE === 'true', // false for port 587 (STARTTLS)
-        auth: {
-            user: rawUser,
-            pass: pass
-        },
-        authMethod: 'LOGIN',
-        requireTLS: isOffice365 || rawPort === 587,
-        tls: {
-            minVersion: 'TLSv1.2',
-            rejectUnauthorized: false
-        },
-        pool: true,
-        maxConnections: 3,
-        maxMessages: 100,
-        rateDelta: 1000,
-        rateLimit: 5
-    };
-}
-
-let activeTransporter = nodemailer.createTransport(buildSmtpConfig(rawHost, rawPass));
-let fallbackTransporter = decodedPass !== rawPass
-    ? nodemailer.createTransport(buildSmtpConfig(rawHost, decodedPass))
-    : nodemailer.createTransport(buildSmtpConfig('smtp-mail.outlook.com', rawPass));
-
-/**
- * Sends email with automatic fallback retry on 535 auth errors
- */
-async function sendMail(mailOptions) {
-    try {
-        return await activeTransporter.sendMail(mailOptions);
-    } catch (err) {
-        if (err && err.message && err.message.includes('535') && fallbackTransporter) {
-            console.warn('[SMTP] Primary authentication failed (535); retrying with alternate credentials...');
-            const info = await fallbackTransporter.sendMail(mailOptions);
-            activeTransporter = fallbackTransporter; // cache working transporter
-            return info;
-        }
-        throw err;
+const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: false,          // false → STARTTLS on port 587
+    requireTLS: true,       // enforce STARTTLS
+    auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS
+    },
+    authMethod: 'LOGIN',    // required for Exchange Online / Office 365
+    tls: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: false
     }
-}
+});
 
-const defaultSender = {
-    name: rawFromName,
-    email: rawFromEmail
-};
+const defaultSender = { name: FROM_NAME, email: FROM_EMAIL };
 
 async function verifySmtpConnection() {
-    if (!rawHost || !rawUser) {
-        return { success: false, reason: 'SMTP credentials missing in .env' };
+    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+        console.warn('[SMTP] Credentials not fully configured in .env — skipping verification.');
+        return { success: false, reason: 'SMTP credentials missing' };
     }
     try {
-        await activeTransporter.verify();
-        console.log(`[SMTP STATUS] Successfully connected to ${rawHost}:${rawPort} (${rawUser})`);
+        await transporter.verify();
+        console.log(`[SMTP OK] Connected to ${SMTP_HOST}:${SMTP_PORT} as ${SMTP_USER}`);
         return { success: true };
     } catch (err) {
-        if (err && err.message && err.message.includes('535') && fallbackTransporter) {
-            try {
-                await fallbackTransporter.verify();
-                activeTransporter = fallbackTransporter;
-                console.log(`[SMTP STATUS] Successfully connected using alternate credentials.`);
-                return { success: true };
-            } catch (fallbackErr) {
-                console.error(`[SMTP STATUS ERROR]:`, fallbackErr.message);
-                return { success: false, error: fallbackErr.message };
-            }
+        console.error(`[SMTP ERROR] ${SMTP_HOST}:${SMTP_PORT} — ${err.message}`);
+        if (err.message.includes('535')) {
+            console.error('[SMTP HINT] 535 = authentication rejected by server.');
+            console.error('  → Ensure "Authenticated SMTP" is enabled for this mailbox in M365 Admin Center.');
+            console.error('  → Users > Active Users > <mailbox> > Mail tab > Manage email apps > Authenticated SMTP ✔');
         }
-        console.error(`[SMTP STATUS ERROR]:`, err.message);
         return { success: false, error: err.message };
     }
 }
 
-module.exports = {
-    transporter: {
-        sendMail: (options) => sendMail(options),
-        verify: () => verifySmtpConnection()
-    },
-    defaultSender,
-    verifySmtpConnection
-};
+module.exports = { transporter, defaultSender, verifySmtpConnection };
+
 
 
