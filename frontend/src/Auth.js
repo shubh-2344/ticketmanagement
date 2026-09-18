@@ -20,8 +20,6 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
   const [otpSuccessMessage, setOtpSuccessMessage] = useState('');
   const [isVerifiedSuccess, setIsVerifiedSuccess] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(300); // 5-minute countdown (300 seconds)
-  const [devOtpHint, setDevOtpHint] = useState('');
-  const [emailSent, setEmailSent] = useState(true);
 
   const inputRefs = useRef([]);
 
@@ -84,13 +82,7 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
         setOtpEmail(response.data.email || formData.email);
         setOtpDigits(['', '', '', '', '', '']);
         setTimerSeconds(300);
-        setOtpSuccessMessage(response.data.message || "We've sent a 6-digit verification code to your email address. Please enter the code below to verify your account.");
-        if (response.data.devOtp) {
-          setDevOtpHint(response.data.devOtp);
-        } else {
-          setDevOtpHint('');
-        }
-        setEmailSent(response.data.emailSent !== false);
+        setOtpSuccessMessage(response.data.message || "A 6-digit verification code has been sent to your email address. Please enter the code below to verify your account.");
       } else {
         const { token, user } = response.data;
         onAuthSuccess(token, user);
@@ -211,12 +203,6 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
       setTimerSeconds(300); // Reset 5-minute timer
       setOtpDigits(['', '', '', '', '', '']);
       setOtpSuccessMessage(response.data.message || 'A fresh 6-digit verification code has been sent to your email.');
-      if (response.data.devOtp) {
-        setDevOtpHint(response.data.devOtp);
-      } else {
-        setDevOtpHint('');
-      }
-      setEmailSent(response.data.emailSent !== false);
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 100);
@@ -435,49 +421,6 @@ function Auth({ API_URL, onAuthSuccess, globalSettings }) {
             )}
 
             {error && <div className="auth-error-banner"><AlertIcon size={16} /> {error}</div>}
-
-            {devOtpHint && (
-              <div style={{
-                marginBottom: '16px',
-                padding: '12px 16px',
-                background: 'rgba(56, 189, 248, 0.08)',
-                border: '1px dashed rgba(56, 189, 248, 0.4)',
-                borderRadius: '8px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {emailSent ? 'Verification Code' : 'Fallback Verification Code'}
-                  </div>
-                  <div style={{ fontSize: '15px', fontWeight: '800', color: 'var(--accent, #38bdf8)', letterSpacing: '2px', fontFamily: 'monospace' }}>
-                    {devOtpHint}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const digits = devOtpHint.split('').slice(0, 6);
-                    setOtpDigits(digits);
-                    setError('');
-                  }}
-                  style={{
-                    background: 'linear-gradient(135deg, #0284c7, #6366f1)',
-                    border: 'none',
-                    color: '#ffffff',
-                    padding: '6px 14px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)'
-                  }}
-                >
-                  Auto-fill
-                </button>
-              </div>
-            )}
 
             <form onSubmit={handleVerifyOtp} className="auth-form">
               <div className="form-group" style={{ marginBottom: '12px' }}>

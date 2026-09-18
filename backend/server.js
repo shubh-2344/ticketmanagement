@@ -504,18 +504,15 @@ app.post('/api/auth/signup', async (req, res) => {
                 const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
                 await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
                 
-                const mailResult = await emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp });
-                let message = 'Account exists but is unverified. A new 6-digit OTP code has been sent to your email.';
-                if (!mailResult.success) {
-                    message = `Account exists but unverified. Verification email delivery status: ${mailResult.error || 'SMTP delivery issue'}. Verification code: ${otp}`;
-                }
+                // Dispatch OTP email asynchronously in the background so API responds instantly
+                emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp }).catch(err => {
+                    console.error('[SIGNUP OTP BACKGROUND ERROR]:', err.message);
+                });
 
                 return res.status(200).json({
-                    message,
+                    message: 'Account exists but is unverified. A new 6-digit verification code has been sent to your email.',
                     requireOtp: true,
-                    email: email.trim().toLowerCase(),
-                    emailSent: mailResult.success,
-                    devOtp: otp
+                    email: email.trim().toLowerCase()
                 });
             }
         }
@@ -530,20 +527,15 @@ app.post('/api/auth/signup', async (req, res) => {
             [userId, name.trim(), email.trim().toLowerCase(), hashedPassword, assignedRole, false, otp, otpExpiresAt]
         );
 
-        // Send OTP verification email
-        const mailResult = await emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp });
-
-        let message = 'Registration successful! Please enter the 6-digit OTP sent to your email to activate your account.';
-        if (!mailResult.success) {
-            message = `Registration created! Notice: Verification email delivery failed (${mailResult.error || 'SMTP delivery issue'}). For verification, your OTP code is: ${otp}`;
-        }
+        // Dispatch OTP email asynchronously in the background so API responds instantly
+        emailService.sendOtpEmail({ to: email.trim().toLowerCase(), name: name.trim(), otp }).catch(err => {
+            console.error('[SIGNUP OTP BACKGROUND ERROR]:', err.message);
+        });
 
         res.status(201).json({
-            message,
+            message: 'Registration successful! A 6-digit verification code has been sent to your email address.',
             requireOtp: true,
-            email: email.trim().toLowerCase(),
-            emailSent: mailResult.success,
-            devOtp: otp
+            email: email.trim().toLowerCase()
         });
     } catch (err) {
         console.error('Signup error:', err);
@@ -672,17 +664,13 @@ app.post('/api/auth/resend-otp', async (req, res) => {
 
         await pool.query('UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE id = $3', [otp, otpExpiresAt, user.id]);
 
-        const mailResult = await emailService.sendOtpEmail({ to: user.email, name: user.name, otp });
-
-        let message = 'A new 6-digit OTP code has been sent to your email.';
-        if (!mailResult.success) {
-            message = `New OTP generated! Notice: Email delivery failed (${mailResult.error || 'SMTP delivery issue'}). For verification, your OTP code is: ${otp}`;
-        }
+        // Dispatch OTP email asynchronously in the background
+        emailService.sendOtpEmail({ to: user.email, name: user.name, otp }).catch(err => {
+            console.error('[RESEND OTP BACKGROUND ERROR]:', err.message);
+        });
 
         res.json({
-            message,
-            emailSent: mailResult.success,
-            devOtp: otp
+            message: 'A fresh 6-digit verification code has been sent to your email address.'
         });
     } catch (err) {
         console.error('Resend OTP error:', err);

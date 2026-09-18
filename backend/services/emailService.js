@@ -59,15 +59,11 @@ async function sendOtpEmail({ to, name, otp }) {
     const html = templates.otpTemplate({ name, otp });
     const text = `Hello ${name || 'User'},\n\nThank you for signing up for DevSecOps Ticket Management System.\n\nYour 6-digit email verification code is: ${otp}\n\nThis verification code is valid for 15 minutes.\nIf you did not request this verification, please ignore this email.\n\nDevSecOps Ticket Management Portal`;
 
-    console.log(`[OTP DISPATCH] Sending verification OTP [${otp}] to <${to}>...`);
+    console.log(`[OTP DISPATCH] Sending verification email to <${to}>...`);
     const result = await sendMailHelper({ to, subject, html, text });
 
     if (!result.success) {
-        console.warn('\n' + '='.repeat(60));
-        console.warn(`[OTP BACKUP NOTIFICATION]`);
-        console.warn(`Failed to send email to <${to}> due to: ${result.error}`);
-        console.warn(`VERIFICATION CODE: [ ${otp} ]`);
-        console.warn('='.repeat(60) + '\n');
+        console.error(`[OTP DISPATCH ERROR] Email delivery failed for <${to}>: ${result.error}`);
     }
 
     return result;
